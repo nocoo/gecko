@@ -19,6 +19,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Disable PKCE — vinext's request wrapping loses the
+      // pkceCodeVerifier cookie during the OAuth callback,
+      // causing an InvalidCheck error. Pure state verification
+      // is sufficient for server-side OAuth flows.
+      checks: ["state"],
     }),
   ],
   pages: {
@@ -26,17 +31,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: "/login",
   },
   cookies: {
-    pkceCodeVerifier: {
-      name: useSecureCookies
-        ? "__Secure-authjs.pkce.code_verifier"
-        : "authjs.pkce.code_verifier",
-      options: {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: useSecureCookies,
-      },
-    },
     state: {
       name: useSecureCookies ? "__Secure-authjs.state" : "authjs.state",
       options: {
