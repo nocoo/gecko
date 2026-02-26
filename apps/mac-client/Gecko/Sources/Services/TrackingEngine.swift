@@ -25,7 +25,7 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Dependencies
 
-    private let db: DatabaseManager
+    private let db: any DatabaseService
 
     // MARK: - Private State
 
@@ -43,7 +43,7 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Init
 
-    init(db: DatabaseManager = .shared) {
+    init(db: any DatabaseService = DatabaseManager.shared) {
         self.db = db
         loadRecentSessions()
     }

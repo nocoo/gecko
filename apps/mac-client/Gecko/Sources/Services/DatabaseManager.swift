@@ -1,11 +1,25 @@
 import Foundation
 import GRDB
 
+/// Abstract interface for focus session persistence.
+///
+/// Extracted from `DatabaseManager` to enable testing with mock implementations.
+/// All methods are synchronous and throw on failure.
+protocol DatabaseService: Sendable {
+    func insert(_ session: FocusSession) throws
+    func update(_ session: FocusSession) throws
+    func save(_ session: FocusSession) throws
+    func fetchRecent(limit: Int) throws -> [FocusSession]
+    func fetch(id: String) throws -> FocusSession?
+    func count() throws -> Int
+    func deleteAll() throws
+}
+
 /// Manages the SQLite database lifecycle and provides CRUD operations for FocusSession.
 ///
 /// Database path: `~/Library/Application Support/com.gecko.app/gecko.sqlite`
 /// This path is accessible without sandbox, and will also be readable by the future web dashboard.
-final class DatabaseManager: Sendable {
+final class DatabaseManager: DatabaseService {
 
     /// Shared singleton for app-wide use.
     static let shared = DatabaseManager()
