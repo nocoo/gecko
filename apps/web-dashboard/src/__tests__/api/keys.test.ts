@@ -171,7 +171,7 @@ describe("/api/keys/[id]", () => {
     test("deletes user's API key", async () => {
       // First query: check key exists and belongs to user
       // Second query: delete the key
-      const { calls } = mockD1([
+      mockD1([
         [{ id: "key-1", user_id: "e2e-test-user" }],
         [],
       ]);

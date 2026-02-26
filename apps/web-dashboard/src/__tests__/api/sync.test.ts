@@ -76,7 +76,7 @@ function sampleSession(overrides: Record<string, unknown> = {}) {
 describe("POST /api/sync", () => {
   test("uploads sessions and returns count", async () => {
     // Two D1 calls: INSERT OR IGNORE for sessions, INSERT for sync_log
-    const { calls } = mockD1([[], []]);
+    mockD1([[], []]);
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {

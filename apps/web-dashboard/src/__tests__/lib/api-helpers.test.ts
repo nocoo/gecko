@@ -1,5 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
-import { NextRequest } from "next/server";
+import { describe, test, expect, beforeEach } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // API helpers tests — auth extraction for route handlers

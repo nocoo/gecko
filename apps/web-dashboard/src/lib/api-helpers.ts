@@ -5,7 +5,10 @@ import { auth } from "@/auth";
 import { query } from "@/lib/d1";
 import { hashApiKey } from "@/lib/api-key";
 
-const SKIP_AUTH = process.env.E2E_SKIP_AUTH === "true";
+// Read lazily — env may be set after module import (e.g. in tests)
+function isSkipAuth(): boolean {
+  return process.env.E2E_SKIP_AUTH === "true";
+}
 const E2E_TEST_USER_ID = "e2e-test-user";
 
 // ---------------------------------------------------------------------------
@@ -28,7 +31,7 @@ export interface ApiKeyUser extends AuthenticatedUser {
 export async function requireSession(): Promise<
   { user: AuthenticatedUser; error?: never } | { user?: never; error: Response }
 > {
-  if (SKIP_AUTH) {
+  if (isSkipAuth()) {
     return { user: { userId: E2E_TEST_USER_ID } };
   }
 
@@ -51,7 +54,7 @@ export async function requireApiKey(
 ): Promise<
   { user: ApiKeyUser; error?: never } | { user?: never; error: Response }
 > {
-  if (SKIP_AUTH) {
+  if (isSkipAuth()) {
     return { user: { userId: E2E_TEST_USER_ID, deviceId: "e2e-test-device" } };
   }
 
