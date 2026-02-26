@@ -126,21 +126,25 @@ describe("GET /api/stats", () => {
     mockD1([
       // Total stats query
       [{ total_sessions: 100, total_duration: 50000.0, total_apps: 15 }],
+      // Longest session query
+      [{ max_duration: 3600.0 }],
       // Top apps query
       [
-        { app_name: "Chrome", total_duration: 20000.0, session_count: 40 },
-        { app_name: "VS Code", total_duration: 15000.0, session_count: 30 },
+        { app_name: "Chrome", bundle_id: "com.google.Chrome", total_duration: 20000.0, session_count: 40 },
+        { app_name: "VS Code", bundle_id: "com.microsoft.VSCode", total_duration: 15000.0, session_count: 30 },
       ],
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats");
+    const req = new Request("http://localhost/api/stats?period=all");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
     const data = await res.json();
+    expect(data.period).toBe("all");
     expect(data.totalSessions).toBe(100);
     expect(data.totalDuration).toBe(50000.0);
+    expect(data.longestSession).toBe(3600.0);
     expect(data.topApps).toHaveLength(2);
     expect(data.topApps[0].appName).toBe("Chrome");
   });
@@ -148,6 +152,7 @@ describe("GET /api/stats", () => {
   test("handles no data gracefully", async () => {
     mockD1([
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
+      [{ max_duration: 0 }],
       [],
     ]);
     const { GET } = await import("../../app/api/stats/route");
@@ -158,7 +163,25 @@ describe("GET /api/stats", () => {
 
     const data = await res.json();
     expect(data.totalSessions).toBe(0);
+    expect(data.longestSession).toBe(0);
     expect(data.topApps).toEqual([]);
+  });
+
+  test("defaults to 'today' period", async () => {
+    const { calls } = mockD1([
+      [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
+      [{ max_duration: 0 }],
+      [],
+    ]);
+    const { GET } = await import("../../app/api/stats/route");
+
+    const req = new Request("http://localhost/api/stats");
+    const res = await GET(req);
+    const data = await res.json();
+
+    expect(data.period).toBe("today");
+    // Should have start_time filter in queries
+    expect(calls[0].params.length).toBe(2); // user_id + start_time
   });
 });
 
