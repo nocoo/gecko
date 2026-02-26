@@ -11,6 +11,7 @@
 		1CCBE1EA8B9BEF3B17C03E19 /* TrackingIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */; };
 		1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */; };
 		32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */; };
+		41F63E1D39F1982DFC892652 /* SessionFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0CEFF5C1B16F613CF4961B /* SessionFormatter.swift */; };
 		4F001E568DF66F25802F9449 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6006006F719700E5CB8CAD70 /* AboutView.swift */; };
 		54407C392BC4405D0D9ABD39 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A202828F8AFFB6F940E2BDA5 /* GRDB */; };
 		5E448D30BCB3E6B70611BDDE /* BrowserURLFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */; };
@@ -64,6 +65,7 @@
 		8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManagerTests.swift; sourceTree = "<group>"; };
 		A1039A1BE6D4B215E0FEB366 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A2357FDBE576E42911EB112C /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
+		AA0CEFF5C1B16F613CF4961B /* SessionFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFormatter.swift; sourceTree = "<group>"; };
 		C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserURLFetcher.swift; sourceTree = "<group>"; };
 		C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingEngine.swift; sourceTree = "<group>"; };
 		F3C8B226E462249412DE7B16 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
@@ -137,10 +139,18 @@
 				0BDFE91A36D880F59A199ACE /* App */,
 				A51AFD26A3424D19F4B2F82B /* Models */,
 				DEE035846637B6A52B09F101 /* Services */,
+				6F4BFE2918F1053CF76C4F86 /* ViewModels */,
 				C1A723E12E512E8AD8FB7AB3 /* Views */,
 			);
 			name = Sources;
 			path = Gecko/Sources;
+			sourceTree = "<group>";
+		};
+		6F4BFE2918F1053CF76C4F86 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		A51AFD26A3424D19F4B2F82B /* Models */ = {
@@ -181,6 +191,7 @@
 				C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */,
 				6050F571491038E2744B1122 /* DatabaseManager.swift */,
 				A2357FDBE576E42911EB112C /* PermissionManager.swift */,
+				AA0CEFF5C1B16F613CF4961B /* SessionFormatter.swift */,
 				F3C8B226E462249412DE7B16 /* SettingsManager.swift */,
 				C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */,
 			);
@@ -292,6 +303,7 @@
 				1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */,
 				75751D40958A9830333F005F /* MenuBarView.swift in Sources */,
 				DD2BA44B44B422D76749C2A4 /* PermissionManager.swift in Sources */,
+				41F63E1D39F1982DFC892652 /* SessionFormatter.swift in Sources */,
 				EF5B485080A9B3C354AB9966 /* SessionListView.swift in Sources */,
 				89FEC7AD65140689461D7FA0 /* SettingsManager.swift in Sources */,
 				9FCF334CDE514CE172F06158 /* SettingsView.swift in Sources */,
