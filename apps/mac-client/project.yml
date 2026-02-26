@@ -1,0 +1,40 @@
+name: Gecko
+options:
+  bundleIdPrefix: com.gecko
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  generateEmptyDirectories: true
+
+packages:
+  GRDB:
+    url: https://github.com/groue/GRDB.swift
+    from: "7.0.0"
+
+targets:
+  Gecko:
+    type: application
+    platform: macOS
+    sources:
+      - path: Gecko/Sources
+      - path: Gecko/Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gecko.app
+        PRODUCT_NAME: Gecko
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "5.10"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        INFOPLIST_FILE: Gecko/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Gecko/Resources/Gecko.entitlements
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        ENABLE_APP_SANDBOX: "NO"
+    dependencies:
+      - package: GRDB
+        product: GRDB
+    entitlements:
+      path: Gecko/Resources/Gecko.entitlements
+      properties:
+        com.apple.security.app-sandbox: false
