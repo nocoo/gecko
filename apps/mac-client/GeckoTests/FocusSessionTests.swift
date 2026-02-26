@@ -40,12 +40,12 @@ final class FocusSessionTests: XCTestCase {
     func testFinishSetsEndTimeAndDuration() {
         var session = FocusSession.start(appName: "Cursor", windowTitle: "test.swift")
 
-        // Simulate a small delay
-        let startTime = session.startTime
-        session.finish()
+        // Use a deterministic end time to avoid same-millisecond flakiness
+        let endTime = session.startTime + 5.0
+        session.finish(at: endTime)
 
-        XCTAssertGreaterThanOrEqual(session.endTime, startTime)
-        XCTAssertGreaterThanOrEqual(session.duration, 0)
+        XCTAssertEqual(session.endTime, endTime)
+        XCTAssertEqual(session.duration, 5.0)
         XCTAssertFalse(session.isActive)
     }
 
