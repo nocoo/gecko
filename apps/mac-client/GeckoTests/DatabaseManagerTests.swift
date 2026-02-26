@@ -4,7 +4,7 @@ import GRDB
 
 final class DatabaseManagerTests: XCTestCase {
 
-    private var db: DatabaseManager!
+    private var db: DatabaseManager! // swiftlint:disable:this implicitly_unwrapped_optional
 
     override func setUp() async throws {
         db = try DatabaseManager.makeInMemory()

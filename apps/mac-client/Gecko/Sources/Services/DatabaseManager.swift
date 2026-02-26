@@ -34,6 +34,7 @@ final class DatabaseManager: Sendable {
 
     /// The production database file URL.
     static var databaseURL: URL {
+        // swiftlint:disable:next force_unwrapping
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let directory = appSupport.appendingPathComponent("com.gecko.app", isDirectory: true)
         return directory.appendingPathComponent("gecko.sqlite")

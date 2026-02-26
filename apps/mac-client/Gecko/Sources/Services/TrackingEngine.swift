@@ -189,6 +189,7 @@ final class TrackingEngine: ObservableObject {
         }
 
         var titleValue: CFTypeRef?
+        // swiftlint:disable:next force_cast
         let titleResult = AXUIElementCopyAttributeValue(window as! AXUIElement, kAXTitleAttribute as CFString, &titleValue)
 
         guard titleResult == .success, let title = titleValue as? String, !title.isEmpty else {

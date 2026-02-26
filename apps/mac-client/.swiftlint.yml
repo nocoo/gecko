@@ -1,0 +1,48 @@
+excluded:
+  - Gecko.xcodeproj
+  - .build
+
+disabled_rules:
+  - trailing_comma
+  - opening_brace
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - modifier_order
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - vertical_whitespace_closing_braces
+
+line_length:
+  warning: 140
+  error: 200
+
+type_body_length:
+  warning: 300
+  error: 500
+
+file_length:
+  warning: 500
+  error: 800
+
+function_body_length:
+  warning: 50
+  error: 100
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - db
+    - i
+    - t
+
+nesting:
+  type_level: 2
+  function_level: 3

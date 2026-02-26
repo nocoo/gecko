@@ -56,12 +56,14 @@ final class PermissionManager: ObservableObject {
 
     /// Open System Settings > Privacy & Security > Accessibility.
     func openAccessibilitySettings() {
+        // swiftlint:disable:next force_unwrapping
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
         NSWorkspace.shared.open(url)
     }
 
     /// Open System Settings > Privacy & Security > Automation.
     func openAutomationSettings() {
+        // swiftlint:disable:next force_unwrapping
         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
         NSWorkspace.shared.open(url)
     }
