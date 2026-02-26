@@ -5,14 +5,14 @@ import SwiftUI
 /// Displays a live-updating table with app name, window title, URL, timestamps,
 /// and duration for each session. Active sessions are highlighted.
 struct SessionListView: View {
-    @ObservedObject var trackingEngine: TrackingEngine
+    @ObservedObject var viewModel: SessionListViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             headerSection
             Divider()
 
-            if trackingEngine.recentSessions.isEmpty {
+            if viewModel.recentSessions.isEmpty {
                 emptyState
             } else {
                 sessionList
@@ -29,12 +29,12 @@ struct SessionListView: View {
 
             Spacer()
 
-            Text("\(trackingEngine.recentSessions.count) records")
+            Text("\(viewModel.sessionCount) records")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
             Button {
-                trackingEngine.loadRecentSessions()
+                viewModel.refresh()
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
@@ -65,7 +65,7 @@ struct SessionListView: View {
     // MARK: - Session List
 
     private var sessionList: some View {
-        List(trackingEngine.recentSessions) { session in
+        List(viewModel.recentSessions) { session in
             SessionRowView(session: session)
         }
         .listStyle(.inset(alternatesRowBackgrounds: true))

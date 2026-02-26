@@ -2,10 +2,7 @@ import SwiftUI
 
 /// Tab 4: Settings for configuring the SQLite database path.
 struct SettingsView: View {
-    @ObservedObject var settingsManager: SettingsManager
-    @State private var editingPath: String = ""
-    @State private var showValidationError: Bool = false
-    @State private var isEditing: Bool = false
+    @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -15,9 +12,6 @@ struct SettingsView: View {
             Spacer()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            editingPath = settingsManager.databasePath
-        }
     }
 
     // MARK: - Header
@@ -50,12 +44,11 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {
-                TextField("Database path", text: $editingPath)
+                TextField("Database path", text: $viewModel.editingPath)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
-                    .onChange(of: editingPath) {
-                        isEditing = (editingPath != settingsManager.databasePath)
-                        showValidationError = false
+                    .onChange(of: viewModel.editingPath) {
+                        viewModel.onPathChanged()
                     }
 
                 Button("Browse...") {
@@ -65,7 +58,7 @@ struct SettingsView: View {
                 .controlSize(.small)
             }
 
-            if showValidationError {
+            if viewModel.showValidationError {
                 Label("Invalid path. The parent directory must exist or be creatable.", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption)
                     .foregroundStyle(.red)
@@ -73,31 +66,22 @@ struct SettingsView: View {
 
             HStack(spacing: 12) {
                 Button("Save") {
-                    if settingsManager.validatePath(editingPath) {
-                        settingsManager.databasePath = editingPath
-                        isEditing = false
-                        showValidationError = false
-                    } else {
-                        showValidationError = true
-                    }
+                    viewModel.save()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(!isEditing)
+                .disabled(!viewModel.canSave)
 
                 Button("Reset to Default") {
-                    settingsManager.resetToDefault()
-                    editingPath = settingsManager.databasePath
-                    isEditing = false
-                    showValidationError = false
+                    viewModel.resetToDefault()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(!settingsManager.isCustomPath && !isEditing)
+                .disabled(!viewModel.canReset)
 
                 Spacer()
 
-                if settingsManager.isCustomPath {
+                if viewModel.isCustomPath {
                     Label("Custom path", systemImage: "info.circle")
                         .font(.caption2)
                         .foregroundStyle(.orange)
@@ -121,7 +105,7 @@ struct SettingsView: View {
         panel.canCreateDirectories = true
 
         if panel.runModal() == .OK, let url = panel.url {
-            editingPath = url.path
+            viewModel.setPath(url.path)
         }
     }
 }

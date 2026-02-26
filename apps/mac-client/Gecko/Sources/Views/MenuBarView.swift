@@ -2,22 +2,23 @@ import SwiftUI
 
 /// Menu bar dropdown content.
 struct MenuBarView: View {
-    @ObservedObject var permissionManager: PermissionManager
-    @ObservedObject var trackingEngine: TrackingEngine
+    @ObservedObject var viewModel: MenuBarViewModel
     @ObservedObject var tabSelection: TabSelection
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(spacing: 4) {
             // Tracking status
-            if trackingEngine.isTracking {
-                if let session = trackingEngine.currentSession {
-                    Label(session.appName, systemImage: "eye.fill")
+            if viewModel.isTracking {
+                if let appName = viewModel.currentAppName {
+                    Label(appName, systemImage: "eye.fill")
                         .padding(.vertical, 4)
-                    Text(session.windowTitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    if let windowTitle = viewModel.currentWindowTitle {
+                        Text(windowTitle)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 } else {
                     Label("Tracking Active", systemImage: "eye.fill")
                         .padding(.vertical, 4)
@@ -28,7 +29,7 @@ struct MenuBarView: View {
             }
 
             // Permission warning
-            if !permissionManager.allPermissionsGranted {
+            if !viewModel.allPermissionsGranted {
                 Divider()
                 Label("Permissions Missing", systemImage: "exclamationmark.triangle.fill")
                     .foregroundStyle(.orange)
@@ -38,12 +39,8 @@ struct MenuBarView: View {
             Divider()
 
             // Toggle tracking
-            Button(trackingEngine.isTracking ? "Stop Tracking" : "Start Tracking") {
-                if trackingEngine.isTracking {
-                    trackingEngine.stop()
-                } else {
-                    trackingEngine.start()
-                }
+            Button(viewModel.toggleButtonTitle) {
+                viewModel.toggleTracking()
             }
 
             // Open main window
@@ -62,8 +59,7 @@ struct MenuBarView: View {
             Divider()
 
             Button("Quit Gecko") {
-                trackingEngine.stop()
-                NSApplication.shared.terminate(nil)
+                viewModel.quitApp()
             }
             .keyboardShortcut("q", modifiers: .command)
         }

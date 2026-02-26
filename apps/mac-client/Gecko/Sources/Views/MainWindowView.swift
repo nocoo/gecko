@@ -4,29 +4,26 @@ import SwiftUI
 ///
 /// Tabs: Tracking | Sessions | Settings | About
 struct MainWindowView: View {
-    @ObservedObject var permissionManager: PermissionManager
-    @ObservedObject var trackingEngine: TrackingEngine
-    @ObservedObject var settingsManager: SettingsManager
+    @ObservedObject var trackingViewModel: TrackingViewModel
+    @ObservedObject var sessionListViewModel: SessionListViewModel
+    @ObservedObject var settingsViewModel: SettingsViewModel
     @ObservedObject var tabSelection: TabSelection
 
     var body: some View {
         TabView(selection: $tabSelection.selectedTab) {
-            TrackingStatusView(
-                trackingEngine: trackingEngine,
-                permissionManager: permissionManager
-            )
-            .tabItem {
-                Label(TabIdentifier.tracking.label, systemImage: TabIdentifier.tracking.icon)
-            }
-            .tag(TabIdentifier.tracking)
+            TrackingStatusView(viewModel: trackingViewModel)
+                .tabItem {
+                    Label(TabIdentifier.tracking.label, systemImage: TabIdentifier.tracking.icon)
+                }
+                .tag(TabIdentifier.tracking)
 
-            SessionListView(trackingEngine: trackingEngine)
+            SessionListView(viewModel: sessionListViewModel)
                 .tabItem {
                     Label(TabIdentifier.sessions.label, systemImage: TabIdentifier.sessions.icon)
                 }
                 .tag(TabIdentifier.sessions)
 
-            SettingsView(settingsManager: settingsManager)
+            SettingsView(viewModel: settingsViewModel)
                 .tabItem {
                     Label(TabIdentifier.settings.label, systemImage: TabIdentifier.settings.icon)
                 }

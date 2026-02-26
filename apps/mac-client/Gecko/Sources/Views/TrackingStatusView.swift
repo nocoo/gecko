@@ -6,8 +6,7 @@ import SwiftUI
 /// at the bottom shows permission status — auto-expanded when any
 /// permission is missing, collapsed when all are granted.
 struct TrackingStatusView: View {
-    @ObservedObject var trackingEngine: TrackingEngine
-    @ObservedObject var permissionManager: PermissionManager
+    @ObservedObject var viewModel: TrackingViewModel
     @State private var permissionsExpanded = false
 
     var body: some View {
@@ -31,10 +30,10 @@ struct TrackingStatusView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
         .onAppear {
-            permissionsExpanded = !permissionManager.allPermissionsGranted
+            permissionsExpanded = !viewModel.allPermissionsGranted
         }
-        .onChange(of: permissionManager.allPermissionsGranted) { granted in
-            if granted {
+        .onChange(of: viewModel.allPermissionsGranted) {
+            if viewModel.allPermissionsGranted {
                 withAnimation { permissionsExpanded = false }
             }
         }
@@ -44,17 +43,13 @@ struct TrackingStatusView: View {
 
     private var trackingButton: some View {
         Button {
-            if trackingEngine.isTracking {
-                trackingEngine.stop()
-            } else {
-                trackingEngine.start()
-            }
+            viewModel.toggleTracking()
         } label: {
             ZStack {
                 // Outer glow ring
                 Circle()
                     .fill(
-                        trackingEngine.isTracking
+                        viewModel.isTracking
                             ? Color.green.opacity(0.15)
                             : Color.secondary.opacity(0.08)
                     )
@@ -63,26 +58,26 @@ struct TrackingStatusView: View {
                 // Main circle
                 Circle()
                     .fill(
-                        trackingEngine.isTracking
+                        viewModel.isTracking
                             ? Color.green.gradient
                             : Color.secondary.opacity(0.2).gradient
                     )
                     .frame(width: 120, height: 120)
                     .shadow(
-                        color: trackingEngine.isTracking
+                        color: viewModel.isTracking
                             ? Color.green.opacity(0.4)
                             : Color.clear,
                         radius: 12
                     )
 
                 // Icon
-                Image(systemName: trackingEngine.isTracking ? "eye.fill" : "eye.slash")
+                Image(systemName: viewModel.isTracking ? "eye.fill" : "eye.slash")
                     .font(.system(size: 36, weight: .medium))
-                    .foregroundStyle(trackingEngine.isTracking ? .white : .secondary)
+                    .foregroundStyle(viewModel.isTracking ? .white : .secondary)
             }
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(trackingEngine.isTracking ? "Stop Tracking" : "Start Tracking")
+        .accessibilityLabel(viewModel.isTracking ? "Stop Tracking" : "Start Tracking")
         .accessibilityHint("Double-click to toggle focus tracking")
     }
 
@@ -90,10 +85,10 @@ struct TrackingStatusView: View {
 
     private var statusSection: some View {
         VStack(spacing: 8) {
-            Text(trackingEngine.isTracking ? "Tracking Active" : "Tracking Paused")
+            Text(viewModel.isTracking ? "Tracking Active" : "Tracking Paused")
                 .font(.title2.bold())
 
-            if trackingEngine.isTracking, let session = trackingEngine.currentSession {
+            if viewModel.isTracking, let session = viewModel.currentSession {
                 VStack(spacing: 4) {
                     Text(session.appName)
                         .font(.body)
@@ -111,7 +106,7 @@ struct TrackingStatusView: View {
                             .truncationMode(.middle)
                     }
                 }
-            } else if !trackingEngine.isTracking {
+            } else if !viewModel.isTracking {
                 Text("Click the button to start tracking your focus sessions.")
                     .font(.subheadline)
                     .foregroundStyle(.tertiary)
@@ -128,19 +123,19 @@ struct TrackingStatusView: View {
                 permissionRow(
                     title: "Accessibility",
                     subtitle: "Read window titles via AXUIElement API.",
-                    isGranted: permissionManager.isAccessibilityGranted,
-                    missingHint: permissionManager.isAccessibilityGranted ? nil
+                    isGranted: viewModel.isAccessibilityGranted,
+                    missingHint: viewModel.isAccessibilityGranted ? nil
                         : "If already enabled, click \"Reset & Request\" — rebuilds can invalidate the entry.",
                     actions: {
-                        if !permissionManager.isAccessibilityGranted {
+                        if !viewModel.isAccessibilityGranted {
                             Button("Reset & Request") {
-                                permissionManager.resetAndRequestAccessibility()
+                                viewModel.resetAndRequestAccessibility()
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
 
                             Button("Open Settings") {
-                                permissionManager.openAccessibilitySettings()
+                                viewModel.openAccessibilitySettings()
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -153,18 +148,18 @@ struct TrackingStatusView: View {
                 permissionRow(
                     title: "Automation",
                     subtitle: "Execute AppleScript to grab browser URLs.",
-                    isGranted: permissionManager.isAutomationGranted,
+                    isGranted: viewModel.isAutomationGranted,
                     missingHint: nil,
                     actions: {
-                        if !permissionManager.isAutomationGranted {
+                        if !viewModel.isAutomationGranted {
                             Button("Request") {
-                                permissionManager.testAutomation()
+                                viewModel.testAutomation()
                             }
                             .buttonStyle(.borderedProminent)
                             .controlSize(.small)
 
                             Button("Open Settings") {
-                                permissionManager.openAutomationSettings()
+                                viewModel.openAutomationSettings()
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -185,19 +180,19 @@ struct TrackingStatusView: View {
     private var permissionDisclosureLabel: some View {
         HStack(spacing: 8) {
             Image(
-                systemName: permissionManager.allPermissionsGranted
+                systemName: viewModel.allPermissionsGranted
                     ? "checkmark.seal.fill"
                     : "exclamationmark.triangle.fill"
             )
-            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+            .foregroundStyle(viewModel.allPermissionsGranted ? .green : .orange)
 
             Text(
-                permissionManager.allPermissionsGranted
+                viewModel.allPermissionsGranted
                     ? "All permissions granted"
                     : "Permissions required"
             )
             .font(.callout.weight(.medium))
-            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+            .foregroundStyle(viewModel.allPermissionsGranted ? .green : .orange)
 
             Spacer()
         }
