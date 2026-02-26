@@ -141,11 +141,15 @@ struct SessionRowView: View {
 
     // MARK: - Formatting
 
-    private func formatTime(_ timestamp: Double) -> String {
-        let date = Date(timeIntervalSince1970: timestamp)
+    private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
-        return formatter.string(from: date)
+        return formatter
+    }()
+
+    private func formatTime(_ timestamp: Double) -> String {
+        let date = Date(timeIntervalSince1970: timestamp)
+        return Self.timeFormatter.string(from: date)
     }
 
     private func formatDuration(_ seconds: Double) -> String {

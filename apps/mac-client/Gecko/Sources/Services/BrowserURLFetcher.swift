@@ -63,12 +63,13 @@ enum BrowserURLFetcher {
 
     /// Fetch the current URL from the specified browser.
     ///
-    /// Runs on the calling thread. AppleScript execution may block briefly (~50ms).
+    /// Runs AppleScript on a background thread to avoid blocking the main thread.
+    /// AppleScript execution typically takes 50-200ms.
     /// Returns nil if the browser has no open windows or the script fails.
-    static func fetchURL(for browser: Browser) -> String? {
-        let script: String
+    static func fetchURL(for browser: Browser) async -> String? {
+        let scriptSource: String
         if browser.isChromiumBased {
-            script = """
+            scriptSource = """
                 tell application "\(browser.scriptTarget)"
                     if (count of windows) > 0 then
                         return URL of active tab of front window
@@ -77,7 +78,7 @@ enum BrowserURLFetcher {
             """
         } else {
             // Safari
-            script = """
+            scriptSource = """
                 tell application "\(browser.scriptTarget)"
                     if (count of windows) > 0 then
                         return URL of current tab of front window
@@ -86,22 +87,65 @@ enum BrowserURLFetcher {
             """
         }
 
-        let appleScript = NSAppleScript(source: script)
+        return await withCheckedContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let appleScript = NSAppleScript(source: scriptSource)
+                var errorInfo: NSDictionary?
+                let result = appleScript?.executeAndReturnError(&errorInfo)
+
+                if let urlString = result?.stringValue, !urlString.isEmpty {
+                    continuation.resume(returning: urlString)
+                } else {
+                    continuation.resume(returning: nil)
+                }
+            }
+        }
+    }
+
+    /// Convenience: fetch URL by app name. Returns nil if app is not a known browser.
+    static func fetchURL(appName: String) async -> String? {
+        guard let browser = identifyBrowser(appName: appName) else {
+            return nil
+        }
+        return await fetchURL(for: browser)
+    }
+
+    /// Synchronous variant for testing only — do NOT call on main thread.
+    static func fetchURLSync(for browser: Browser) -> String? {
+        let scriptSource: String
+        if browser.isChromiumBased {
+            scriptSource = """
+                tell application "\(browser.scriptTarget)"
+                    if (count of windows) > 0 then
+                        return URL of active tab of front window
+                    end if
+                end tell
+            """
+        } else {
+            scriptSource = """
+                tell application "\(browser.scriptTarget)"
+                    if (count of windows) > 0 then
+                        return URL of current tab of front window
+                    end if
+                end tell
+            """
+        }
+
+        let appleScript = NSAppleScript(source: scriptSource)
         var errorInfo: NSDictionary?
         let result = appleScript?.executeAndReturnError(&errorInfo)
 
         guard let urlString = result?.stringValue, !urlString.isEmpty else {
             return nil
         }
-
         return urlString
     }
 
-    /// Convenience: fetch URL by app name. Returns nil if app is not a known browser.
-    static func fetchURL(appName: String) -> String? {
+    /// Synchronous convenience for testing only.
+    static func fetchURLSync(appName: String) -> String? {
         guard let browser = identifyBrowser(appName: appName) else {
             return nil
         }
-        return fetchURL(for: browser)
+        return fetchURLSync(for: browser)
     }
 }

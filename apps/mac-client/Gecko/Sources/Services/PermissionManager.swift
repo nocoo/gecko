@@ -132,15 +132,24 @@ final class PermissionManager: ObservableObject {
     /// macOS does not provide a direct API to query Automation permission status.
     /// We attempt a harmless AppleScript to System Events (which is always running)
     /// and treat success as "granted".
+    ///
+    /// **Important**: AppleScript execution can block for 50-200ms, so this runs
+    /// on a background thread and publishes the result back to main.
     private func checkAutomation() {
-        let script = NSAppleScript(source: """
-            tell application "System Events"
-                return name of first process whose frontmost is true
-            end tell
-        """)
-        var errorInfo: NSDictionary?
-        let result = script?.executeAndReturnError(&errorInfo)
-        isAutomationGranted = (result != nil && errorInfo == nil)
+        Task.detached(priority: .utility) {
+            let script = NSAppleScript(source: """
+                tell application "System Events"
+                    return name of first process whose frontmost is true
+                end tell
+            """)
+            var errorInfo: NSDictionary?
+            let result = script?.executeAndReturnError(&errorInfo)
+            let granted = (result != nil && errorInfo == nil)
+
+            await MainActor.run {
+                self.isAutomationGranted = granted
+            }
+        }
     }
 
     // MARK: - Polling

@@ -87,8 +87,8 @@ final class BrowserURLFetcherTests: XCTestCase {
 
     // MARK: - fetchURL with unknown app
 
-    func testFetchURLForNonBrowserReturnsNil() {
-        let url = BrowserURLFetcher.fetchURL(appName: "Finder")
+    func testFetchURLForNonBrowserReturnsNil() async {
+        let url = await BrowserURLFetcher.fetchURL(appName: "Finder")
         XCTAssertNil(url)
     }
 

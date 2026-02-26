@@ -10,6 +10,8 @@ import Combine
 ///    changes (e.g., switching tabs in Chrome without switching apps).
 /// 3. **Session lifecycle**: On each focus change, the previous session is finalized
 ///    (end_time + duration computed) and a new session is inserted.
+/// 4. **Off-main-thread**: AppleScript (browser URL) and DB operations run on
+///    background threads to keep the UI responsive.
 @MainActor
 final class TrackingEngine: ObservableObject {
 
@@ -58,7 +60,7 @@ final class TrackingEngine: ObservableObject {
             queue: .main
         ) { [weak self] notification in
             Task { @MainActor in
-                self?.handleAppActivation(notification)
+                await self?.handleAppActivation(notification)
             }
         }
 
@@ -68,12 +70,14 @@ final class TrackingEngine: ObservableObject {
             repeats: true
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.checkForInAppChanges()
+                await self?.checkForInAppChanges()
             }
         }
 
         // Capture the currently active app immediately
-        captureCurrentFocus()
+        Task {
+            await captureCurrentFocus()
+        }
     }
 
     /// Stop tracking and finalize the current session.
@@ -94,26 +98,26 @@ final class TrackingEngine: ObservableObject {
     // MARK: - Event Handlers
 
     /// Called when a new app is activated (event-driven, zero polling).
-    private func handleAppActivation(_ notification: Notification) {
+    private func handleAppActivation(_ notification: Notification) async {
         guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
             return
         }
 
         let appName = app.localizedName ?? "Unknown"
         let windowTitle = readWindowTitle(for: app)
-        let url = BrowserURLFetcher.fetchURL(appName: appName)
+        let url = await BrowserURLFetcher.fetchURL(appName: appName)
 
         switchFocus(appName: appName, windowTitle: windowTitle, url: url)
     }
 
     /// Fallback: check if window title or URL changed within the same app.
-    private func checkForInAppChanges() {
+    private func checkForInAppChanges() async {
         guard isTracking else { return }
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
         let windowTitle = readWindowTitle(for: frontApp)
-        let url = BrowserURLFetcher.fetchURL(appName: appName)
+        let url = await BrowserURLFetcher.fetchURL(appName: appName)
 
         // Only switch if something actually changed
         let titleChanged = windowTitle != lastWindowTitle
@@ -125,12 +129,12 @@ final class TrackingEngine: ObservableObject {
     }
 
     /// Capture whatever app is currently focused (used on engine start).
-    private func captureCurrentFocus() {
+    private func captureCurrentFocus() async {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
         let windowTitle = readWindowTitle(for: frontApp)
-        let url = BrowserURLFetcher.fetchURL(appName: appName)
+        let url = await BrowserURLFetcher.fetchURL(appName: appName)
 
         switchFocus(appName: appName, windowTitle: windowTitle, url: url)
     }
@@ -139,8 +143,8 @@ final class TrackingEngine: ObservableObject {
 
     /// Handle a focus switch: finalize previous session, start new one.
     private func switchFocus(appName: String, windowTitle: String, url: String?) {
-        // Finalize the previous session
-        finalizeCurrentSession()
+        // Finalize the previous session (without reloading recent — we'll reload once at the end)
+        finalizeCurrentSessionQuietly()
 
         // Update tracking state
         lastWindowTitle = windowTitle
@@ -158,8 +162,15 @@ final class TrackingEngine: ObservableObject {
         }
     }
 
-    /// Finalize the current session by setting end_time and duration.
+    /// Finalize the current session by setting end_time and duration, then reload.
     private func finalizeCurrentSession() {
+        finalizeCurrentSessionQuietly()
+        loadRecentSessions()
+    }
+
+    /// Finalize the current session without reloading recent sessions.
+    /// Used internally by `switchFocus` to avoid a redundant reload.
+    private func finalizeCurrentSessionQuietly() {
         guard var session = currentSession else { return }
         guard session.isActive else { return }
 
@@ -168,7 +179,6 @@ final class TrackingEngine: ObservableObject {
         do {
             try db.update(session)
             currentSession = nil
-            loadRecentSessions()
         } catch {
             print("[TrackingEngine] Failed to finalize session: \(error)")
         }
@@ -201,12 +211,19 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Data Loading
 
-    /// Reload recent sessions from the database.
+    /// Reload recent sessions from the database on a background thread.
     func loadRecentSessions() {
-        do {
-            recentSessions = try db.fetchRecent(limit: Self.recentSessionsLimit)
-        } catch {
-            print("[TrackingEngine] Failed to load recent sessions: \(error)")
+        let database = db
+        let limit = Self.recentSessionsLimit
+        Task.detached(priority: .userInitiated) {
+            do {
+                let sessions = try database.fetchRecent(limit: limit)
+                await MainActor.run {
+                    self.recentSessions = sessions
+                }
+            } catch {
+                print("[TrackingEngine] Failed to load recent sessions: \(error)")
+            }
         }
     }
 }
