@@ -2,6 +2,7 @@ import XCTest
 import GRDB
 @testable import Gecko
 
+// swiftlint:disable type_body_length
 final class DatabaseManagerTests: XCTestCase {
 
     private var db: DatabaseManager! // swiftlint:disable:this implicitly_unwrapped_optional
@@ -411,3 +412,4 @@ final class DatabaseManagerTests: XCTestCase {
         XCTAssertEqual(results.count, 0)
     }
 }
+// swiftlint:enable type_body_length

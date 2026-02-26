@@ -57,11 +57,11 @@ private final class MockURLProtocol: URLProtocol {
     /// Set this to control what the mock returns.
     nonisolated(unsafe) static var handler: ((URLRequest) throws -> (Data, HTTPURLResponse))?
 
-    override class func canInit(with request: URLRequest) -> Bool {
+    override static func canInit(with request: URLRequest) -> Bool {
         true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 
@@ -102,9 +102,9 @@ private func makeURLSession() -> URLSession {
 
 private func jsonResponse(statusCode: Int, body: [String: Any]) -> (Data, HTTPURLResponse) {
     let data = try! JSONSerialization.data(withJSONObject: body) // swiftlint:disable:this force_try
-    // swiftlint:disable:next force_unwrapping
-    let response = HTTPURLResponse(url: URL(string: "https://test.example.com")!,
-                                   statusCode: statusCode, httpVersion: nil, headerFields: nil)!
+    let url = URL(string: "https://test.example.com")! // swiftlint:disable:this force_unwrapping
+    let response = HTTPURLResponse(url: url, statusCode: statusCode,
+                                   httpVersion: nil, headerFields: nil)! // swiftlint:disable:this force_unwrapping
     return (data, response)
 }
 
@@ -180,9 +180,9 @@ final class SyncServiceTests: XCTestCase {
     // MARK: - SyncResponse Decoding
 
     func testSyncResponseDecodesSnakeCase() throws {
-        let json = """
+        let json = Data("""
         {"inserted": 42, "duplicates": 3, "sync_id": "abc-123"}
-        """.data(using: .utf8)!
+        """.utf8)
 
         let response = try JSONDecoder().decode(SyncResponse.self, from: json)
 

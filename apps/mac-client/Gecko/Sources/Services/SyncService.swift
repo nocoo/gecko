@@ -164,7 +164,6 @@ final class SyncService: ObservableObject {
             if totalSynced > 0 {
                 logger.info("Sync complete: \(totalSynced) sessions")
             }
-
         } catch let error as SyncError {
             handleSyncError(error)
         } catch {
