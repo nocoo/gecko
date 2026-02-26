@@ -13,6 +13,7 @@
 		1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */; };
 		25EC6DD2799BFCDC0BED26CB /* TrackingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C272E57F72F6825A0CC3B3 /* TrackingViewModel.swift */; };
 		2AA5DA1DE52792302B44D2BC /* SessionListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */; };
+		2AAC39C912B93A5B42B48A40 /* SyncServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 640535CD7F8432D05C2D8D72 /* SyncServiceTests.swift */; };
 		32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */; };
 		379414745EC99C2DEFAA03ED /* SessionFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A5C67D0B5C31893670E77D /* SessionFormatterTests.swift */; };
 		408E5F6F0431DFA23113FE6C /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */; };
@@ -68,6 +69,7 @@
 		6006006F719700E5CB8CAD70 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
 		6050F571491038E2744B1122 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
+		640535CD7F8432D05C2D8D72 /* SyncServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceTests.swift; sourceTree = "<group>"; };
 		715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifierTests.swift; sourceTree = "<group>"; };
 		73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 				CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */,
 				8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */,
 				73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */,
+				640535CD7F8432D05C2D8D72 /* SyncServiceTests.swift */,
 				715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */,
 				885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */,
 			);
@@ -357,6 +360,7 @@
 				2AA5DA1DE52792302B44D2BC /* SessionListViewModelTests.swift in Sources */,
 				32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */,
 				408E5F6F0431DFA23113FE6C /* SettingsViewModelTests.swift in Sources */,
+				2AAC39C912B93A5B42B48A40 /* SyncServiceTests.swift in Sources */,
 				F542313E1A985009F974B173 /* TabIdentifierTests.swift in Sources */,
 				1CCBE1EA8B9BEF3B17C03E19 /* TrackingIntegrationTests.swift in Sources */,
 			);

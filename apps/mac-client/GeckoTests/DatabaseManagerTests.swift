@@ -300,4 +300,114 @@ final class DatabaseManagerTests: XCTestCase {
         XCTAssertEqual(fetched?.isFullScreen, false)
         XCTAssertEqual(fetched?.isMinimized, false)
     }
+
+    // MARK: - FetchUnsynced
+
+    func testFetchUnsyncedReturnsOnlyFinalizedSessions() throws {
+        // GIVEN: one active session (duration=0) and one finalized session
+        let active = FocusSession(
+            id: "active-1", appName: "App", bundleId: nil, windowTitle: "Win",
+            url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+            isFullScreen: false, isMinimized: false,
+            startTime: 1000.0, endTime: 1000.0, duration: 0
+        )
+        let finalized = FocusSession(
+            id: "done-1", appName: "App", bundleId: nil, windowTitle: "Win",
+            url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+            isFullScreen: false, isMinimized: false,
+            startTime: 1010.0, endTime: 1020.0, duration: 10.0
+        )
+        try db.insert(active)
+        try db.insert(finalized)
+
+        // WHEN: fetching unsynced sessions since time 0
+        let results = try db.fetchUnsynced(since: 0, limit: 100)
+
+        // THEN: only the finalized session is returned
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0].id, "done-1")
+    }
+
+    func testFetchUnsyncedRespectsWatermark() throws {
+        // GIVEN: three finalized sessions at different start times
+        for i in 0..<3 {
+            let session = FocusSession(
+                id: "sync-\(i)", appName: "App", bundleId: nil, windowTitle: "Win",
+                url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+                isFullScreen: false, isMinimized: false,
+                startTime: Double(1000 + i * 100), endTime: Double(1050 + i * 100),
+                duration: 50.0
+            )
+            try db.insert(session)
+        }
+
+        // WHEN: fetching with watermark at 1100 (after first two)
+        let results = try db.fetchUnsynced(since: 1100, limit: 100)
+
+        // THEN: only the third session (start_time=1200) is returned
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0].id, "sync-2")
+    }
+
+    func testFetchUnsyncedOrderedByStartTimeAscending() throws {
+        // GIVEN: sessions inserted in reverse order
+        for i in (0..<3).reversed() {
+            let session = FocusSession(
+                id: "order-\(i)", appName: "App", bundleId: nil, windowTitle: "Win",
+                url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+                isFullScreen: false, isMinimized: false,
+                startTime: Double(1000 + i * 100), endTime: Double(1050 + i * 100),
+                duration: 50.0
+            )
+            try db.insert(session)
+        }
+
+        // WHEN: fetching all
+        let results = try db.fetchUnsynced(since: 0, limit: 100)
+
+        // THEN: ordered ascending by start_time
+        XCTAssertEqual(results.count, 3)
+        XCTAssertEqual(results[0].id, "order-0")
+        XCTAssertEqual(results[1].id, "order-1")
+        XCTAssertEqual(results[2].id, "order-2")
+    }
+
+    func testFetchUnsyncedRespectsLimit() throws {
+        // GIVEN: 5 finalized sessions
+        for i in 0..<5 {
+            let session = FocusSession(
+                id: "limit-\(i)", appName: "App", bundleId: nil, windowTitle: "Win",
+                url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+                isFullScreen: false, isMinimized: false,
+                startTime: Double(1000 + i * 10), endTime: Double(1005 + i * 10),
+                duration: 5.0
+            )
+            try db.insert(session)
+        }
+
+        // WHEN: fetching with limit 2
+        let results = try db.fetchUnsynced(since: 0, limit: 2)
+
+        // THEN: only 2 returned (earliest two)
+        XCTAssertEqual(results.count, 2)
+        XCTAssertEqual(results[0].id, "limit-0")
+        XCTAssertEqual(results[1].id, "limit-1")
+    }
+
+    func testFetchUnsyncedReturnsEmptyWhenAllSynced() throws {
+        // GIVEN: one session at start_time 1000
+        let session = FocusSession(
+            id: "synced-1", appName: "App", bundleId: nil, windowTitle: "Win",
+            url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+            isFullScreen: false, isMinimized: false,
+            startTime: 1000.0, endTime: 1010.0, duration: 10.0
+        )
+        try db.insert(session)
+
+        // WHEN: watermark is at or past the session's start_time
+        let results = try db.fetchUnsynced(since: 1000.0, limit: 100)
+
+        // THEN: no results (watermark is not strictly less than)
+        XCTAssertEqual(results.count, 0)
+    }
 }

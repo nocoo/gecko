@@ -99,4 +99,100 @@ final class SettingsManagerTests: XCTestCase {
         let manager = SettingsManager(defaults: defaults, defaultPath: "/custom/default.sqlite")
         XCTAssertEqual(manager.databasePath, "/saved/path.sqlite")
     }
+
+    // MARK: - Sync Settings: Defaults
+
+    func testSyncEnabledDefaultsToFalse() {
+        let manager = SettingsManager(defaults: defaults)
+        XCTAssertFalse(manager.syncEnabled)
+    }
+
+    func testApiKeyDefaultsToEmpty() {
+        let manager = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager.apiKey, "")
+    }
+
+    func testSyncServerUrlDefaultsToProduction() {
+        let manager = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager.syncServerUrl, SettingsManager.defaultSyncServerUrl)
+    }
+
+    func testLastSyncedStartTimeDefaultsToZero() {
+        let manager = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager.lastSyncedStartTime, 0)
+    }
+
+    // MARK: - Sync Settings: Persistence
+
+    func testSyncEnabledPersistedToDefaults() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.syncEnabled = true
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertTrue(manager2.syncEnabled)
+    }
+
+    func testApiKeyPersistedToDefaults() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.apiKey = "gk_test123"
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager2.apiKey, "gk_test123")
+    }
+
+    func testSyncServerUrlPersistedToDefaults() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.syncServerUrl = "https://custom.example.com"
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager2.syncServerUrl, "https://custom.example.com")
+    }
+
+    func testLastSyncedStartTimePersistedToDefaults() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.lastSyncedStartTime = 1234567.89
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertEqual(manager2.lastSyncedStartTime, 1234567.89)
+    }
+
+    // MARK: - isSyncConfigured
+
+    func testIsSyncConfiguredRequiresAllThree() {
+        let manager = SettingsManager(defaults: defaults)
+
+        // GIVEN: nothing configured
+        XCTAssertFalse(manager.isSyncConfigured)
+
+        // GIVEN: only enabled
+        manager.syncEnabled = true
+        XCTAssertFalse(manager.isSyncConfigured, "Needs API key too")
+
+        // GIVEN: enabled + API key
+        manager.apiKey = "gk_test"
+        XCTAssertTrue(manager.isSyncConfigured, "Has enabled + key + default URL")
+
+        // GIVEN: disabled
+        manager.syncEnabled = false
+        XCTAssertFalse(manager.isSyncConfigured, "Disabled = not configured")
+    }
+
+    func testIsSyncConfiguredWithEmptyServerUrl() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.syncEnabled = true
+        manager.apiKey = "gk_test"
+        manager.syncServerUrl = ""
+        XCTAssertFalse(manager.isSyncConfigured, "Empty server URL = not configured")
+    }
+
+    // MARK: - resetSyncState
+
+    func testResetSyncStateResetsWatermark() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.lastSyncedStartTime = 9999.0
+
+        manager.resetSyncState()
+
+        XCTAssertEqual(manager.lastSyncedStartTime, 0)
+    }
 }

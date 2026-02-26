@@ -180,4 +180,127 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertTrue(viewModel.canReset)
     }
+
+    // MARK: - Sync State Init
+
+    func testSyncStateInitFromSettings() {
+        let manager = makeSettingsManager()
+        manager.syncEnabled = true
+        manager.apiKey = "gk_abc123"
+        manager.syncServerUrl = "https://test.example.com"
+
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        XCTAssertTrue(viewModel.syncEnabled)
+        XCTAssertEqual(viewModel.editingApiKey, "gk_abc123")
+        XCTAssertEqual(viewModel.editingSyncServerUrl, "https://test.example.com")
+    }
+
+    func testSyncStateDefaultsWhenNotConfigured() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        XCTAssertFalse(viewModel.syncEnabled)
+        XCTAssertEqual(viewModel.editingApiKey, "")
+        XCTAssertEqual(viewModel.editingSyncServerUrl, SettingsManager.defaultSyncServerUrl)
+        XCTAssertFalse(viewModel.isSyncEditing)
+    }
+
+    // MARK: - Sync Editing State
+
+    func testChangingApiKeySetsIsSyncEditing() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_new_key"
+
+        XCTAssertTrue(viewModel.isSyncEditing)
+    }
+
+    func testChangingSyncServerUrlSetsIsSyncEditing() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingSyncServerUrl = "https://new-server.com"
+
+        XCTAssertTrue(viewModel.isSyncEditing)
+    }
+
+    func testRevertingApiKeyClearsIsSyncEditing() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_temporary"
+        XCTAssertTrue(viewModel.isSyncEditing)
+
+        viewModel.editingApiKey = ""
+        XCTAssertFalse(viewModel.isSyncEditing)
+    }
+
+    // MARK: - Save Sync Settings
+
+    func testSaveSyncSettingsPersists() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_save_test"
+        viewModel.editingSyncServerUrl = "https://saved.example.com"
+        viewModel.saveSyncSettings()
+
+        XCTAssertEqual(manager.apiKey, "gk_save_test")
+        XCTAssertEqual(manager.syncServerUrl, "https://saved.example.com")
+        XCTAssertFalse(viewModel.isSyncEditing)
+    }
+
+    // MARK: - Reset Sync Settings
+
+    func testResetSyncSettingsRestoresDefaults() {
+        let manager = makeSettingsManager()
+        manager.syncEnabled = true
+        manager.apiKey = "gk_to_reset"
+        manager.syncServerUrl = "https://custom.com"
+        manager.lastSyncedStartTime = 9999.0
+
+        let viewModel = SettingsViewModel(settingsManager: manager)
+        viewModel.resetSyncSettings()
+
+        XCTAssertFalse(viewModel.syncEnabled)
+        XCTAssertEqual(viewModel.editingApiKey, "")
+        XCTAssertEqual(viewModel.editingSyncServerUrl, SettingsManager.defaultSyncServerUrl)
+        XCTAssertFalse(viewModel.isSyncEditing)
+        XCTAssertEqual(manager.lastSyncedStartTime, 0)
+    }
+
+    // MARK: - Sync Enable Toggle
+
+    func testSyncEnableToggleUpdatesManager() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        XCTAssertFalse(manager.syncEnabled)
+
+        viewModel.syncEnabled = true
+        XCTAssertTrue(manager.syncEnabled)
+
+        viewModel.syncEnabled = false
+        XCTAssertFalse(manager.syncEnabled)
+    }
+
+    // MARK: - canSyncNow
+
+    func testCanSyncNowWhenConfigured() {
+        let manager = makeSettingsManager()
+        manager.syncEnabled = true
+        manager.apiKey = "gk_test"
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        XCTAssertTrue(viewModel.canSyncNow)
+    }
+
+    func testCanSyncNowFalseWhenNotConfigured() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        XCTAssertFalse(viewModel.canSyncNow)
+    }
 }
