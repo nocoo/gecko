@@ -1,0 +1,7 @@
+{
+  "name": "gecko",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --cwd apps/web-dashboard dev"
+  }
+}
