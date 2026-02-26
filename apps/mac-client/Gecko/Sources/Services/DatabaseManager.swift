@@ -11,6 +11,7 @@ protocol DatabaseService: Sendable {
     func save(_ session: FocusSession) throws
     func fetchRecent(limit: Int) throws -> [FocusSession]
     func fetch(id: String) throws -> FocusSession?
+    func fetchUnsynced(since startTime: Double, limit: Int) throws -> [FocusSession]
     func count() throws -> Int
     func deleteAll() throws
 }
@@ -164,6 +165,21 @@ final class DatabaseManager: DatabaseService {
     func count() throws -> Int {
         try dbQueue.read { db in
             try FocusSession.fetchCount(db)
+        }
+    }
+
+    /// Fetch finalized sessions with start_time after the given watermark, ordered ascending.
+    ///
+    /// Used by SyncService to find sessions that haven't been synced yet.
+    /// Only returns completed sessions (duration > 0).
+    func fetchUnsynced(since startTime: Double, limit: Int = 1000) throws -> [FocusSession] {
+        try dbQueue.read { db in
+            try FocusSession
+                .filter(FocusSession.Columns.startTime > startTime)
+                .filter(FocusSession.Columns.duration > 0)
+                .order(FocusSession.Columns.startTime.asc)
+                .limit(limit)
+                .fetchAll(db)
         }
     }
 }
