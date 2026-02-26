@@ -1,41 +1,44 @@
-# 数据库 Schema
+# Database Schema
 
-## 概述
+## Overview
 
-Gecko 使用 SQLite 作为本地持久化存储，通过 [GRDB.swift](https://github.com/groue/GRDB.swift) 进行线程安全的读写操作。
+Gecko uses two databases: a **local SQLite** on each macOS device for real-time data collection, and a **cloud Cloudflare D1** database for cross-device aggregation and dashboard queries.
 
-- **存储路径**: `~/Library/Application Support/com.gecko.app/gecko.sqlite`
-- **日志模式**: WAL（Write-Ahead Logging），提升并发读写性能
-- **外键约束**: 已启用
-- **设计目标**: macOS 客户端与未来 Web Dashboard 共享同一数据库文件
+| Aspect | Local (macOS) | Cloud (D1) |
+|---|---|---|
+| Engine | SQLite via GRDB.swift | Cloudflare D1 (SQLite-compatible) |
+| Path | `~/Library/Application Support/com.gecko.app/gecko.sqlite` | `gecko` (ID: `f66490d2-e7b3-43e8-a30c-2b34111141d7`) |
+| Access | macOS app direct file I/O | Web dashboard via D1 REST API |
+| Mode | WAL, foreign keys enabled | Serverless, managed by Cloudflare |
+| Scope | Single device, all sessions | Multi-user, multi-device |
 
-## 表结构
+---
+
+## Local Database (macOS)
 
 ### `focus_sessions`
 
-记录用户的焦点会话（每次窗口切换产生一条记录）。
+Records focus sessions — one row per window/tab switch. See [02-data-collection.md](./02-data-collection.md) for how data is collected.
 
-| 列名 | SQLite 类型 | 约束 | 迁移版本 | 说明 |
+| Column | SQLite Type | Constraint | Migration | Description |
 |---|---|---|---|---|
-| `id` | TEXT | PRIMARY KEY | v1 | UUID 字符串，由 `UUID().uuidString` 生成 |
-| `app_name` | TEXT | NOT NULL | v1 | 应用名称，如 "Google Chrome"、"Cursor" |
-| `window_title` | TEXT | NOT NULL | v1 | 当前窗口标题 |
-| `url` | TEXT | 可空 | v1 | 浏览器当前页面 URL（非浏览器应用为 nil） |
-| `start_time` | DOUBLE | NOT NULL | v1 | 会话开始时间（Unix 时间戳，秒） |
-| `end_time` | DOUBLE | NOT NULL | v1 | 会话结束时间（Unix 时间戳，秒） |
-| `duration` | DOUBLE | NOT NULL, DEFAULT 0 | v1 | 会话持续时间（秒），`end_time - start_time` 的冗余字段 |
-| `bundle_id` | TEXT | 可空 | v2 | 应用 Bundle ID，如 "com.google.Chrome" |
-| `tab_title` | TEXT | 可空 | v2 | 浏览器标签页标题 |
-| `tab_count` | INTEGER | 可空 | v2 | 浏览器当前打开的标签页数量 |
-| `document_path` | TEXT | 可空 | v2 | 编辑器/IDE 当前打开的文档路径（通过 Accessibility API 获取） |
-| `is_full_screen` | BOOLEAN | DEFAULT false | v2 | 窗口是否处于全屏状态 |
-| `is_minimized` | BOOLEAN | DEFAULT false | v2 | 窗口是否处于最小化状态 |
+| `id` | TEXT | PRIMARY KEY | v1 | UUID string from `UUID().uuidString` |
+| `app_name` | TEXT | NOT NULL | v1 | App display name, e.g. "Google Chrome" |
+| `window_title` | TEXT | NOT NULL | v1 | Focused window title |
+| `url` | TEXT | nullable | v1 | Browser tab URL (nil for non-browsers) |
+| `start_time` | DOUBLE | NOT NULL | v1 | Session start (Unix timestamp, seconds) |
+| `end_time` | DOUBLE | NOT NULL | v1 | Session end (Unix timestamp, seconds) |
+| `duration` | DOUBLE | NOT NULL, DEFAULT 0 | v1 | Redundant: `end_time - start_time` |
+| `bundle_id` | TEXT | nullable | v2 | App bundle ID, e.g. "com.google.Chrome" |
+| `tab_title` | TEXT | nullable | v2 | Browser tab title |
+| `tab_count` | INTEGER | nullable | v2 | Open tab count in browser front window |
+| `document_path` | TEXT | nullable | v2 | Editor/IDE document path via AXDocument |
+| `is_full_screen` | BOOLEAN | DEFAULT false | v2 | AXFullScreen window state |
+| `is_minimized` | BOOLEAN | DEFAULT false | v2 | AXMinimized window state |
 
-## 迁移历史
+### Local Migrations
 
-### v1: `v1_create_focus_sessions`
-
-创建 `focus_sessions` 基础表，包含 7 个核心字段。
+#### v1: `v1_create_focus_sessions`
 
 ```sql
 CREATE TABLE focus_sessions (
@@ -49,9 +52,7 @@ CREATE TABLE focus_sessions (
 );
 ```
 
-### v2: `v2_add_rich_context`
-
-新增 6 个富上下文字段，用于捕获更丰富的焦点信息。
+#### v2: `v2_add_rich_context`
 
 ```sql
 ALTER TABLE focus_sessions ADD COLUMN bundle_id       TEXT;
@@ -62,25 +63,181 @@ ALTER TABLE focus_sessions ADD COLUMN is_full_screen  BOOLEAN DEFAULT 0;
 ALTER TABLE focus_sessions ADD COLUMN is_minimized    BOOLEAN DEFAULT 0;
 ```
 
-## 设计决策
+### CRUD Operations
 
-### `duration` 是冗余字段
+Via `DatabaseService` protocol (dependency-injectable, testable with in-memory DB):
 
-`duration` 始终等于 `end_time - start_time`，属于反范式设计。保留它是为了简化查询（如按持续时间排序、聚合统计），避免在每次查询时计算。
+| Method | Description |
+|---|---|
+| `insert(_:)` | Insert new session |
+| `update(_:)` | Update existing session (e.g. finalize with duration) |
+| `save(_:)` | Upsert (insert or update) |
+| `fetchRecent(limit:)` | Fetch recent sessions ordered by `start_time DESC` |
+| `fetch(id:)` | Fetch single session by primary key |
+| `count()` | Total session count |
+| `deleteAll()` | Truncate all sessions |
 
-### `isActive` 是计算属性
+---
 
-活跃会话通过 `duration == 0 && endTime == startTime` 判断，而非数据库中的独立字段。这意味着刚创建的会话（尚未调用 `finish()`）会被视为活跃状态。
+## Cloud Database (Cloudflare D1)
 
-### 空字符串 vs nil
+### `focus_sessions`
 
-`url` 等可空字段中，空字符串 `""` 和 `nil` 是不同的值。空字符串会被原样存储，不会被强制转换为 nil。
+Mirrors the local schema with three additional columns for multi-user and multi-device support.
 
-### CodingKeys 映射
+| Column | D1 Type | Constraint | Description |
+|---|---|---|---|
+| `id` | TEXT | PRIMARY KEY | UUID from macOS app (same as local) |
+| `user_id` | TEXT | NOT NULL | Google OAuth `sub` (owner identity) |
+| `device_id` | TEXT | NOT NULL | Device UUID from `api_keys` table |
+| `app_name` | TEXT | NOT NULL | App display name |
+| `window_title` | TEXT | NOT NULL | Focused window title |
+| `url` | TEXT | nullable | Browser tab URL |
+| `start_time` | REAL | NOT NULL | Unix timestamp (seconds) |
+| `end_time` | REAL | NOT NULL | Unix timestamp (seconds) |
+| `duration` | REAL | NOT NULL, DEFAULT 0 | `end_time - start_time` |
+| `bundle_id` | TEXT | nullable | App bundle ID |
+| `tab_title` | TEXT | nullable | Browser tab title |
+| `tab_count` | INTEGER | nullable | Open tab count |
+| `document_path` | TEXT | nullable | Editor document path |
+| `is_full_screen` | INTEGER | DEFAULT 0 | 0/1 boolean |
+| `is_minimized` | INTEGER | DEFAULT 0 | 0/1 boolean |
+| `synced_at` | TEXT | NOT NULL | ISO 8601 upload timestamp |
 
-Swift 模型使用 camelCase，数据库列使用 snake_case。通过 `CodingKeys` 枚举完成映射：
+**Indexes:**
 
-| Swift 属性 | 数据库列名 |
+```sql
+CREATE INDEX idx_sessions_user_time  ON focus_sessions(user_id, start_time);
+CREATE INDEX idx_sessions_user_app   ON focus_sessions(user_id, app_name);
+CREATE INDEX idx_sessions_device     ON focus_sessions(device_id);
+```
+
+### `api_keys`
+
+API keys for macOS app authentication. Each key is bound to one user and one device.
+
+| Column | D1 Type | Constraint | Description |
+|---|---|---|---|
+| `id` | TEXT | PRIMARY KEY | UUID |
+| `user_id` | TEXT | NOT NULL | Owner (Google OAuth `sub`) |
+| `name` | TEXT | NOT NULL | User-given name, e.g. "MacBook Pro" |
+| `key_hash` | TEXT | NOT NULL, UNIQUE | SHA-256 hash of raw API key |
+| `device_id` | TEXT | NOT NULL, UNIQUE | Generated UUID for this device |
+| `created_at` | TEXT | NOT NULL | ISO 8601 |
+| `last_used` | TEXT | nullable | ISO 8601, updated on each sync |
+
+**Indexes:**
+
+```sql
+CREATE INDEX idx_keys_user ON api_keys(user_id);
+```
+
+### `sync_logs`
+
+Audit trail for each batch upload from macOS app.
+
+| Column | D1 Type | Constraint | Description |
+|---|---|---|---|
+| `id` | TEXT | PRIMARY KEY | UUID |
+| `user_id` | TEXT | NOT NULL | Owner |
+| `device_id` | TEXT | NOT NULL | Source device |
+| `session_count` | INTEGER | NOT NULL | Sessions in this batch |
+| `first_start` | REAL | NOT NULL | Earliest `start_time` in batch |
+| `last_start` | REAL | NOT NULL | Latest `start_time` in batch |
+| `synced_at` | TEXT | NOT NULL | ISO 8601 |
+
+**Indexes:**
+
+```sql
+CREATE INDEX idx_sync_user ON sync_logs(user_id, synced_at);
+```
+
+### Cloud Migration: `v1_cloud_init`
+
+```sql
+CREATE TABLE focus_sessions (
+    id              TEXT    PRIMARY KEY,
+    user_id         TEXT    NOT NULL,
+    device_id       TEXT    NOT NULL,
+    app_name        TEXT    NOT NULL,
+    window_title    TEXT    NOT NULL,
+    url             TEXT,
+    start_time      REAL    NOT NULL,
+    end_time        REAL    NOT NULL,
+    duration        REAL    NOT NULL DEFAULT 0,
+    bundle_id       TEXT,
+    tab_title       TEXT,
+    tab_count       INTEGER,
+    document_path   TEXT,
+    is_full_screen  INTEGER DEFAULT 0,
+    is_minimized    INTEGER DEFAULT 0,
+    synced_at       TEXT    NOT NULL
+);
+
+CREATE INDEX idx_sessions_user_time  ON focus_sessions(user_id, start_time);
+CREATE INDEX idx_sessions_user_app   ON focus_sessions(user_id, app_name);
+CREATE INDEX idx_sessions_device     ON focus_sessions(device_id);
+
+CREATE TABLE api_keys (
+    id          TEXT    PRIMARY KEY,
+    user_id     TEXT    NOT NULL,
+    name        TEXT    NOT NULL,
+    key_hash    TEXT    NOT NULL UNIQUE,
+    device_id   TEXT    NOT NULL UNIQUE,
+    created_at  TEXT    NOT NULL,
+    last_used   TEXT
+);
+
+CREATE INDEX idx_keys_user ON api_keys(user_id);
+
+CREATE TABLE sync_logs (
+    id              TEXT    PRIMARY KEY,
+    user_id         TEXT    NOT NULL,
+    device_id       TEXT    NOT NULL,
+    session_count   INTEGER NOT NULL,
+    first_start     REAL    NOT NULL,
+    last_start      REAL    NOT NULL,
+    synced_at       TEXT    NOT NULL
+);
+
+CREATE INDEX idx_sync_user ON sync_logs(user_id, synced_at);
+```
+
+---
+
+## Design Decisions
+
+### `duration` is a redundant field
+
+`duration` always equals `end_time - start_time`. Kept to simplify aggregation queries without runtime computation.
+
+### `isActive` is a computed property
+
+Active sessions have `duration == 0 && endTime == startTime`. Not stored in DB — determined at read time.
+
+### Empty string vs nil
+
+Nullable fields treat `""` and `nil` as distinct values. Empty strings are stored as-is.
+
+### Local DOUBLE vs Cloud REAL
+
+Local SQLite uses `DOUBLE` (GRDB convention), cloud D1 uses `REAL` (standard SQLite affinity). Both store IEEE 754 doubles — fully compatible.
+
+### D1 uses INTEGER for booleans
+
+D1 has no native BOOLEAN type. `is_full_screen` and `is_minimized` use `INTEGER DEFAULT 0` (0 = false, 1 = true).
+
+### Idempotent sync via UUID primary key
+
+`focus_sessions.id` is the same UUID on local and cloud. `INSERT OR IGNORE` ensures duplicate uploads are harmless. See [03-data-sync.md](./03-data-sync.md) for the sync protocol.
+
+### Multi-user data isolation
+
+All cloud queries filter by `user_id`. The `user_id` is derived from the authenticated session (dashboard) or from the API key lookup (sync endpoint). Users cannot access other users' data.
+
+### CodingKeys mapping (macOS client)
+
+| Swift Property | DB Column |
 |---|---|
 | `appName` | `app_name` |
 | `windowTitle` | `window_title` |
@@ -92,17 +249,3 @@ Swift 模型使用 camelCase，数据库列使用 snake_case。通过 `CodingKey
 | `documentPath` | `document_path` |
 | `isFullScreen` | `is_full_screen` |
 | `isMinimized` | `is_minimized` |
-
-## CRUD 操作
-
-通过 `DatabaseService` 协议抽象，支持依赖注入和测试 mock：
-
-| 方法 | 说明 |
-|---|---|
-| `insert(_:)` | 插入新会话 |
-| `update(_:)` | 更新已有会话（如结束时设置 duration） |
-| `save(_:)` | Upsert 操作（存在则更新，不存在则插入） |
-| `fetchRecent(limit:)` | 按 `start_time` 降序获取最近的会话，默认 50 条 |
-| `fetch(id:)` | 按 ID 查询单条会话 |
-| `count()` | 返回会话总数 |
-| `deleteAll()` | 清空所有会话数据 |
