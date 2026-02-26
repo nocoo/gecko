@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+dist/
+out/
+
+# env files (keep .env.example)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# bun
+bun.lockb
