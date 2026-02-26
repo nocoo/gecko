@@ -1,15 +1,21 @@
 import SwiftUI
 
-/// Tab 4: Settings for configuring the SQLite database path.
+/// Tab 4: Settings for configuring database path and cloud sync.
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            headerSection
-            Divider()
-            databasePathSection
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                headerSection
+                Divider()
+                databasePathSection
+                Divider()
+                    .padding(.horizontal)
+                syncSection
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -59,9 +65,12 @@ struct SettingsView: View {
             }
 
             if viewModel.showValidationError {
-                Label("Invalid path. The parent directory must exist or be creatable.", systemImage: "exclamationmark.triangle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.red)
+                Label(
+                    "Invalid path. The parent directory must exist or be creatable.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.red)
             }
 
             HStack(spacing: 12) {
@@ -93,6 +102,120 @@ struct SettingsView: View {
             }
         }
         .padding()
+    }
+
+    // MARK: - Cloud Sync
+
+    private var syncSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("Cloud Sync", systemImage: "icloud.fill")
+                .font(.headline)
+
+            Text("Sync focus sessions to your Gecko dashboard.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            // Enable toggle
+            Toggle("Enable sync", isOn: $viewModel.syncEnabled)
+                .toggleStyle(.switch)
+
+            // API Key
+            VStack(alignment: .leading, spacing: 4) {
+                Text("API Key")
+                    .font(.subheadline.weight(.medium))
+                SecureField("Paste your API key (gk_...)", text: $viewModel.editingApiKey)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .monospaced))
+            }
+
+            // Server URL
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Server URL")
+                    .font(.subheadline.weight(.medium))
+                TextField("https://gecko.dev.hexly.ai", text: $viewModel.editingSyncServerUrl)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(.body, design: .monospaced))
+            }
+
+            // Sync status
+            syncStatusView
+
+            // Actions
+            HStack(spacing: 12) {
+                Button("Save") {
+                    viewModel.saveSyncSettings()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+                .disabled(!viewModel.canSaveSyncSettings)
+
+                Button("Sync Now") {
+                    Task { await viewModel.syncNow() }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .disabled(!viewModel.canSyncNow)
+
+                Button("Reset") {
+                    viewModel.resetSyncSettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            }
+        }
+        .padding()
+    }
+
+    // MARK: - Sync Status View
+
+    @ViewBuilder
+    private var syncStatusView: some View {
+        HStack(spacing: 8) {
+            syncStatusIcon
+            syncStatusText
+        }
+        .font(.caption)
+    }
+
+    @ViewBuilder
+    private var syncStatusIcon: some View {
+        switch viewModel.syncStatus {
+        case .idle:
+            Image(systemName: "checkmark.circle")
+                .foregroundStyle(.green)
+        case .syncing:
+            ProgressView()
+                .controlSize(.small)
+        case .error:
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.red)
+        case .disabled:
+            Image(systemName: "minus.circle")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder
+    private var syncStatusText: some View {
+        switch viewModel.syncStatus {
+        case .idle:
+            if let lastTime = viewModel.syncLastTime {
+                Text("Last synced: \(lastTime, style: .relative) ago (\(viewModel.syncLastCount) sessions)")
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("Ready to sync")
+                    .foregroundStyle(.secondary)
+            }
+        case .syncing:
+            Text("Syncing...")
+                .foregroundStyle(.secondary)
+        case .error(let message):
+            Text(message)
+                .foregroundStyle(.red)
+        case .disabled:
+            Text("Sync disabled")
+                .foregroundStyle(.secondary)
+        }
     }
 
     // MARK: - File Browser
