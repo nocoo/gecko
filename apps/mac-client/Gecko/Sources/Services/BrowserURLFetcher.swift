@@ -135,6 +135,27 @@ enum BrowserURLFetcher {
         return executeScript(scriptSource)
     }
 
+    // MARK: - Parsing
+
+    /// Parse a tab-delimited AppleScript output string into BrowserInfo.
+    ///
+    /// Expected format: `"url\ttabTitle\ttabCount"`.
+    /// Handles partial output (1 or 2 parts), empty fields, and non-integer tab counts.
+    /// Returns all-nil BrowserInfo for nil or empty input.
+    static func parseBrowserInfo(from output: String?) -> BrowserInfo {
+        guard let output, !output.isEmpty else {
+            return BrowserInfo(url: nil, tabTitle: nil, tabCount: nil)
+        }
+
+        let parts = output.components(separatedBy: "\t")
+
+        let url = parts.indices.contains(0) && !parts[0].isEmpty ? parts[0] : nil
+        let tabTitle = parts.indices.contains(1) && !parts[1].isEmpty ? parts[1] : nil
+        let tabCount: Int? = parts.indices.contains(2) ? Int(parts[2]) : nil
+
+        return BrowserInfo(url: url, tabTitle: tabTitle, tabCount: tabCount)
+    }
+
     // MARK: - Private Helpers
 
     /// Build an AppleScript that returns URL, tab title, and tab count as a tab-delimited string.
@@ -176,16 +197,6 @@ enum BrowserURLFetcher {
         var errorInfo: NSDictionary?
         let result = appleScript?.executeAndReturnError(&errorInfo)
 
-        guard let output = result?.stringValue, !output.isEmpty else {
-            return BrowserInfo(url: nil, tabTitle: nil, tabCount: nil)
-        }
-
-        let parts = output.components(separatedBy: "\t")
-
-        let url = parts.indices.contains(0) && !parts[0].isEmpty ? parts[0] : nil
-        let tabTitle = parts.indices.contains(1) && !parts[1].isEmpty ? parts[1] : nil
-        let tabCount: Int? = parts.indices.contains(2) ? Int(parts[2]) : nil
-
-        return BrowserInfo(url: url, tabTitle: tabTitle, tabCount: tabCount)
+        return parseBrowserInfo(from: result?.stringValue)
     }
 }
