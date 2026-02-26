@@ -21,6 +21,7 @@ final class PermissionManager: ObservableObject {
     // MARK: - Private
 
     private var pollTimer: Timer?
+    private var hasLoggedAccessibilityHint: Bool = false
 
     // MARK: - Lifecycle
 
@@ -42,15 +43,39 @@ final class PermissionManager: ObservableObject {
     }
 
     /// Prompt the system Accessibility dialog (one-shot) and open System Settings.
+    ///
+    /// Important: On macOS, Accessibility permission is tied to the specific binary's
+    /// code signature. When running from Xcode, each rebuild may produce a different
+    /// signature, causing previously granted permission to stop working.
+    /// The fix is to remove the old entry from System Settings and re-authorize.
     func requestAccessibility() {
-        // This call triggers the system prompt the first time.
-        // Subsequent calls just return the current status.
+        // This call triggers the system prompt the first time for this specific binary.
+        // It will NOT re-prompt if the user already denied for this exact binary.
         let options = [kAXTrustedCheckOptionPrompt.takeRetainedValue(): true] as CFDictionary
         let granted = AXIsProcessTrustedWithOptions(options)
         isAccessibilityGranted = granted
 
         if !granted {
+            // Also open System Settings so the user can manually toggle
             openAccessibilitySettings()
+        }
+    }
+
+    /// Reset Accessibility permission for this app via tccutil and re-prompt.
+    ///
+    /// This is the nuclear option: it removes all Accessibility entries for our bundle ID,
+    /// then re-triggers the prompt. Useful when Xcode rebuilds change the binary signature.
+    func resetAndRequestAccessibility() {
+        let bundleId = Bundle.main.bundleIdentifier ?? "com.gecko.app"
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
+        process.arguments = ["reset", "Accessibility", bundleId]
+        try? process.run()
+        process.waitUntilExit()
+
+        // Small delay to let TCC database update, then re-prompt
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.requestAccessibility()
         }
     }
 
@@ -87,7 +112,19 @@ final class PermissionManager: ObservableObject {
     // MARK: - Private Checks
 
     private func checkAccessibility() {
-        isAccessibilityGranted = AXIsProcessTrusted()
+        let trusted = AXIsProcessTrusted()
+        if !trusted && !hasLoggedAccessibilityHint {
+            hasLoggedAccessibilityHint = true
+            let bundlePath = Bundle.main.bundlePath
+            let pid = ProcessInfo.processInfo.processIdentifier
+            print("[PermissionManager] AXIsProcessTrusted() = false")
+            print("[PermissionManager] Bundle path: \(bundlePath)")
+            print("[PermissionManager] PID: \(pid)")
+            print("[PermissionManager] Hint: In System Settings > Accessibility, make sure the entry")
+            print("  matches this exact binary. If running from Xcode, you may need to add Xcode itself")
+            print("  or the DerivedData binary path to the Accessibility list.")
+        }
+        isAccessibilityGranted = trusted
     }
 
     /// Heuristic check for Automation permission.

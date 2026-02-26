@@ -63,13 +63,7 @@ struct PermissionView: View {
 
     private var permissionsList: some View {
         VStack(spacing: 0) {
-            permissionRow(
-                title: "Accessibility",
-                subtitle: "Read window titles via AXUIElement API.",
-                isGranted: permissionManager.isAccessibilityGranted,
-                requestAction: { permissionManager.requestAccessibility() },
-                settingsAction: { permissionManager.openAccessibilitySettings() }
-            )
+            accessibilityRow
             Divider().padding(.leading, 52)
             permissionRow(
                 title: "Automation (Apple Events)",
@@ -79,6 +73,56 @@ struct PermissionView: View {
                 settingsAction: { permissionManager.openAutomationSettings() }
             )
         }
+    }
+
+    private var accessibilityRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: permissionManager.isAccessibilityGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(permissionManager.isAccessibilityGranted ? .green : .red)
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Accessibility")
+                    .font(.body.weight(.semibold))
+                Text("Read window titles via AXUIElement API.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if !permissionManager.isAccessibilityGranted {
+                    Text("If already enabled in System Settings, click \"Reset & Request\" — Xcode rebuilds can invalidate the old entry.")
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            Spacer()
+
+            if !permissionManager.isAccessibilityGranted {
+                Button("Reset & Request") {
+                    permissionManager.resetAndRequestAccessibility()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+
+                Button("Open Settings") {
+                    permissionManager.openAccessibilitySettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+            } else {
+                Text("Granted")
+                    .font(.callout.weight(.medium))
+                    .foregroundStyle(.green)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(Color.green.opacity(0.1))
+                    )
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
     }
 
     private func permissionRow(
