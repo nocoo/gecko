@@ -52,6 +52,11 @@ struct MenuBarView: View {
             }
             .keyboardShortcut("d", modifiers: .command)
 
+            Button("About Gecko") {
+                openWindow(id: "about")
+                NSApplication.shared.activate(ignoringOtherApps: true)
+            }
+
             Divider()
 
             Button("Quit Gecko") {

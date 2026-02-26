@@ -23,9 +23,11 @@ struct PermissionView: View {
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 10) {
-                Image(systemName: "shield.checkered")
-                    .font(.system(size: 28))
-                    .foregroundStyle(.secondary)
+                Image("GeckoLogo")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 36, height: 36)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
                 VStack(alignment: .leading, spacing: 2) {
                     Text("System Permissions")
                         .font(.title2.bold())
