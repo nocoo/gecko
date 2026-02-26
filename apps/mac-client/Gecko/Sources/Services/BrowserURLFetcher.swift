@@ -1,6 +1,18 @@
 import Cocoa
 
-/// Fetches the current URL from known browsers via AppleScript.
+/// Information extracted from a browser via AppleScript.
+struct BrowserInfo: Equatable {
+    /// The URL of the active tab.
+    let url: String?
+
+    /// The title of the active tab (cleaner than window title).
+    let tabTitle: String?
+
+    /// The number of open tabs in the front window.
+    let tabCount: Int?
+}
+
+/// Fetches browser context (URL, tab title, tab count) from known browsers via AppleScript.
 ///
 /// Supported browsers:
 /// - Google Chrome (and Chromium-based: Edge, Brave, Arc, Vivaldi)
@@ -61,45 +73,38 @@ enum BrowserURLFetcher {
         identifyBrowser(appName: appName) != nil
     }
 
-    /// Fetch the current URL from the specified browser.
+    // MARK: - BrowserInfo Fetching
+
+    /// Fetch URL, tab title, and tab count from the specified browser in a single AppleScript call.
     ///
     /// Runs AppleScript on a background thread to avoid blocking the main thread.
     /// AppleScript execution typically takes 50-200ms.
-    /// Returns nil if the browser has no open windows or the script fails.
-    static func fetchURL(for browser: Browser) async -> String? {
-        let scriptSource: String
-        if browser.isChromiumBased {
-            scriptSource = """
-                tell application "\(browser.scriptTarget)"
-                    if (count of windows) > 0 then
-                        return URL of active tab of front window
-                    end if
-                end tell
-            """
-        } else {
-            // Safari
-            scriptSource = """
-                tell application "\(browser.scriptTarget)"
-                    if (count of windows) > 0 then
-                        return URL of current tab of front window
-                    end if
-                end tell
-            """
-        }
+    /// Returns a BrowserInfo with nil fields if the browser has no open windows or the script fails.
+    static func fetchInfo(for browser: Browser) async -> BrowserInfo {
+        let scriptSource = buildInfoScript(for: browser)
 
         return await withCheckedContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                let appleScript = NSAppleScript(source: scriptSource)
-                var errorInfo: NSDictionary?
-                let result = appleScript?.executeAndReturnError(&errorInfo)
-
-                if let urlString = result?.stringValue, !urlString.isEmpty {
-                    continuation.resume(returning: urlString)
-                } else {
-                    continuation.resume(returning: nil)
-                }
+                let result = executeScript(scriptSource)
+                continuation.resume(returning: result)
             }
         }
+    }
+
+    /// Convenience: fetch BrowserInfo by app name. Returns nil if app is not a known browser.
+    static func fetchInfo(appName: String) async -> BrowserInfo? {
+        guard let browser = identifyBrowser(appName: appName) else {
+            return nil
+        }
+        return await fetchInfo(for: browser)
+    }
+
+    // MARK: - Legacy URL-only API (kept for backward compatibility)
+
+    /// Fetch the current URL from the specified browser.
+    static func fetchURL(for browser: Browser) async -> String? {
+        let info = await fetchInfo(for: browser)
+        return info.url
     }
 
     /// Convenience: fetch URL by app name. Returns nil if app is not a known browser.
@@ -112,33 +117,8 @@ enum BrowserURLFetcher {
 
     /// Synchronous variant for testing only — do NOT call on main thread.
     static func fetchURLSync(for browser: Browser) -> String? {
-        let scriptSource: String
-        if browser.isChromiumBased {
-            scriptSource = """
-                tell application "\(browser.scriptTarget)"
-                    if (count of windows) > 0 then
-                        return URL of active tab of front window
-                    end if
-                end tell
-            """
-        } else {
-            scriptSource = """
-                tell application "\(browser.scriptTarget)"
-                    if (count of windows) > 0 then
-                        return URL of current tab of front window
-                    end if
-                end tell
-            """
-        }
-
-        let appleScript = NSAppleScript(source: scriptSource)
-        var errorInfo: NSDictionary?
-        let result = appleScript?.executeAndReturnError(&errorInfo)
-
-        guard let urlString = result?.stringValue, !urlString.isEmpty else {
-            return nil
-        }
-        return urlString
+        let info = fetchInfoSync(for: browser)
+        return info.url
     }
 
     /// Synchronous convenience for testing only.
@@ -147,5 +127,65 @@ enum BrowserURLFetcher {
             return nil
         }
         return fetchURLSync(for: browser)
+    }
+
+    /// Synchronous BrowserInfo fetch for testing only — do NOT call on main thread.
+    static func fetchInfoSync(for browser: Browser) -> BrowserInfo {
+        let scriptSource = buildInfoScript(for: browser)
+        return executeScript(scriptSource)
+    }
+
+    // MARK: - Private Helpers
+
+    /// Build an AppleScript that returns URL, tab title, and tab count as a tab-delimited string.
+    ///
+    /// Output format: "url\ttabTitle\ttabCount"
+    /// Using tab delimiter because URLs and titles won't contain tabs.
+    private static func buildInfoScript(for browser: Browser) -> String {
+        if browser.isChromiumBased {
+            return """
+                tell application "\(browser.scriptTarget)"
+                    if (count of windows) > 0 then
+                        set frontWin to front window
+                        set tabURL to URL of active tab of frontWin
+                        set tabName to title of active tab of frontWin
+                        set tabNum to count of tabs of frontWin
+                        return tabURL & "\t" & tabName & "\t" & (tabNum as text)
+                    end if
+                end tell
+            """
+        } else {
+            // Safari uses "current tab" instead of "active tab"
+            return """
+                tell application "\(browser.scriptTarget)"
+                    if (count of windows) > 0 then
+                        set frontWin to front window
+                        set tabURL to URL of current tab of frontWin
+                        set tabName to name of current tab of frontWin
+                        set tabNum to count of tabs of frontWin
+                        return tabURL & "\t" & tabName & "\t" & (tabNum as text)
+                    end if
+                end tell
+            """
+        }
+    }
+
+    /// Execute an AppleScript and parse the tab-delimited result into BrowserInfo.
+    private static func executeScript(_ source: String) -> BrowserInfo {
+        let appleScript = NSAppleScript(source: source)
+        var errorInfo: NSDictionary?
+        let result = appleScript?.executeAndReturnError(&errorInfo)
+
+        guard let output = result?.stringValue, !output.isEmpty else {
+            return BrowserInfo(url: nil, tabTitle: nil, tabCount: nil)
+        }
+
+        let parts = output.components(separatedBy: "\t")
+
+        let url = parts.indices.contains(0) && !parts[0].isEmpty ? parts[0] : nil
+        let tabTitle = parts.indices.contains(1) && !parts[1].isEmpty ? parts[1] : nil
+        let tabCount: Int? = parts.indices.contains(2) ? Int(parts[2]) : nil
+
+        return BrowserInfo(url: url, tabTitle: tabTitle, tabCount: tabCount)
     }
 }
