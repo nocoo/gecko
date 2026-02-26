@@ -12,6 +12,8 @@ import Combine
 ///    (end_time + duration computed) and a new session is inserted.
 /// 4. **Off-main-thread**: AppleScript (browser URL) and DB operations run on
 ///    background threads to keep the UI responsive.
+/// 5. **Rich context**: Captures bundle ID, browser tab info, document path,
+///    full-screen and minimized state via Accessibility API.
 @MainActor
 final class TrackingEngine: ObservableObject {
 
@@ -104,10 +106,22 @@ final class TrackingEngine: ObservableObject {
         }
 
         let appName = app.localizedName ?? "Unknown"
+        let bundleId = app.bundleIdentifier
         let windowTitle = readWindowTitle(for: app)
-        let url = await BrowserURLFetcher.fetchURL(appName: appName)
+        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        let documentPath = readDocumentPath(for: app)
+        let isFullScreen = readFullScreenState(for: app)
+        let isMinimized = readMinimizedState(for: app)
 
-        switchFocus(appName: appName, windowTitle: windowTitle, url: url)
+        switchFocus(FocusContext(
+            appName: appName,
+            bundleId: bundleId,
+            windowTitle: windowTitle,
+            browserInfo: browserInfo,
+            documentPath: documentPath,
+            isFullScreen: isFullScreen,
+            isMinimized: isMinimized
+        ))
     }
 
     /// Fallback: check if window title or URL changed within the same app.
@@ -116,15 +130,29 @@ final class TrackingEngine: ObservableObject {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
+        let bundleId = frontApp.bundleIdentifier
         let windowTitle = readWindowTitle(for: frontApp)
-        let url = await BrowserURLFetcher.fetchURL(appName: appName)
+        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        let url = browserInfo?.url
 
         // Only switch if something actually changed
         let titleChanged = windowTitle != lastWindowTitle
         let urlChanged = url != lastURL
 
         if titleChanged || urlChanged {
-            switchFocus(appName: appName, windowTitle: windowTitle, url: url)
+            let documentPath = readDocumentPath(for: frontApp)
+            let isFullScreen = readFullScreenState(for: frontApp)
+            let isMinimized = readMinimizedState(for: frontApp)
+
+            switchFocus(FocusContext(
+                appName: appName,
+                bundleId: bundleId,
+                windowTitle: windowTitle,
+                browserInfo: browserInfo,
+                documentPath: documentPath,
+                isFullScreen: isFullScreen,
+                isMinimized: isMinimized
+            ))
         }
     }
 
@@ -133,25 +161,58 @@ final class TrackingEngine: ObservableObject {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
+        let bundleId = frontApp.bundleIdentifier
         let windowTitle = readWindowTitle(for: frontApp)
-        let url = await BrowserURLFetcher.fetchURL(appName: appName)
+        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        let documentPath = readDocumentPath(for: frontApp)
+        let isFullScreen = readFullScreenState(for: frontApp)
+        let isMinimized = readMinimizedState(for: frontApp)
 
-        switchFocus(appName: appName, windowTitle: windowTitle, url: url)
+        switchFocus(FocusContext(
+            appName: appName,
+            bundleId: bundleId,
+            windowTitle: windowTitle,
+            browserInfo: browserInfo,
+            documentPath: documentPath,
+            isFullScreen: isFullScreen,
+            isMinimized: isMinimized
+        ))
     }
 
     // MARK: - Core Logic
 
+    /// All context gathered about the currently focused window.
+    private struct FocusContext {
+        let appName: String
+        let bundleId: String?
+        let windowTitle: String
+        let browserInfo: BrowserInfo?
+        let documentPath: String?
+        let isFullScreen: Bool
+        let isMinimized: Bool
+    }
+
     /// Handle a focus switch: finalize previous session, start new one.
-    private func switchFocus(appName: String, windowTitle: String, url: String?) {
+    private func switchFocus(_ ctx: FocusContext) {
         // Finalize the previous session (without reloading recent — we'll reload once at the end)
         finalizeCurrentSessionQuietly()
 
         // Update tracking state
-        lastWindowTitle = windowTitle
-        lastURL = url
+        lastWindowTitle = ctx.windowTitle
+        lastURL = ctx.browserInfo?.url
 
         // Create and persist the new session
-        let session = FocusSession.start(appName: appName, windowTitle: windowTitle, url: url)
+        let session = FocusSession.start(
+            appName: ctx.appName,
+            windowTitle: ctx.windowTitle,
+            bundleId: ctx.bundleId,
+            url: ctx.browserInfo?.url,
+            tabTitle: ctx.browserInfo?.tabTitle,
+            tabCount: ctx.browserInfo?.tabCount,
+            documentPath: ctx.documentPath,
+            isFullScreen: ctx.isFullScreen,
+            isMinimized: ctx.isMinimized
+        )
 
         do {
             try db.insert(session)
@@ -188,6 +249,79 @@ final class TrackingEngine: ObservableObject {
 
     /// Read the title of the focused window using the Accessibility API.
     private func readWindowTitle(for app: NSRunningApplication) -> String {
+        guard let window = focusedWindow(for: app) else {
+            return app.localizedName ?? "Unknown"
+        }
+
+        var titleValue: CFTypeRef?
+        let titleResult = AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleValue)
+
+        guard titleResult == .success, let title = titleValue as? String, !title.isEmpty else {
+            return app.localizedName ?? "Unknown"
+        }
+
+        return title
+    }
+
+    // MARK: - Document Path (AXUIElement)
+
+    /// Read the document path from the focused window via AXDocumentAttribute.
+    /// Returns nil if the app doesn't expose a document path (most don't).
+    private func readDocumentPath(for app: NSRunningApplication) -> String? {
+        guard let window = focusedWindow(for: app) else { return nil }
+
+        var docValue: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(window, kAXDocumentAttribute as CFString, &docValue)
+
+        guard result == .success, let urlString = docValue as? String, !urlString.isEmpty else {
+            return nil
+        }
+
+        // AXDocument typically returns a file URL string like "file:///path/to/file"
+        if let url = URL(string: urlString), url.isFileURL {
+            return url.path
+        }
+        return urlString
+    }
+
+    // MARK: - Full Screen State (AXUIElement)
+
+    /// Read whether the focused window is in full-screen mode.
+    private func readFullScreenState(for app: NSRunningApplication) -> Bool {
+        guard let window = focusedWindow(for: app) else { return false }
+
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(
+            window,
+            "AXFullScreen" as CFString,
+            &value
+        )
+
+        guard result == .success, let boolValue = value as? Bool else {
+            return false
+        }
+        return boolValue
+    }
+
+    // MARK: - Minimized State (AXUIElement)
+
+    /// Read whether the focused window is minimized.
+    private func readMinimizedState(for app: NSRunningApplication) -> Bool {
+        guard let window = focusedWindow(for: app) else { return false }
+
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &value)
+
+        guard result == .success, let boolValue = value as? Bool else {
+            return false
+        }
+        return boolValue
+    }
+
+    // MARK: - AX Helpers
+
+    /// Get the focused window AXUIElement for an app.
+    private func focusedWindow(for app: NSRunningApplication) -> AXUIElement? {
         let pid = app.processIdentifier
         let axApp = AXUIElementCreateApplication(pid)
 
@@ -195,18 +329,11 @@ final class TrackingEngine: ObservableObject {
         let result = AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow)
 
         guard result == .success, let window = focusedWindow else {
-            return app.localizedName ?? "Unknown"
+            return nil
         }
 
-        var titleValue: CFTypeRef?
         // swiftlint:disable:next force_cast
-        let titleResult = AXUIElementCopyAttributeValue(window as! AXUIElement, kAXTitleAttribute as CFString, &titleValue)
-
-        guard titleResult == .success, let title = titleValue as? String, !title.isEmpty else {
-            return app.localizedName ?? "Unknown"
-        }
-
-        return title
+        return (window as! AXUIElement)
     }
 
     // MARK: - Data Loading
