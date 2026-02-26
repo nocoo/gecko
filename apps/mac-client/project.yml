@@ -38,3 +38,19 @@ targets:
       path: Gecko/Resources/Gecko.entitlements
       properties:
         com.apple.security.app-sandbox: false
+
+  GeckoTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: GeckoTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gecko.app.tests
+        SWIFT_VERSION: "5.10"
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        GENERATE_INFOPLIST_FILE: "YES"
+    dependencies:
+      - target: Gecko
+      - package: GRDB
+        product: GRDB

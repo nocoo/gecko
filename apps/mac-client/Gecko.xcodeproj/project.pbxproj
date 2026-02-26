@@ -10,23 +10,41 @@
 		0089BC2B358DE385EFD46338 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = C2CCF0780EE410525828F526 /* GRDB */; };
 		13C8BD9F36AB894303FA0E58 /* PermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 726453529616B009EB50F112 /* PermissionView.swift */; };
 		1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */; };
+		54407C392BC4405D0D9ABD39 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A202828F8AFFB6F940E2BDA5 /* GRDB */; };
 		5E448D30BCB3E6B70611BDDE /* BrowserURLFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */; };
+		721AADFE56E0CCE878D8374C /* FocusSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 203519E5E2018147BF42E1BE /* FocusSessionTests.swift */; };
 		75751D40958A9830333F005F /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1972D611D5056EC4B9B66A /* MenuBarView.swift */; };
 		88920D23109AAE39F8C8F2D2 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6050F571491038E2744B1122 /* DatabaseManager.swift */; };
+		8A458FEF753E8862414D9B1D /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */; };
 		8F6408F7E646F087885638F8 /* GeckoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F237EE48C4DB4A754509C17 /* GeckoApp.swift */; };
 		9AA0C79ADEA06A3F6B0C1540 /* TrackingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */; };
 		CC1D1642ED5D3C014FD0FF86 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89CCD7476D4B09C2960B3296 /* FocusSession.swift */; };
 		DD2BA44B44B422D76749C2A4 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2357FDBE576E42911EB112C /* PermissionManager.swift */; };
+		E7A2DD9A3AB6ED024CFAC066 /* BrowserURLFetcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F91918CD0F5E00F6C58320 /* BrowserURLFetcherTests.swift */; };
 		EF5B485080A9B3C354AB9966 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05058F5358C1B87D72263DBB /* SessionListView.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		357DAF0895124B5F91E6F899 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E0A75EE3080779BC85C268ED /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C29118035DDE5E77A4D75647;
+			remoteInfo = Gecko;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		05058F5358C1B87D72263DBB /* SessionListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListView.swift; sourceTree = "<group>"; };
 		0C7D57D323079AEFBED2F94B /* Gecko.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Gecko.entitlements; sourceTree = "<group>"; };
 		0F237EE48C4DB4A754509C17 /* GeckoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeckoApp.swift; sourceTree = "<group>"; };
+		203519E5E2018147BF42E1BE /* FocusSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusSessionTests.swift; sourceTree = "<group>"; };
+		223881DEA6F5F897603A4735 /* GeckoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeckoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		24FC4252E474CDF8EA4480D9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		27F91918CD0F5E00F6C58320 /* BrowserURLFetcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserURLFetcherTests.swift; sourceTree = "<group>"; };
 		292A060E95BFFAA5F8F2F2C2 /* Gecko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gecko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6050F571491038E2744B1122 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
+		609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		726453529616B009EB50F112 /* PermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionView.swift; sourceTree = "<group>"; };
 		8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		89CCD7476D4B09C2960B3296 /* FocusSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusSession.swift; sourceTree = "<group>"; };
@@ -42,6 +60,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				0089BC2B358DE385EFD46338 /* GRDB in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		869BE3FF413149C94A4485F4 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				54407C392BC4405D0D9ABD39 /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -66,10 +92,21 @@
 			path = Gecko/Resources;
 			sourceTree = "<group>";
 		};
+		579075480CD01F51E32AE4B8 /* GeckoTests */ = {
+			isa = PBXGroup;
+			children = (
+				27F91918CD0F5E00F6C58320 /* BrowserURLFetcherTests.swift */,
+				609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */,
+				203519E5E2018147BF42E1BE /* FocusSessionTests.swift */,
+			);
+			path = GeckoTests;
+			sourceTree = "<group>";
+		};
 		5F43FD838C3FF41C86613CCD /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				292A060E95BFFAA5F8F2F2C2 /* Gecko.app */,
+				223881DEA6F5F897603A4735 /* GeckoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,6 +145,7 @@
 		D6AABD80D5FF79A6B0672FA0 = {
 			isa = PBXGroup;
 			children = (
+				579075480CD01F51E32AE4B8 /* GeckoTests */,
 				46388FDA276C71910904F599 /* Resources */,
 				601401235F56EBE83275AEC0 /* Sources */,
 				5F43FD838C3FF41C86613CCD /* Products */,
@@ -128,6 +166,26 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		16BE8ABCBF5E28612D00EA11 /* GeckoTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A7D1BE9AD526D718FED41222 /* Build configuration list for PBXNativeTarget "GeckoTests" */;
+			buildPhases = (
+				BF440AFEC359127CF12FC7DA /* Sources */,
+				869BE3FF413149C94A4485F4 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				7EB44BCDF8A17E39B051F60C /* PBXTargetDependency */,
+			);
+			name = GeckoTests;
+			packageProductDependencies = (
+				A202828F8AFFB6F940E2BDA5 /* GRDB */,
+			);
+			productName = GeckoTests;
+			productReference = 223881DEA6F5F897603A4735 /* GeckoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		C29118035DDE5E77A4D75647 /* Gecko */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0435132AD91DFF785F9319EF /* Build configuration list for PBXNativeTarget "Gecko" */;
@@ -179,6 +237,7 @@
 			projectRoot = "";
 			targets = (
 				C29118035DDE5E77A4D75647 /* Gecko */,
+				16BE8ABCBF5E28612D00EA11 /* GeckoTests */,
 			);
 		};
 /* End PBXProject section */
@@ -201,7 +260,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BF440AFEC359127CF12FC7DA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E7A2DD9A3AB6ED024CFAC066 /* BrowserURLFetcherTests.swift in Sources */,
+				8A458FEF753E8862414D9B1D /* DatabaseManagerTests.swift in Sources */,
+				721AADFE56E0CCE878D8374C /* FocusSessionTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		7EB44BCDF8A17E39B051F60C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C29118035DDE5E77A4D75647 /* Gecko */;
+			targetProxy = 357DAF0895124B5F91E6F899 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		28BA689A814E940C4B75B64F /* Debug */ = {
@@ -225,6 +302,25 @@
 				PRODUCT_NAME = Gecko;
 				SDKROOT = macosx;
 				SWIFT_VERSION = 5.10;
+			};
+			name = Debug;
+		};
+		44CA243EC15D57313B36FDBB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gecko.app.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.10;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gecko.app/Contents/MacOS/Gecko";
 			};
 			name = Debug;
 		};
@@ -371,6 +467,25 @@
 			};
 			name = Release;
 		};
+		E9A7B9A289BB3B72A582AB12 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gecko.app.tests;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.10;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gecko.app/Contents/MacOS/Gecko";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -379,6 +494,15 @@
 			buildConfigurations = (
 				28BA689A814E940C4B75B64F /* Debug */,
 				9BCF23347CC876AA2D711BCE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		A7D1BE9AD526D718FED41222 /* Build configuration list for PBXNativeTarget "GeckoTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44CA243EC15D57313B36FDBB /* Debug */,
+				E9A7B9A289BB3B72A582AB12 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;
@@ -406,6 +530,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		A202828F8AFFB6F940E2BDA5 /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7F6A9745266B101A4EC20522 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
 		C2CCF0780EE410525828F526 /* GRDB */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7F6A9745266B101A4EC20522 /* XCRemoteSwiftPackageReference "GRDB.swift" */;
