@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		0089BC2B358DE385EFD46338 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = C2CCF0780EE410525828F526 /* GRDB */; };
-		13C8BD9F36AB894303FA0E58 /* PermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 726453529616B009EB50F112 /* PermissionView.swift */; };
 		1CCBE1EA8B9BEF3B17C03E19 /* TrackingIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */; };
 		1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */; };
 		32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */; };
@@ -57,7 +56,6 @@
 		6050F571491038E2744B1122 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifierTests.swift; sourceTree = "<group>"; };
-		726453529616B009EB50F112 /* PermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionView.swift; sourceTree = "<group>"; };
 		8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		85EEA3C58188F9DA8A7FA883 /* TabIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifier.swift; sourceTree = "<group>"; };
 		885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingIntegrationTests.swift; sourceTree = "<group>"; };
@@ -160,7 +158,6 @@
 				6006006F719700E5CB8CAD70 /* AboutView.swift */,
 				8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */,
 				8D1972D611D5056EC4B9B66A /* MenuBarView.swift */,
-				726453529616B009EB50F112 /* PermissionView.swift */,
 				05058F5358C1B87D72263DBB /* SessionListView.swift */,
 				529AD4EBE02C86AFD4E18E21 /* SettingsView.swift */,
 				FFFF2A6CB7FBF27A64A1E7E9 /* TrackingStatusView.swift */,
@@ -295,7 +292,6 @@
 				1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */,
 				75751D40958A9830333F005F /* MenuBarView.swift in Sources */,
 				DD2BA44B44B422D76749C2A4 /* PermissionManager.swift in Sources */,
-				13C8BD9F36AB894303FA0E58 /* PermissionView.swift in Sources */,
 				EF5B485080A9B3C354AB9966 /* SessionListView.swift in Sources */,
 				89FEC7AD65140689461D7FA0 /* SettingsManager.swift in Sources */,
 				9FCF334CDE514CE172F06158 /* SettingsView.swift in Sources */,

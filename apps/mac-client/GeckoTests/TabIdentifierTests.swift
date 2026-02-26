@@ -6,26 +6,24 @@ final class TabIdentifierTests: XCTestCase {
     // MARK: - All Cases
 
     func testAllCasesCount() {
-        XCTAssertEqual(TabIdentifier.allCases.count, 5)
+        XCTAssertEqual(TabIdentifier.allCases.count, 4)
     }
 
     func testCaseOrder() {
         let cases = TabIdentifier.allCases
         XCTAssertEqual(cases[0], .tracking)
-        XCTAssertEqual(cases[1], .permissions)
-        XCTAssertEqual(cases[2], .sessions)
-        XCTAssertEqual(cases[3], .settings)
-        XCTAssertEqual(cases[4], .about)
+        XCTAssertEqual(cases[1], .sessions)
+        XCTAssertEqual(cases[2], .settings)
+        XCTAssertEqual(cases[3], .about)
     }
 
     // MARK: - Raw Values
 
     func testRawValues() {
         XCTAssertEqual(TabIdentifier.tracking.rawValue, 0)
-        XCTAssertEqual(TabIdentifier.permissions.rawValue, 1)
-        XCTAssertEqual(TabIdentifier.sessions.rawValue, 2)
-        XCTAssertEqual(TabIdentifier.settings.rawValue, 3)
-        XCTAssertEqual(TabIdentifier.about.rawValue, 4)
+        XCTAssertEqual(TabIdentifier.sessions.rawValue, 1)
+        XCTAssertEqual(TabIdentifier.settings.rawValue, 2)
+        XCTAssertEqual(TabIdentifier.about.rawValue, 3)
     }
 
     // MARK: - Labels
@@ -38,7 +36,6 @@ final class TabIdentifierTests: XCTestCase {
 
     func testExpectedLabels() {
         XCTAssertEqual(TabIdentifier.tracking.label, "Tracking")
-        XCTAssertEqual(TabIdentifier.permissions.label, "Permissions")
         XCTAssertEqual(TabIdentifier.sessions.label, "Sessions")
         XCTAssertEqual(TabIdentifier.settings.label, "Settings")
         XCTAssertEqual(TabIdentifier.about.label, "About")

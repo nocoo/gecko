@@ -1,11 +1,17 @@
 import SwiftUI
 
-/// Tab 1: Large circular button to start/stop tracking with status display.
+/// Tab 1: Tracking control + collapsible permission status.
+///
+/// The large circular button dominates the view. A DisclosureGroup
+/// at the bottom shows permission status — auto-expanded when any
+/// permission is missing, collapsed when all are granted.
 struct TrackingStatusView: View {
     @ObservedObject var trackingEngine: TrackingEngine
+    @ObservedObject var permissionManager: PermissionManager
+    @State private var permissionsExpanded = false
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 0) {
             Spacer()
 
             // Large circular toggle button
@@ -13,11 +19,25 @@ struct TrackingStatusView: View {
 
             // Status text
             statusSection
+                .padding(.top, 24)
 
             Spacer()
+
+            // Collapsible permission section
+            permissionDisclosure
+                .padding(.horizontal)
+                .padding(.bottom, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .onAppear {
+            permissionsExpanded = !permissionManager.allPermissionsGranted
+        }
+        .onChange(of: permissionManager.allPermissionsGranted) { granted in
+            if granted {
+                withAnimation { permissionsExpanded = false }
+            }
+        }
     }
 
     // MARK: - Tracking Button
@@ -98,5 +118,131 @@ struct TrackingStatusView: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+
+    // MARK: - Permission Disclosure
+
+    private var permissionDisclosure: some View {
+        DisclosureGroup(isExpanded: $permissionsExpanded) {
+            VStack(spacing: 0) {
+                permissionRow(
+                    title: "Accessibility",
+                    subtitle: "Read window titles via AXUIElement API.",
+                    isGranted: permissionManager.isAccessibilityGranted,
+                    missingHint: permissionManager.isAccessibilityGranted ? nil
+                        : "If already enabled, click \"Reset & Request\" — rebuilds can invalidate the entry.",
+                    actions: {
+                        if !permissionManager.isAccessibilityGranted {
+                            Button("Reset & Request") {
+                                permissionManager.resetAndRequestAccessibility()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+
+                            Button("Open Settings") {
+                                permissionManager.openAccessibilitySettings()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                )
+
+                Divider().padding(.leading, 44)
+
+                permissionRow(
+                    title: "Automation",
+                    subtitle: "Execute AppleScript to grab browser URLs.",
+                    isGranted: permissionManager.isAutomationGranted,
+                    missingHint: nil,
+                    actions: {
+                        if !permissionManager.isAutomationGranted {
+                            Button("Request") {
+                                permissionManager.testAutomation()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+
+                            Button("Open Settings") {
+                                permissionManager.openAutomationSettings()
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                        }
+                    }
+                )
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+        } label: {
+            permissionDisclosureLabel
+        }
+    }
+
+    private var permissionDisclosureLabel: some View {
+        HStack(spacing: 8) {
+            Image(
+                systemName: permissionManager.allPermissionsGranted
+                    ? "checkmark.seal.fill"
+                    : "exclamationmark.triangle.fill"
+            )
+            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+
+            Text(
+                permissionManager.allPermissionsGranted
+                    ? "All permissions granted"
+                    : "Permissions required"
+            )
+            .font(.callout.weight(.medium))
+            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+
+            Spacer()
+        }
+    }
+
+    // MARK: - Permission Row
+
+    @ViewBuilder
+    private func permissionRow<Actions: View>(
+        title: String,
+        subtitle: String,
+        isGranted: Bool,
+        missingHint: String?,
+        @ViewBuilder actions: () -> Actions
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: isGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.system(size: 20))
+                .foregroundStyle(isGranted ? .green : .red)
+                .frame(width: 28)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.callout.weight(.semibold))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let hint = missingHint {
+                    Text(hint)
+                        .font(.caption2)
+                        .foregroundStyle(.orange)
+                }
+            }
+
+            Spacer()
+
+            if isGranted {
+                Text("Granted")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.green)
+            } else {
+                actions()
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 }

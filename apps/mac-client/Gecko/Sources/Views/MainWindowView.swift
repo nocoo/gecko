@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Main window content with a tab-based layout.
 ///
-/// Tabs: Tracking | Permissions | Sessions | Settings | About
+/// Tabs: Tracking | Sessions | Settings | About
 struct MainWindowView: View {
     @ObservedObject var permissionManager: PermissionManager
     @ObservedObject var trackingEngine: TrackingEngine
@@ -11,17 +11,14 @@ struct MainWindowView: View {
 
     var body: some View {
         TabView(selection: $tabSelection.selectedTab) {
-            TrackingStatusView(trackingEngine: trackingEngine)
-                .tabItem {
-                    Label(TabIdentifier.tracking.label, systemImage: TabIdentifier.tracking.icon)
-                }
-                .tag(TabIdentifier.tracking)
-
-            PermissionView(permissionManager: permissionManager)
-                .tabItem {
-                    Label(TabIdentifier.permissions.label, systemImage: TabIdentifier.permissions.icon)
-                }
-                .tag(TabIdentifier.permissions)
+            TrackingStatusView(
+                trackingEngine: trackingEngine,
+                permissionManager: permissionManager
+            )
+            .tabItem {
+                Label(TabIdentifier.tracking.label, systemImage: TabIdentifier.tracking.icon)
+            }
+            .tag(TabIdentifier.tracking)
 
             SessionListView(trackingEngine: trackingEngine)
                 .tabItem {
