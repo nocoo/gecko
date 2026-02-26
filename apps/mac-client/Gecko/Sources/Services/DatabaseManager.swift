@@ -83,6 +83,17 @@ final class DatabaseManager: Sendable {
             }
         }
 
+        migrator.registerMigration("v2_add_rich_context") { db in
+            try db.alter(table: "focus_sessions") { t in
+                t.add(column: "bundle_id", .text)
+                t.add(column: "tab_title", .text)
+                t.add(column: "tab_count", .integer)
+                t.add(column: "document_path", .text)
+                t.add(column: "is_full_screen", .boolean).defaults(to: false)
+                t.add(column: "is_minimized", .boolean).defaults(to: false)
+            }
+        }
+
         try migrator.migrate(dbQueue)
     }
 
