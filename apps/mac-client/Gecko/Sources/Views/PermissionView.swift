@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The permission onboarding and debug dashboard view.
+/// Tab 2: Permission onboarding and status dashboard.
 ///
 /// Displays the status of required macOS permissions with clear
 /// visual indicators (checkmark / xmark) and action buttons.
@@ -14,8 +14,9 @@ struct PermissionView: View {
             permissionsList
             Divider()
             footerSection
+            Spacer()
         }
-        .frame(minWidth: 520, minHeight: 320)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     // MARK: - Header
@@ -45,11 +46,19 @@ struct PermissionView: View {
 
     private var overallStatusBadge: some View {
         HStack(spacing: 6) {
-            Image(systemName: permissionManager.allPermissionsGranted ? "checkmark.seal.fill" : "exclamationmark.triangle.fill")
-                .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
-            Text(permissionManager.allPermissionsGranted ? "All permissions granted — Gecko is ready." : "Some permissions are missing.")
-                .font(.callout.weight(.medium))
-                .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+            Image(
+                systemName: permissionManager.allPermissionsGranted
+                    ? "checkmark.seal.fill"
+                    : "exclamationmark.triangle.fill"
+            )
+            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
+            Text(
+                permissionManager.allPermissionsGranted
+                    ? "All permissions granted \u{2014} Gecko is ready."
+                    : "Some permissions are missing."
+            )
+            .font(.callout.weight(.medium))
+            .foregroundStyle(permissionManager.allPermissionsGranted ? .green : .orange)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
@@ -79,10 +88,14 @@ struct PermissionView: View {
 
     private var accessibilityRow: some View {
         HStack(spacing: 12) {
-            Image(systemName: permissionManager.isAccessibilityGranted ? "checkmark.circle.fill" : "xmark.circle.fill")
-                .font(.system(size: 24))
-                .foregroundStyle(permissionManager.isAccessibilityGranted ? .green : .red)
-                .frame(width: 32)
+            Image(
+                systemName: permissionManager.isAccessibilityGranted
+                    ? "checkmark.circle.fill"
+                    : "xmark.circle.fill"
+            )
+            .font(.system(size: 24))
+            .foregroundStyle(permissionManager.isAccessibilityGranted ? .green : .red)
+            .frame(width: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Accessibility")
@@ -91,9 +104,12 @@ struct PermissionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if !permissionManager.isAccessibilityGranted {
-                    Text("If already enabled in System Settings, click \"Reset & Request\" — Xcode rebuilds can invalidate the old entry.")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
+                    Text(
+                        "If already enabled in System Settings, click \"Reset & Request\""
+                        + " \u{2014} Xcode rebuilds can invalidate the old entry."
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
                 }
             }
 
@@ -112,15 +128,7 @@ struct PermissionView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             } else {
-                Text("Granted")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(.green)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.green.opacity(0.1))
-                    )
+                grantedBadge
             }
         }
         .padding(.horizontal)
@@ -163,19 +171,23 @@ struct PermissionView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
             } else {
-                Text("Granted")
-                    .font(.callout.weight(.medium))
-                    .foregroundStyle(.green)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 4)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color.green.opacity(0.1))
-                    )
+                grantedBadge
             }
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
+    }
+
+    private var grantedBadge: some View {
+        Text("Granted")
+            .font(.callout.weight(.medium))
+            .foregroundStyle(.green)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(Color.green.opacity(0.1))
+            )
     }
 
     // MARK: - Footer

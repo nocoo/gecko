@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// About window displaying the Gecko logo, version info, and credits.
+/// Tab 5: About page displaying the Gecko logo, version info, and description.
 struct AboutView: View {
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0"
@@ -12,6 +12,8 @@ struct AboutView: View {
 
     var body: some View {
         VStack(spacing: 16) {
+            Spacer()
+
             Image("GeckoLogo")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
@@ -39,8 +41,10 @@ struct AboutView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .lineSpacing(2)
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(32)
-        .frame(width: 300, height: 320)
     }
 }

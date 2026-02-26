@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarView: View {
     @ObservedObject var permissionManager: PermissionManager
     @ObservedObject var trackingEngine: TrackingEngine
+    @ObservedObject var tabSelection: TabSelection
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -53,7 +54,8 @@ struct MenuBarView: View {
             .keyboardShortcut("d", modifiers: .command)
 
             Button("About Gecko") {
-                openWindow(id: "about")
+                tabSelection.selectedTab = .about
+                openWindow(id: "main")
                 NSApplication.shared.activate(ignoringOtherApps: true)
             }
 

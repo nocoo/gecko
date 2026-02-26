@@ -4,24 +4,28 @@ import SwiftUI
 struct GeckoApp: App {
     @StateObject private var permissionManager = PermissionManager()
     @StateObject private var trackingEngine = TrackingEngine()
+    @StateObject private var settingsManager = SettingsManager()
+    @StateObject private var tabSelection = TabSelection()
 
     var body: some Scene {
-        // Main window for permission onboarding and debug dashboard
+        // Main window with tabbed layout
         Window("Gecko", id: "main") {
-            MainWindowView(permissionManager: permissionManager, trackingEngine: trackingEngine)
+            MainWindowView(
+                permissionManager: permissionManager,
+                trackingEngine: trackingEngine,
+                settingsManager: settingsManager,
+                tabSelection: tabSelection
+            )
         }
         .defaultSize(width: 700, height: 600)
 
-        // About window
-        Window("About Gecko", id: "about") {
-            AboutView()
-        }
-        .windowResizability(.contentSize)
-        .windowStyle(.titleBar)
-
         // Menu bar icon — always visible
         MenuBarExtra("Gecko", systemImage: "eye.circle") {
-            MenuBarView(permissionManager: permissionManager, trackingEngine: trackingEngine)
+            MenuBarView(
+                permissionManager: permissionManager,
+                trackingEngine: trackingEngine,
+                tabSelection: tabSelection
+            )
         }
     }
 }
