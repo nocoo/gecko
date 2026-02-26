@@ -243,6 +243,7 @@
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					C29118035DDE5E77A4D75647 = {
+						DevelopmentTeam = 7Q9CP6438M;
 						ProvisioningStyle = Manual;
 					};
 				};
@@ -333,10 +334,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Gecko/Resources/Gecko.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = 675988434F86B7962DFFF3CAFE8A143092E4997A;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7Q9CP6438M;
 				ENABLE_APP_SANDBOX = NO;
 				INFOPLIST_FILE = Gecko/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -439,10 +441,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Gecko/Resources/Gecko.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_IDENTITY = 675988434F86B7962DFFF3CAFE8A143092E4997A;
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 7Q9CP6438M;
 				ENABLE_APP_SANDBOX = NO;
 				INFOPLIST_FILE = Gecko/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
