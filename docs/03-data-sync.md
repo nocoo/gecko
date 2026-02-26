@@ -240,3 +240,25 @@ The dashboard uses sync logs to display:
 - Last sync time per device
 - Total sessions synced
 - Sync frequency / health indicators
+
+---
+
+## Implementation Progress
+
+| Component | Status | Notes |
+|---|---|---|
+| D1 REST API client (`src/lib/d1.ts`) | Done | 10 tests |
+| API key utilities (`src/lib/api-key.ts`) | Done | 8 tests |
+| Auth helpers (`src/lib/api-helpers.ts`) | Done | 13 tests |
+| `POST /api/keys` — create key | Done | |
+| `GET /api/keys` — list keys | Done | |
+| `DELETE /api/keys/[id]` — revoke key | Done | |
+| `POST /api/sync` — batch upload | Done | 7 tests |
+| `GET /api/sessions` — list sessions | Done | Paginated |
+| `GET /api/stats` — aggregated stats | Done | Period filter (today/week/month/all) |
+| `GET /api/sync/status` — sync health | Done | Per-device last sync |
+| Settings page — API key management UI | Done | Create, list, revoke keys with dialogs |
+| Dashboard page — real data from D1 | Done | Period selector, stat cards, top apps table |
+| macOS `SyncService.swift` | Not started | |
+| macOS `DatabaseManager` additions | Not started | fetchUnsynced query |
+| macOS Settings UI for sync config | Not started | API key input, sync status |
