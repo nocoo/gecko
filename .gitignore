@@ -23,6 +23,7 @@ Package.resolved
 node_modules/
 .next/
 .env*.local
+.wrangler/
 
 # IDE
 .vscode/
