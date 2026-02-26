@@ -134,4 +134,142 @@ final class BrowserURLFetcherTests: XCTestCase {
             XCTAssertFalse(browser.scriptTarget.isEmpty, "\(browser) has no script target")
         }
     }
+
+    // MARK: - parseBrowserInfo: Valid output
+
+    func testParseValidFullOutput() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://example.com\tExample Page\t5")
+        XCTAssertEqual(info.url, "https://example.com")
+        XCTAssertEqual(info.tabTitle, "Example Page")
+        XCTAssertEqual(info.tabCount, 5)
+    }
+
+    func testParseValidWithSingleTab() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t1")
+        XCTAssertEqual(info.tabCount, 1)
+    }
+
+    func testParseValidWithLargeTabCount() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t999")
+        XCTAssertEqual(info.tabCount, 999)
+    }
+
+    // MARK: - parseBrowserInfo: Nil / empty input
+
+    func testParseNilInputReturnsAllNil() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: nil)
+        XCTAssertNil(info.url)
+        XCTAssertNil(info.tabTitle)
+        XCTAssertNil(info.tabCount)
+    }
+
+    func testParseEmptyStringReturnsAllNil() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "")
+        XCTAssertNil(info.url)
+        XCTAssertNil(info.tabTitle)
+        XCTAssertNil(info.tabCount)
+    }
+
+    // MARK: - parseBrowserInfo: Partial output
+
+    func testParseURLOnly() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://example.com")
+        XCTAssertEqual(info.url, "https://example.com")
+        XCTAssertNil(info.tabTitle)
+        XCTAssertNil(info.tabCount)
+    }
+
+    func testParseURLAndTitleOnly() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://example.com\tPage Title")
+        XCTAssertEqual(info.url, "https://example.com")
+        XCTAssertEqual(info.tabTitle, "Page Title")
+        XCTAssertNil(info.tabCount)
+    }
+
+    // MARK: - parseBrowserInfo: Empty fields
+
+    func testParseEmptyURLField() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "\tPage Title\t3")
+        XCTAssertNil(info.url)
+        XCTAssertEqual(info.tabTitle, "Page Title")
+        XCTAssertEqual(info.tabCount, 3)
+    }
+
+    func testParseEmptyTitleField() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://example.com\t\t3")
+        XCTAssertEqual(info.url, "https://example.com")
+        XCTAssertNil(info.tabTitle)
+        XCTAssertEqual(info.tabCount, 3)
+    }
+
+    func testParseAllFieldsEmpty() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "\t\t")
+        XCTAssertNil(info.url)
+        XCTAssertNil(info.tabTitle)
+        XCTAssertNil(info.tabCount)
+    }
+
+    // MARK: - parseBrowserInfo: Non-integer tab count
+
+    func testParseNonIntegerTabCountReturnsNil() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\tabc")
+        XCTAssertEqual(info.url, "https://a.com")
+        XCTAssertEqual(info.tabTitle, "Title")
+        XCTAssertNil(info.tabCount)
+    }
+
+    func testParseFloatTabCountReturnsNil() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t3.5")
+        XCTAssertNil(info.tabCount)
+    }
+
+    func testParseEmptyTabCountReturnsNil() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t")
+        XCTAssertNil(info.tabCount)
+    }
+
+    // MARK: - parseBrowserInfo: Unicode and special characters
+
+    func testParseUnicodeInTitle() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\t日本語タイトル\t2")
+        XCTAssertEqual(info.tabTitle, "日本語タイトル")
+    }
+
+    func testParseEmojiInTitle() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tHello 🌍 World\t1")
+        XCTAssertEqual(info.tabTitle, "Hello 🌍 World")
+    }
+
+    func testParseURLWithQueryParams() {
+        let url = "https://example.com/search?q=hello+world&lang=en"
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "\(url)\tSearch\t1")
+        XCTAssertEqual(info.url, url)
+    }
+
+    func testParseURLWithFragment() {
+        let url = "https://example.com/page#section-2"
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "\(url)\tPage\t1")
+        XCTAssertEqual(info.url, url)
+    }
+
+    // MARK: - parseBrowserInfo: Extra tabs in content
+
+    func testParseExtraTabsInOutput() {
+        // If output somehow has 4+ tab-separated parts, extra parts are ignored
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t5\textra")
+        XCTAssertEqual(info.url, "https://a.com")
+        XCTAssertEqual(info.tabTitle, "Title")
+        XCTAssertEqual(info.tabCount, 5)
+    }
+
+    func testParseNegativeTabCount() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t-1")
+        // Int("-1") succeeds, so tabCount will be -1
+        XCTAssertEqual(info.tabCount, -1)
+    }
+
+    func testParseZeroTabCount() {
+        let info = BrowserURLFetcher.parseBrowserInfo(from: "https://a.com\tTitle\t0")
+        XCTAssertEqual(info.tabCount, 0)
+    }
 }
