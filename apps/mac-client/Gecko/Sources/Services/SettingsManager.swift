@@ -4,6 +4,7 @@ import Foundation
 ///
 /// Currently supports:
 /// - Custom SQLite database path
+/// - Cloud sync configuration (API key, server URL, enable/disable)
 @MainActor
 final class SettingsManager: ObservableObject {
 
@@ -11,7 +12,15 @@ final class SettingsManager: ObservableObject {
 
     private enum Keys {
         static let databasePath = "gecko.settings.databasePath"
+        static let syncEnabled = "gecko.sync.enabled"
+        static let apiKey = "gecko.sync.apiKey"
+        static let syncServerUrl = "gecko.sync.serverUrl"
+        static let lastSyncedStartTime = "gecko.sync.lastSyncedStartTime"
     }
+
+    // MARK: - Defaults
+
+    static let defaultSyncServerUrl = "https://gecko.dev.hexly.ai"
 
     // MARK: - Storage
 
@@ -26,12 +35,45 @@ final class SettingsManager: ObservableObject {
         }
     }
 
+    /// Whether cloud sync is enabled.
+    @Published var syncEnabled: Bool {
+        didSet {
+            defaults.set(syncEnabled, forKey: Keys.syncEnabled)
+        }
+    }
+
+    /// The API key for authenticating with the sync server.
+    @Published var apiKey: String {
+        didSet {
+            defaults.set(apiKey, forKey: Keys.apiKey)
+        }
+    }
+
+    /// The sync server URL (e.g., "https://gecko.dev.hexly.ai").
+    @Published var syncServerUrl: String {
+        didSet {
+            defaults.set(syncServerUrl, forKey: Keys.syncServerUrl)
+        }
+    }
+
+    /// The start_time watermark of the last successfully synced session.
+    @Published var lastSyncedStartTime: Double {
+        didSet {
+            defaults.set(lastSyncedStartTime, forKey: Keys.lastSyncedStartTime)
+        }
+    }
+
     // MARK: - Init
 
     init() {
         self.defaults = .standard
         self.databasePath = UserDefaults.standard.string(forKey: Keys.databasePath)
             ?? Self.defaultDatabasePath
+        self.syncEnabled = UserDefaults.standard.bool(forKey: Keys.syncEnabled)
+        self.apiKey = UserDefaults.standard.string(forKey: Keys.apiKey) ?? ""
+        self.syncServerUrl = UserDefaults.standard.string(forKey: Keys.syncServerUrl)
+            ?? Self.defaultSyncServerUrl
+        self.lastSyncedStartTime = UserDefaults.standard.double(forKey: Keys.lastSyncedStartTime)
     }
 
     /// For testing: init with a custom UserDefaults suite.
@@ -40,6 +82,11 @@ final class SettingsManager: ObservableObject {
         self.databasePath = defaults.string(forKey: Keys.databasePath)
             ?? defaultPath
             ?? Self.defaultDatabasePath
+        self.syncEnabled = defaults.bool(forKey: Keys.syncEnabled)
+        self.apiKey = defaults.string(forKey: Keys.apiKey) ?? ""
+        self.syncServerUrl = defaults.string(forKey: Keys.syncServerUrl)
+            ?? Self.defaultSyncServerUrl
+        self.lastSyncedStartTime = defaults.double(forKey: Keys.lastSyncedStartTime)
     }
 
     // MARK: - Default Path
@@ -57,6 +104,16 @@ final class SettingsManager: ObservableObject {
     /// Reset to the default database path.
     func resetToDefault() {
         databasePath = Self.defaultDatabasePath
+    }
+
+    /// Whether sync is properly configured (has both an API key and server URL).
+    var isSyncConfigured: Bool {
+        syncEnabled && !apiKey.isEmpty && !syncServerUrl.isEmpty
+    }
+
+    /// Reset sync watermark to re-sync all data from the beginning.
+    func resetSyncState() {
+        lastSyncedStartTime = 0
     }
 
     /// Validate that the directory of the given path exists (or can be created).
