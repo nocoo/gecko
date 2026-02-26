@@ -22,6 +22,7 @@
 		721AADFE56E0CCE878D8374C /* FocusSessionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 203519E5E2018147BF42E1BE /* FocusSessionTests.swift */; };
 		75751D40958A9830333F005F /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D1972D611D5056EC4B9B66A /* MenuBarView.swift */; };
 		88920D23109AAE39F8C8F2D2 /* DatabaseManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6050F571491038E2744B1122 /* DatabaseManager.swift */; };
+		8987A481C43C43EFA5D959EB /* MenuBarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1D742463D897A428BB759D9 /* MenuBarViewModel.swift */; };
 		89FEC7AD65140689461D7FA0 /* SettingsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3C8B226E462249412DE7B16 /* SettingsManager.swift */; };
 		8A458FEF753E8862414D9B1D /* DatabaseManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */; };
 		8F6408F7E646F087885638F8 /* GeckoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F237EE48C4DB4A754509C17 /* GeckoApp.swift */; };
@@ -76,6 +77,7 @@
 		C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserURLFetcher.swift; sourceTree = "<group>"; };
 		C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingEngine.swift; sourceTree = "<group>"; };
 		CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListViewModelTests.swift; sourceTree = "<group>"; };
+		F1D742463D897A428BB759D9 /* MenuBarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarViewModel.swift; sourceTree = "<group>"; };
 		F3C8B226E462249412DE7B16 /* SettingsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManager.swift; sourceTree = "<group>"; };
 		FFFF2A6CB7FBF27A64A1E7E9 /* TrackingStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingStatusView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -159,6 +161,7 @@
 		6F4BFE2918F1053CF76C4F86 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				F1D742463D897A428BB759D9 /* MenuBarViewModel.swift */,
 				8AEE6FF0BF3AB00EA90E4BD9 /* SessionListViewModel.swift */,
 				B4C272E57F72F6825A0CC3B3 /* TrackingViewModel.swift */,
 			);
@@ -314,6 +317,7 @@
 				8F6408F7E646F087885638F8 /* GeckoApp.swift in Sources */,
 				1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */,
 				75751D40958A9830333F005F /* MenuBarView.swift in Sources */,
+				8987A481C43C43EFA5D959EB /* MenuBarViewModel.swift in Sources */,
 				DD2BA44B44B422D76749C2A4 /* PermissionManager.swift in Sources */,
 				41F63E1D39F1982DFC892652 /* SessionFormatter.swift in Sources */,
 				EF5B485080A9B3C354AB9966 /* SessionListView.swift in Sources */,
