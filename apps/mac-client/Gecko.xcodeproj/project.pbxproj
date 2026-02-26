@@ -8,12 +8,14 @@
 
 /* Begin PBXBuildFile section */
 		0089BC2B358DE385EFD46338 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = C2CCF0780EE410525828F526 /* GRDB */; };
+		165E19E96BF97F2B093B81F3 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23EE1EDE2F958864B8766B3C /* SettingsViewModel.swift */; };
 		1CCBE1EA8B9BEF3B17C03E19 /* TrackingIntegrationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */; };
 		1E825065A01AF3EF030E8063 /* MainWindowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */; };
 		25EC6DD2799BFCDC0BED26CB /* TrackingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4C272E57F72F6825A0CC3B3 /* TrackingViewModel.swift */; };
 		2AA5DA1DE52792302B44D2BC /* SessionListViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */; };
 		32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */; };
 		379414745EC99C2DEFAA03ED /* SessionFormatterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00A5C67D0B5C31893670E77D /* SessionFormatterTests.swift */; };
+		408E5F6F0431DFA23113FE6C /* SettingsViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */; };
 		41F63E1D39F1982DFC892652 /* SessionFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0CEFF5C1B16F613CF4961B /* SessionFormatter.swift */; };
 		4F001E568DF66F25802F9449 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6006006F719700E5CB8CAD70 /* AboutView.swift */; };
 		54407C392BC4405D0D9ABD39 /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = A202828F8AFFB6F940E2BDA5 /* GRDB */; };
@@ -55,6 +57,7 @@
 		0F237EE48C4DB4A754509C17 /* GeckoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeckoApp.swift; sourceTree = "<group>"; };
 		203519E5E2018147BF42E1BE /* FocusSessionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusSessionTests.swift; sourceTree = "<group>"; };
 		223881DEA6F5F897603A4735 /* GeckoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GeckoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		23EE1EDE2F958864B8766B3C /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		24FC4252E474CDF8EA4480D9 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		27F91918CD0F5E00F6C58320 /* BrowserURLFetcherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserURLFetcherTests.swift; sourceTree = "<group>"; };
 		292A060E95BFFAA5F8F2F2C2 /* Gecko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Gecko.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,6 +66,7 @@
 		6050F571491038E2744B1122 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifierTests.swift; sourceTree = "<group>"; };
+		73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
 		85EEA3C58188F9DA8A7FA883 /* TabIdentifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifier.swift; sourceTree = "<group>"; };
 		885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingIntegrationTests.swift; sourceTree = "<group>"; };
@@ -130,6 +134,7 @@
 				00A5C67D0B5C31893670E77D /* SessionFormatterTests.swift */,
 				CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */,
 				8E685B9EF46A5EE3B34BD50F /* SettingsManagerTests.swift */,
+				73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */,
 				715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */,
 				885CF3295A75647988ABBE95 /* TrackingIntegrationTests.swift */,
 			);
@@ -163,6 +168,7 @@
 			children = (
 				F1D742463D897A428BB759D9 /* MenuBarViewModel.swift */,
 				8AEE6FF0BF3AB00EA90E4BD9 /* SessionListViewModel.swift */,
+				23EE1EDE2F958864B8766B3C /* SettingsViewModel.swift */,
 				B4C272E57F72F6825A0CC3B3 /* TrackingViewModel.swift */,
 			);
 			path = ViewModels;
@@ -324,6 +330,7 @@
 				D35425D211829E816CB9BA10 /* SessionListViewModel.swift in Sources */,
 				89FEC7AD65140689461D7FA0 /* SettingsManager.swift in Sources */,
 				9FCF334CDE514CE172F06158 /* SettingsView.swift in Sources */,
+				165E19E96BF97F2B093B81F3 /* SettingsViewModel.swift in Sources */,
 				E2E02E8B0C4A2B6A8C651673 /* TabIdentifier.swift in Sources */,
 				9AA0C79ADEA06A3F6B0C1540 /* TrackingEngine.swift in Sources */,
 				67F36B5C006A23A4AB2B4A78 /* TrackingStatusView.swift in Sources */,
@@ -341,6 +348,7 @@
 				379414745EC99C2DEFAA03ED /* SessionFormatterTests.swift in Sources */,
 				2AA5DA1DE52792302B44D2BC /* SessionListViewModelTests.swift in Sources */,
 				32DC92917D19C4E060DCB1BE /* SettingsManagerTests.swift in Sources */,
+				408E5F6F0431DFA23113FE6C /* SettingsViewModelTests.swift in Sources */,
 				F542313E1A985009F974B173 /* TabIdentifierTests.swift in Sources */,
 				1CCBE1EA8B9BEF3B17C03E19 /* TrackingIntegrationTests.swift in Sources */,
 			);
