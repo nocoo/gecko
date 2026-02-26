@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// ViewModel for the settings view.
 ///
@@ -7,7 +8,7 @@ import Foundation
 @MainActor
 final class SettingsViewModel: ObservableObject {
 
-    // MARK: - Published State
+    // MARK: - Database Path State
 
     /// The path currently being edited in the text field.
     @Published var editingPath: String = ""
@@ -21,19 +22,102 @@ final class SettingsViewModel: ObservableObject {
     /// Whether a custom (non-default) path is active.
     @Published private(set) var isCustomPath: Bool = false
 
+    // MARK: - Sync State
+
+    /// Whether sync is enabled (bound to toggle).
+    @Published var syncEnabled: Bool = false {
+        didSet {
+            settingsManager.syncEnabled = syncEnabled
+        }
+    }
+
+    /// The API key being edited.
+    @Published var editingApiKey: String = "" {
+        didSet {
+            isSyncEditing = (editingApiKey != settingsManager.apiKey
+                || editingSyncServerUrl != settingsManager.syncServerUrl)
+        }
+    }
+
+    /// The sync server URL being edited.
+    @Published var editingSyncServerUrl: String = "" {
+        didSet {
+            isSyncEditing = (editingApiKey != settingsManager.apiKey
+                || editingSyncServerUrl != settingsManager.syncServerUrl)
+        }
+    }
+
+    /// Whether sync settings have unsaved changes.
+    @Published private(set) var isSyncEditing: Bool = false
+
+    // MARK: - Sync Service State (read-only, forwarded from SyncService)
+
+    /// Current sync status from SyncService.
+    @Published private(set) var syncStatus: SyncService.SyncStatus = .idle
+
+    /// Last sync error message.
+    @Published private(set) var syncLastError: String?
+
+    /// Timestamp of last successful sync.
+    @Published private(set) var syncLastTime: Date?
+
+    /// Number of sessions synced in last batch.
+    @Published private(set) var syncLastCount: Int = 0
+
     // MARK: - Dependencies
 
     private let settingsManager: SettingsManager
+    private var syncService: SyncService?
+    private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Init
 
-    init(settingsManager: SettingsManager) {
+    init(settingsManager: SettingsManager, syncService: SyncService? = nil) {
         self.settingsManager = settingsManager
+        self.syncService = syncService
+
+        // Database path state
         self.editingPath = settingsManager.databasePath
         self.isCustomPath = settingsManager.isCustomPath
+
+        // Sync state
+        self.syncEnabled = settingsManager.syncEnabled
+        self.editingApiKey = settingsManager.apiKey
+        self.editingSyncServerUrl = settingsManager.syncServerUrl
+
+        // Observe SyncService state
+        bindSyncService()
     }
 
-    // MARK: - Public API
+    // MARK: - SyncService Binding
+
+    private func bindSyncService() {
+        guard let syncService else { return }
+
+        syncService.$status
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$syncStatus)
+
+        syncService.$lastError
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$syncLastError)
+
+        syncService.$lastSyncTime
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$syncLastTime)
+
+        syncService.$lastSyncCount
+            .receive(on: DispatchQueue.main)
+            .assign(to: &$syncLastCount)
+    }
+
+    /// Update the sync service reference (called after GeckoApp creates it).
+    func setSyncService(_ service: SyncService) {
+        self.syncService = service
+        bindSyncService()
+    }
+
+    // MARK: - Database Path Actions
 
     /// Called when the editing path text changes.
     func onPathChanged() {
@@ -80,5 +164,42 @@ final class SettingsViewModel: ObservableObject {
     func setPath(_ path: String) {
         editingPath = path
         onPathChanged()
+    }
+
+    // MARK: - Sync Actions
+
+    /// Save the sync settings (API key and server URL).
+    func saveSyncSettings() {
+        settingsManager.apiKey = editingApiKey
+        settingsManager.syncServerUrl = editingSyncServerUrl
+        isSyncEditing = false
+    }
+
+    /// Reset sync settings to defaults.
+    func resetSyncSettings() {
+        settingsManager.apiKey = ""
+        settingsManager.syncServerUrl = SettingsManager.defaultSyncServerUrl
+        settingsManager.syncEnabled = false
+        settingsManager.resetSyncState()
+
+        editingApiKey = ""
+        editingSyncServerUrl = SettingsManager.defaultSyncServerUrl
+        syncEnabled = false
+        isSyncEditing = false
+    }
+
+    /// Trigger an immediate sync.
+    func syncNow() async {
+        await syncService?.syncNow()
+    }
+
+    /// Whether the sync now button should be enabled.
+    var canSyncNow: Bool {
+        settingsManager.isSyncConfigured && syncStatus != .syncing
+    }
+
+    /// Whether sync save button should be enabled.
+    var canSaveSyncSettings: Bool {
+        isSyncEditing
     }
 }
