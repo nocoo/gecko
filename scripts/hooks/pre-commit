@@ -1,0 +1,18 @@
+#!/bin/bash
+# pre-commit hook: run unit tests
+# Ensures every commit passes all tests before being accepted.
+
+set -euo pipefail
+
+echo "==> [pre-commit] Running unit tests..."
+
+cd apps/mac-client
+
+xcodebuild test \
+  -project Gecko.xcodeproj \
+  -scheme GeckoTests \
+  -destination 'platform=macOS' \
+  -quiet \
+  2>&1 | tail -5
+
+echo "==> [pre-commit] Tests passed."

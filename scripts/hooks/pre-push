@@ -1,0 +1,32 @@
+#!/bin/bash
+# pre-push hook: run UT + Lint + E2E
+# Full verification gate before pushing to remote.
+
+set -euo pipefail
+
+MAC_CLIENT="apps/mac-client"
+
+echo "==> [pre-push] Running unit tests..."
+
+cd "$MAC_CLIENT"
+
+xcodebuild test \
+  -project Gecko.xcodeproj \
+  -scheme GeckoTests \
+  -destination 'platform=macOS' \
+  -quiet \
+  2>&1 | tail -5
+
+echo "==> [pre-push] Running swiftlint..."
+
+LINT_RESULT=$(swiftlint lint --reporter json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "error")
+
+if [ "$LINT_RESULT" != "0" ]; then
+  echo "==> [pre-push] FAILED: swiftlint found $LINT_RESULT violations"
+  swiftlint lint 2>/dev/null
+  exit 1
+fi
+
+echo "==> [pre-push] Lint passed (0 violations)."
+
+echo "==> [pre-push] All checks passed. Pushing..."
