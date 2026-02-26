@@ -15,19 +15,56 @@ final class TrackingIntegrationTests: XCTestCase {
         db = try DatabaseManager.makeInMemory()
     }
 
+    // MARK: - Helper
+
+    // Create a FocusSession with sensible defaults for integration tests.
+    // swiftlint:disable:next function_parameter_count
+    private func makeSession(
+        id: String,
+        appName: String,
+        windowTitle: String,
+        bundleId: String? = nil,
+        url: String? = nil,
+        tabTitle: String? = nil,
+        tabCount: Int? = nil,
+        documentPath: String? = nil,
+        isFullScreen: Bool = false,
+        isMinimized: Bool = false,
+        startTime: Double,
+        endTime: Double,
+        duration: Double
+    ) -> FocusSession {
+        FocusSession(
+            id: id,
+            appName: appName,
+            bundleId: bundleId,
+            windowTitle: windowTitle,
+            url: url,
+            tabTitle: tabTitle,
+            tabCount: tabCount,
+            documentPath: documentPath,
+            isFullScreen: isFullScreen,
+            isMinimized: isMinimized,
+            startTime: startTime,
+            endTime: endTime,
+            duration: duration
+        )
+    }
+
     // MARK: - Scenario: Full session lifecycle
 
     /// GIVEN a user opens Cursor
     /// WHEN they switch to Chrome
     /// THEN the Cursor session is finalized with correct duration
-    /// AND a new Chrome session is started
+    /// AND a new Chrome session is started with rich context
     func testSessionLifecycleOnAppSwitch() throws {
         // GIVEN: A session starts in Cursor at t=1000
-        var cursorSession = FocusSession(
+        var cursorSession = makeSession(
             id: "cursor-1",
             appName: "Cursor",
             windowTitle: "main.swift - Gecko",
-            url: nil,
+            bundleId: "com.todesktop.230313mzl4w4u92",
+            documentPath: "/Users/test/gecko/main.swift",
             startTime: 1000.0,
             endTime: 1000.0,
             duration: 0
@@ -42,11 +79,14 @@ final class TrackingIntegrationTests: XCTestCase {
         cursorSession.finish(at: 1045.0)
         try db.update(cursorSession)
 
-        let chromeSession = FocusSession(
+        let chromeSession = makeSession(
             id: "chrome-1",
             appName: "Google Chrome",
             windowTitle: "GitHub - gecko",
+            bundleId: "com.google.Chrome",
             url: "https://github.com/user/gecko",
+            tabTitle: "GitHub - gecko",
+            tabCount: 12,
             startTime: 1045.0,
             endTime: 1045.0,
             duration: 0
@@ -58,11 +98,16 @@ final class TrackingIntegrationTests: XCTestCase {
         XCTAssertNotNil(finalized)
         XCTAssertEqual(finalized?.duration, 45.0)
         XCTAssertFalse(finalized?.isActive ?? true, "Session should no longer be active")
+        XCTAssertEqual(finalized?.bundleId, "com.todesktop.230313mzl4w4u92")
+        XCTAssertEqual(finalized?.documentPath, "/Users/test/gecko/main.swift")
 
-        // AND: Chrome session is active
+        // AND: Chrome session is active with rich context
         let newActive = try db.fetch(id: "chrome-1")
         XCTAssertTrue(newActive?.isActive ?? false)
         XCTAssertEqual(newActive?.url, "https://github.com/user/gecko")
+        XCTAssertEqual(newActive?.bundleId, "com.google.Chrome")
+        XCTAssertEqual(newActive?.tabTitle, "GitHub - gecko")
+        XCTAssertEqual(newActive?.tabCount, 12)
     }
 
     // MARK: - Scenario: Multiple rapid switches
@@ -77,7 +122,7 @@ final class TrackingIntegrationTests: XCTestCase {
 
         for (index, app) in apps.enumerated() {
             let startTime = Double(1000 + index * 10)
-            let session = FocusSession(
+            let session = makeSession(
                 id: "rapid-\(index)",
                 appName: app,
                 windowTitle: "\(app) Window",
@@ -122,14 +167,17 @@ final class TrackingIntegrationTests: XCTestCase {
     /// GIVEN a user is in Chrome on GitHub
     /// WHEN they switch to a different tab (Stack Overflow)
     /// THEN the GitHub session is finalized
-    /// AND a new Stack Overflow session is created with the new URL
+    /// AND a new Stack Overflow session is created with the new URL and tab info
     func testBrowserTabSwitch() throws {
         // GIVEN: Browsing GitHub
-        var githubSession = FocusSession(
+        var githubSession = makeSession(
             id: "tab-1",
             appName: "Google Chrome",
             windowTitle: "GitHub - gecko",
+            bundleId: "com.google.Chrome",
             url: "https://github.com/user/gecko",
+            tabTitle: "GitHub - gecko",
+            tabCount: 8,
             startTime: 2000.0,
             endTime: 2000.0,
             duration: 0
@@ -140,11 +188,14 @@ final class TrackingIntegrationTests: XCTestCase {
         githubSession.finish(at: 2120.0)
         try db.update(githubSession)
 
-        let soSession = FocusSession(
+        let soSession = makeSession(
             id: "tab-2",
             appName: "Google Chrome",
             windowTitle: "swift - How to use GRDB - Stack Overflow",
+            bundleId: "com.google.Chrome",
             url: "https://stackoverflow.com/questions/12345",
+            tabTitle: "How to use GRDB",
+            tabCount: 9,
             startTime: 2120.0,
             endTime: 2120.0,
             duration: 0
@@ -160,19 +211,31 @@ final class TrackingIntegrationTests: XCTestCase {
         XCTAssertNotEqual(github?.url, stackoverflow?.url)
         XCTAssertEqual(github?.duration, 120.0) // 2 minutes
         XCTAssertTrue(stackoverflow?.isActive ?? false)
+
+        // Both have the same bundleId but different tab info
+        XCTAssertEqual(github?.bundleId, stackoverflow?.bundleId)
+        XCTAssertNotEqual(github?.tabTitle, stackoverflow?.tabTitle)
+        XCTAssertEqual(stackoverflow?.tabTitle, "How to use GRDB")
+        XCTAssertEqual(stackoverflow?.tabCount, 9)
     }
 
-    // MARK: - Scenario: Database persistence roundtrip
+    // MARK: - Scenario: Database persistence roundtrip with rich context
 
-    /// GIVEN sessions are written to the database
+    /// GIVEN sessions are written to the database with all rich context fields
     /// WHEN we read them back
     /// THEN all fields are preserved exactly
     func testDatabasePersistenceRoundtrip() throws {
-        let original = FocusSession(
+        let original = makeSession(
             id: "roundtrip-1",
             appName: "Safari",
             windowTitle: "Apple Developer Documentation",
+            bundleId: "com.apple.Safari",
             url: "https://developer.apple.com/documentation",
+            tabTitle: "Apple Developer Documentation",
+            tabCount: 3,
+            documentPath: nil,
+            isFullScreen: true,
+            isMinimized: false,
             startTime: 1709000000.0,
             endTime: 1709000300.0,
             duration: 300.0
@@ -184,8 +247,14 @@ final class TrackingIntegrationTests: XCTestCase {
         XCTAssertNotNil(fetched)
         XCTAssertEqual(fetched?.id, original.id)
         XCTAssertEqual(fetched?.appName, original.appName)
+        XCTAssertEqual(fetched?.bundleId, original.bundleId)
         XCTAssertEqual(fetched?.windowTitle, original.windowTitle)
         XCTAssertEqual(fetched?.url, original.url)
+        XCTAssertEqual(fetched?.tabTitle, original.tabTitle)
+        XCTAssertEqual(fetched?.tabCount, original.tabCount)
+        XCTAssertEqual(fetched?.documentPath, original.documentPath)
+        XCTAssertEqual(fetched?.isFullScreen, original.isFullScreen)
+        XCTAssertEqual(fetched?.isMinimized, original.isMinimized)
         XCTAssertEqual(fetched?.startTime, original.startTime)
         XCTAssertEqual(fetched?.endTime, original.endTime)
         XCTAssertEqual(fetched?.duration, original.duration)
@@ -195,14 +264,47 @@ final class TrackingIntegrationTests: XCTestCase {
 
     /// GIVEN a non-browser app is focused
     /// WHEN a session is recorded
-    /// THEN the URL field is nil
-    func testNonBrowserSessionHasNilURL() throws {
-        let session = FocusSession.start(appName: "Cursor", windowTitle: "main.swift")
+    /// THEN the URL, tabTitle, and tabCount fields are nil
+    func testNonBrowserSessionHasNilBrowserFields() throws {
+        let session = FocusSession.start(
+            appName: "Cursor",
+            windowTitle: "main.swift",
+            bundleId: "com.todesktop.230313mzl4w4u92",
+            documentPath: "/Users/test/main.swift"
+        )
         try db.insert(session)
 
         let fetched = try db.fetch(id: session.id)
         XCTAssertNil(fetched?.url)
+        XCTAssertNil(fetched?.tabTitle)
+        XCTAssertNil(fetched?.tabCount)
+        XCTAssertEqual(fetched?.bundleId, "com.todesktop.230313mzl4w4u92")
+        XCTAssertEqual(fetched?.documentPath, "/Users/test/main.swift")
         XCTAssertFalse(BrowserURLFetcher.isBrowser(appName: "Cursor"))
+    }
+
+    // MARK: - Scenario: Full-screen and minimized state
+
+    /// GIVEN a window in full-screen mode
+    /// WHEN the session is recorded
+    /// THEN isFullScreen is persisted correctly
+    func testFullScreenStatePersists() throws {
+        let session = makeSession(
+            id: "fs-1",
+            appName: "Keynote",
+            windowTitle: "Presentation.key",
+            bundleId: "com.apple.iWork.Keynote",
+            isFullScreen: true,
+            isMinimized: false,
+            startTime: 3000.0,
+            endTime: 3000.0,
+            duration: 0
+        )
+        try db.insert(session)
+
+        let fetched = try db.fetch(id: "fs-1")
+        XCTAssertEqual(fetched?.isFullScreen, true)
+        XCTAssertEqual(fetched?.isMinimized, false)
     }
 
     // MARK: - Scenario: Empty database
@@ -225,7 +327,7 @@ final class TrackingIntegrationTests: XCTestCase {
         let sessionCount = 100
 
         for i in 0..<sessionCount {
-            var session = FocusSession(
+            var session = makeSession(
                 id: "concurrent-\(i)",
                 appName: "App\(i % 5)",
                 windowTitle: "Window \(i)",

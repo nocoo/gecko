@@ -12,6 +12,12 @@ final class FocusSessionTests: XCTestCase {
         XCTAssertEqual(session.appName, "Cursor")
         XCTAssertEqual(session.windowTitle, "main.swift - Gecko")
         XCTAssertNil(session.url)
+        XCTAssertNil(session.bundleId)
+        XCTAssertNil(session.tabTitle)
+        XCTAssertNil(session.tabCount)
+        XCTAssertNil(session.documentPath)
+        XCTAssertFalse(session.isFullScreen)
+        XCTAssertFalse(session.isMinimized)
         XCTAssertEqual(session.duration, 0)
         XCTAssertEqual(session.startTime, session.endTime)
         XCTAssertTrue(session.isActive)
@@ -25,6 +31,27 @@ final class FocusSessionTests: XCTestCase {
         )
 
         XCTAssertEqual(session.url, "https://github.com")
+        XCTAssertTrue(session.isActive)
+    }
+
+    func testStartWithAllRichContextFields() {
+        let session = FocusSession.start(
+            appName: "Google Chrome",
+            windowTitle: "GitHub - gecko",
+            bundleId: "com.google.Chrome",
+            url: "https://github.com",
+            tabTitle: "GitHub - gecko",
+            tabCount: 12,
+            documentPath: nil,
+            isFullScreen: true,
+            isMinimized: false
+        )
+
+        XCTAssertEqual(session.bundleId, "com.google.Chrome")
+        XCTAssertEqual(session.tabTitle, "GitHub - gecko")
+        XCTAssertEqual(session.tabCount, 12)
+        XCTAssertTrue(session.isFullScreen)
+        XCTAssertFalse(session.isMinimized)
         XCTAssertTrue(session.isActive)
     }
 
@@ -53,8 +80,14 @@ final class FocusSessionTests: XCTestCase {
         var session = FocusSession(
             id: "test-id",
             appName: "Finder",
+            bundleId: "com.apple.finder",
             windowTitle: "Desktop",
             url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1000.0,
             duration: 0
@@ -73,8 +106,14 @@ final class FocusSessionTests: XCTestCase {
         let session = FocusSession(
             id: "test-id",
             appName: "App",
+            bundleId: nil,
             windowTitle: "Win",
             url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1000.0,
             duration: 0
@@ -86,8 +125,14 @@ final class FocusSessionTests: XCTestCase {
         let session = FocusSession(
             id: "test-id",
             appName: "App",
+            bundleId: nil,
             windowTitle: "Win",
             url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1010.0,
             duration: 10.0
@@ -101,8 +146,14 @@ final class FocusSessionTests: XCTestCase {
         let session1 = FocusSession(
             id: "same-id",
             appName: "App",
+            bundleId: nil,
             windowTitle: "Win",
             url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1000.0,
             duration: 0
@@ -110,8 +161,14 @@ final class FocusSessionTests: XCTestCase {
         let session2 = FocusSession(
             id: "same-id",
             appName: "App",
+            bundleId: nil,
             windowTitle: "Win",
             url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1000.0,
             duration: 0
@@ -125,8 +182,14 @@ final class FocusSessionTests: XCTestCase {
         let original = FocusSession(
             id: "test-id",
             appName: "Chrome",
+            bundleId: "com.google.Chrome",
             windowTitle: "Google",
             url: "https://google.com",
+            tabTitle: "Google Search",
+            tabCount: 5,
+            documentPath: nil,
+            isFullScreen: true,
+            isMinimized: false,
             startTime: 1000.0,
             endTime: 1030.0,
             duration: 30.0
@@ -138,5 +201,34 @@ final class FocusSessionTests: XCTestCase {
         let decoded = try decoder.decode(FocusSession.self, from: data)
 
         XCTAssertEqual(original, decoded)
+    }
+
+    func testCodableRoundtripWithNilOptionals() throws {
+        let original = FocusSession(
+            id: "test-nil",
+            appName: "Finder",
+            bundleId: nil,
+            windowTitle: "Desktop",
+            url: nil,
+            tabTitle: nil,
+            tabCount: nil,
+            documentPath: nil,
+            isFullScreen: false,
+            isMinimized: false,
+            startTime: 1000.0,
+            endTime: 1010.0,
+            duration: 10.0
+        )
+
+        let encoder = JSONEncoder()
+        let data = try encoder.encode(original)
+        let decoder = JSONDecoder()
+        let decoded = try decoder.decode(FocusSession.self, from: data)
+
+        XCTAssertEqual(original, decoded)
+        XCTAssertNil(decoded.bundleId)
+        XCTAssertNil(decoded.tabTitle)
+        XCTAssertNil(decoded.tabCount)
+        XCTAssertNil(decoded.documentPath)
     }
 }

@@ -92,6 +92,39 @@ final class BrowserURLFetcherTests: XCTestCase {
         XCTAssertNil(url)
     }
 
+    // MARK: - fetchInfo with unknown app
+
+    func testFetchInfoForNonBrowserReturnsNil() async {
+        let info = await BrowserURLFetcher.fetchInfo(appName: "Finder")
+        XCTAssertNil(info)
+    }
+
+    func testFetchInfoForNonBrowserReturnsNilByIdentify() {
+        // If we can't identify the browser, fetchInfo(appName:) returns nil
+        let browser = BrowserURLFetcher.identifyBrowser(appName: "Terminal")
+        XCTAssertNil(browser)
+    }
+
+    // MARK: - BrowserInfo struct
+
+    func testBrowserInfoEquatable() {
+        let info1 = BrowserInfo(url: "https://example.com", tabTitle: "Example", tabCount: 5)
+        let info2 = BrowserInfo(url: "https://example.com", tabTitle: "Example", tabCount: 5)
+        XCTAssertEqual(info1, info2)
+    }
+
+    func testBrowserInfoEquatableWithNils() {
+        let info1 = BrowserInfo(url: nil, tabTitle: nil, tabCount: nil)
+        let info2 = BrowserInfo(url: nil, tabTitle: nil, tabCount: nil)
+        XCTAssertEqual(info1, info2)
+    }
+
+    func testBrowserInfoNotEqualDifferentURL() {
+        let info1 = BrowserInfo(url: "https://a.com", tabTitle: "A", tabCount: 1)
+        let info2 = BrowserInfo(url: "https://b.com", tabTitle: "A", tabCount: 1)
+        XCTAssertNotEqual(info1, info2)
+    }
+
     // MARK: - All browsers covered
 
     func testAllBrowsersCovered() {
