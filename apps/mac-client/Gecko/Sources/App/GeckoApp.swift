@@ -7,6 +7,7 @@ struct GeckoApp: App {
     @StateObject private var trackingEngine = TrackingEngine()
     @StateObject private var settingsManager = SettingsManager()
     @StateObject private var tabSelection = TabSelection()
+    @StateObject private var syncService: SyncService
 
     // MARK: - ViewModels
     @StateObject private var trackingViewModel: TrackingViewModel
@@ -20,10 +21,13 @@ struct GeckoApp: App {
         let settings = SettingsManager()
         let tab = TabSelection()
 
+        let sync = SyncService(db: DatabaseManager.shared, settings: settings)
+
         _permissionManager = StateObject(wrappedValue: permission)
         _trackingEngine = StateObject(wrappedValue: engine)
         _settingsManager = StateObject(wrappedValue: settings)
         _tabSelection = StateObject(wrappedValue: tab)
+        _syncService = StateObject(wrappedValue: sync)
 
         _trackingViewModel = StateObject(
             wrappedValue: TrackingViewModel(
@@ -41,7 +45,7 @@ struct GeckoApp: App {
             wrappedValue: SessionListViewModel(db: DatabaseManager.shared)
         )
         _settingsViewModel = StateObject(
-            wrappedValue: SettingsViewModel(settingsManager: settings)
+            wrappedValue: SettingsViewModel(settingsManager: settings, syncService: sync)
         )
     }
 
