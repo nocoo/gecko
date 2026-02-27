@@ -183,6 +183,25 @@ On each sync cycle:
 | `GET` | `/api/sessions` | Session | List user's sessions (paginated, filterable) |
 | `GET` | `/api/stats` | Session | Aggregated stats (by day, by app, etc.) |
 | `GET` | `/api/sync/status` | Session | Sync health: last sync time, devices |
+| `GET` | `/api/apps` | Session | List unique tracked apps (bundle_id, name, stats) |
+
+### Categories & Tags (dashboard)
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| `GET` | `/api/categories` | Session | List categories (seeds 4 defaults on first access) |
+| `POST` | `/api/categories` | Session | Create custom category (title + icon) |
+| `PUT` | `/api/categories` | Session | Rename/update a custom category |
+| `DELETE` | `/api/categories` | Session | Delete a custom category |
+| `GET` | `/api/categories/mappings` | Session | List app→category mappings |
+| `PUT` | `/api/categories/mappings` | Session | Batch upsert app→category mappings |
+| `GET` | `/api/tags` | Session | List user's tags |
+| `POST` | `/api/tags` | Session | Create a tag |
+| `PUT` | `/api/tags` | Session | Rename a tag |
+| `DELETE` | `/api/tags` | Session | Delete a tag (+ cascade remove mappings) |
+| `GET` | `/api/tags/mappings` | Session | List app→tag mappings |
+| `PUT` | `/api/tags/mappings` | Session | Batch upsert app→tag mappings |
+| `POST` | `/api/tags/mappings` | Session | Replace all tags for given apps |
 
 ---
 
@@ -282,6 +301,82 @@ The dashboard uses sync logs to display:
 
 ---
 
+## App Categories & Tags
+
+### Overview
+
+Apps tracked by the macOS client can be organized into **categories** (one per app) and **tags** (zero or more per app) on the web dashboard. Both are per-user — each user has their own categories, tags, and mappings.
+
+### Categories
+
+- **One app → one category** (required assignment via `app_category_mappings`)
+- 4 default categories seeded on first access: `system-core`, `system-app`, `browser`, `application`
+- ~95 known `bundle_id` → category auto-mappings seeded alongside defaults
+- Default categories cannot be edited or deleted (`is_default = 1`)
+- Users can create custom categories with a title + Lucide icon name
+- Display: Colored pill with icon + label, color derived from stable hash of slug
+
+### Tags
+
+- **One app → 0-N tags** (optional, many-to-many via `app_tag_mappings`)
+- No defaults — users create all tags
+- Display: Colored pill with label only (no icon), color from stable hash of name
+- Tag assignment uses a "replace all" pattern — POST sends the complete tag set per app
+
+### Color System
+
+Both categories and tags use `getHashColor(input)` for display colors:
+
+- **djb2 hash** of the input string → hue `% 360`
+- `fg`: `hsl(H, 65%, 45%)` — saturated foreground for text
+- `bg`: `hsl(H, 60%, 92%)` — light background for pills
+- Chinese-compatible since JS strings are UTF-16 (`charCodeAt`)
+
+### D1 Schema (migration 0003)
+
+```sql
+-- Categories
+CREATE TABLE categories (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  icon TEXT DEFAULT 'folder',
+  is_default INTEGER DEFAULT 0,
+  slug TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_categories_user_slug ON categories(user_id, slug);
+
+-- App → Category (one-to-one per user)
+CREATE TABLE app_category_mappings (
+  user_id TEXT NOT NULL,
+  bundle_id TEXT NOT NULL,
+  category_id TEXT NOT NULL REFERENCES categories(id),
+  created_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, bundle_id)
+);
+
+-- Tags
+CREATE TABLE tags (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+CREATE UNIQUE INDEX idx_tags_user_name ON tags(user_id, name);
+
+-- App → Tags (many-to-many per user)
+CREATE TABLE app_tag_mappings (
+  user_id TEXT NOT NULL,
+  bundle_id TEXT NOT NULL,
+  tag_id TEXT NOT NULL REFERENCES tags(id),
+  created_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, bundle_id, tag_id)
+);
+```
+
+---
+
 ## Implementation Progress
 
 | Component | Status | Notes |
@@ -297,8 +392,19 @@ The dashboard uses sync logs to display:
 | `GET /api/sessions` — list sessions | Done | Paginated, computes `end_time` as `start_time + duration` |
 | `GET /api/stats` — aggregated stats | Done | Period filter (today/week/month/all) |
 | `GET /api/sync/status` — sync health | Done | Per-device last sync |
+| `GET /api/apps` — list tracked apps | Done | 4 tests, unique bundle_id + stats |
 | Settings page — API key management UI | Done | Create, list, revoke keys with dialogs |
 | Dashboard page — real data from D1 | Done | Period selector, stat cards, top apps table |
+| Hash color utility (`src/lib/hash-color.ts`) | Done | 9 tests, djb2 hash → HSL fg/bg/bgSubtle |
+| Default categories + seed logic | Done | 17 tests (10 constant validation + 7 seeding logic) |
+| CategoryPill + TagBadge components | Done | Static ICON_MAP, hash color pills |
+| Sidebar sub-navigation | Done | 25 tests, Settings → General/Categories/Tags |
+| `/api/categories` CRUD | Done | GET (with auto-seeding), POST, PUT, DELETE |
+| `/api/categories/mappings` GET/PUT | Done | 6 tests, batched upsert |
+| `/api/tags` CRUD | Done | 9 tests, GET/POST/PUT/DELETE |
+| `/api/tags/mappings` GET/PUT/POST | Done | 11 tests, upsert + replace-all-per-app |
+| Categories settings page | Done | CRUD dialogs + icon picker + app mapping UI |
+| Tags settings page | Done | CRUD dialogs + expandable multi-tag assignment |
 | macOS `DatabaseManager` additions | Done | `fetchUnsynced(since:limit:)` — watermark-based query |
 | macOS `SettingsManager` sync settings | Done | apiKey, syncEnabled, syncServerUrl, lastSyncedStartTime |
 | macOS `SyncService.swift` | Done | Timer-based (5m), batch upload, 202 support, 14 tests |
@@ -306,9 +412,9 @@ The dashboard uses sync logs to display:
 | macOS `SettingsView` sync UI | Done | Toggle, API key, server URL, status display, Sync Now |
 | macOS `GeckoApp` wiring | Done | SyncService instantiated and passed to SettingsViewModel |
 | macOS tests | Done | 185 total tests, 0 lint violations |
-| Web dashboard tests | Done | 173 unit tests (0 lint errors) + 6 E2E tests |
+| Web dashboard tests | Done | 258 unit tests (0 lint errors) + 25 E2E tests |
 | Git hooks (husky) | Done | pre-commit: UT (both platforms), pre-push: UT + Lint + E2E |
-| E2E test infrastructure | Done | BDD-style sync round-trip tests, self-managed server on port 10728 |
+| E2E test infrastructure | Done | BDD-style tests, self-managed server on port 10728 |
 
 ---
 
@@ -318,18 +424,27 @@ The dashboard uses sync logs to display:
 
 | Layer | Tool | Hook | Description |
 |---|---|---|---|
-| **Unit Tests** | `bun test` + `xcodebuild test` | pre-commit | 185 mac + 173 web = 358 total tests |
+| **Unit Tests** | `bun test` + `xcodebuild test` | pre-commit | 185 mac + 258 web = 443 total tests |
 | **Lint** | SwiftLint + ESLint | pre-push | 0 violations, 0 errors |
-| **E2E** | `bun run test:e2e` | pre-push (when present) | 6 integration tests against live server |
+| **E2E** | `bun run test:e2e` | pre-push (when present) | 25 integration tests against live server |
 
 ### E2E Test Scenarios
 
 Run via `bun run test:e2e` (sets `RUN_E2E=true`, starts server on port 10728):
 
+**Sync round-trip (`sync-roundtrip.test.ts`):**
+
 1. **New client sync** — POST sessions without `end_time` -> 202 Accepted -> sessions API returns computed `end_time`
 2. **Backward-compatible sync** — Old client sends `end_time` in payload -> server accepts gracefully
 3. **Validation** — Missing required fields -> 400, Empty sessions array -> 400
 4. **Batch size enforcement** — >1000 sessions -> 413
+
+**Categories & Tags (`categories-tags.test.ts`):**
+
+5. **Categories CRUD** — GET seeds defaults -> POST creates custom -> PUT renames -> DELETE removes
+6. **Tags CRUD** — GET returns list -> POST creates -> PUT renames -> DELETE removes (+ cascade)
+7. **Category mappings** — Sync a session -> PUT assigns app to category -> GET confirms mapping
+8. **Tag mappings** — POST assigns multiple tags -> GET confirms -> POST replaces (remove one) -> POST with empty tagIds clears all
 
 ### Running Tests
 
