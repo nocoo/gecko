@@ -1,6 +1,36 @@
 import Foundation
 import Combine
 import os
+import Security
+
+// MARK: - TLS Session Delegate
+
+/// Handles TLS server trust challenges for development builds using local CA certificates
+/// (e.g. mkcert). Evaluates the server certificate against the full system trust store —
+/// including locally-installed development CAs. In RELEASE builds this class is never
+/// instantiated; standard ATS validation applies instead.
+final class SyncSessionDelegate: NSObject, URLSessionDelegate {
+    func urlSession(
+        _ session: URLSession,
+        didReceive challenge: URLAuthenticationChallenge,
+        completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void
+    ) {
+        guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+              let serverTrust = challenge.protectionSpace.serverTrust else {
+            completionHandler(.performDefaultHandling, nil)
+            return
+        }
+
+        // Evaluate using the system trust store (includes mkcert root CA)
+        var error: CFError?
+        let trusted = SecTrustEvaluateWithError(serverTrust, &error)
+        if trusted {
+            completionHandler(.useCredential, URLCredential(trust: serverTrust))
+        } else {
+            completionHandler(.performDefaultHandling, nil)
+        }
+    }
+}
 
 /// Periodically syncs finalized focus sessions to the cloud via POST /api/sync.
 ///
@@ -43,6 +73,9 @@ final class SyncService: ObservableObject {
     private let session: URLSession
     private let syncInterval: TimeInterval
 
+    /// Retained reference so the URLSession delegate is not deallocated.
+    private let sessionDelegate: SyncSessionDelegate? // swiftlint:disable:this unused_declaration
+
     // MARK: - Private State
 
     private var timer: Timer?
@@ -51,16 +84,43 @@ final class SyncService: ObservableObject {
 
     // MARK: - Init
 
+    /// Creates a new SyncService.
+    ///
+    /// - Parameters:
+    ///   - db: Database to fetch unsynced sessions from.
+    ///   - settings: User settings (API key, server URL, watermark).
+    ///   - session: URLSession override. Pass `nil` (default) to auto-create one
+    ///     with a TLS delegate for DEBUG builds. Pass a custom session for tests.
+    ///   - syncInterval: Seconds between sync ticks (default 300).
     init(
         db: any DatabaseService,
         settings: SettingsManager,
-        session: URLSession = .shared,
+        session: URLSession? = nil,
         syncInterval: TimeInterval = 300 // 5 minutes
     ) {
         self.db = db
         self.settings = settings
-        self.session = session
         self.syncInterval = syncInterval
+
+        // In DEBUG builds, create a URLSession with a delegate that trusts local CAs
+        // (e.g. mkcert). In RELEASE builds or when a session is injected (tests), skip.
+        if let session {
+            self.session = session
+            self.sessionDelegate = nil
+        } else {
+            #if DEBUG
+            let delegate = SyncSessionDelegate()
+            self.sessionDelegate = delegate
+            self.session = URLSession(
+                configuration: .default,
+                delegate: delegate,
+                delegateQueue: nil
+            )
+            #else
+            self.session = .shared
+            self.sessionDelegate = nil
+            #endif
+        }
 
         // Observe settings changes to start/stop sync
         settingsCancellable = settings.objectWillChange.sink { [weak self] _ in
