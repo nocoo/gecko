@@ -293,8 +293,8 @@ The dashboard uses sync logs to display:
 | `GET /api/keys` — list keys | Done | |
 | `DELETE /api/keys/[id]` — revoke key | Done | |
 | `POST /api/sync` — batch upload (202) | Done | 10 tests, enqueues to in-memory queue |
-| Sync queue (`src/lib/sync-queue.ts`) | Done | 16 tests, background drain + multi-row INSERT |
-| `GET /api/sessions` — list sessions | Done | Paginated |
+| Sync queue (`src/lib/sync-queue.ts`) | Done | 22 tests: drain, batching, concurrency, D1 param boundary, schema-drift guard |
+| `GET /api/sessions` — list sessions | Done | Paginated, computes `end_time` as `start_time + duration` |
 | `GET /api/stats` — aggregated stats | Done | Period filter (today/week/month/all) |
 | `GET /api/sync/status` — sync health | Done | Per-device last sync |
 | Settings page — API key management UI | Done | Create, list, revoke keys with dialogs |
@@ -306,4 +306,42 @@ The dashboard uses sync logs to display:
 | macOS `SettingsView` sync UI | Done | Toggle, API key, server URL, status display, Sync Now |
 | macOS `GeckoApp` wiring | Done | SyncService instantiated and passed to SettingsViewModel |
 | macOS tests | Done | 185 total tests, 0 lint violations |
-| Web dashboard tests | Done | 165 total tests, 0 lint errors |
+| Web dashboard tests | Done | 173 unit tests (0 lint errors) + 6 E2E tests |
+| Git hooks (husky) | Done | pre-commit: UT (both platforms), pre-push: UT + Lint + E2E |
+| E2E test infrastructure | Done | BDD-style sync round-trip tests, self-managed server on port 10728 |
+
+---
+
+## Test Coverage
+
+### Three-Layer Verification
+
+| Layer | Tool | Hook | Description |
+|---|---|---|---|
+| **Unit Tests** | `bun test` + `xcodebuild test` | pre-commit | 185 mac + 173 web = 358 total tests |
+| **Lint** | SwiftLint + ESLint | pre-push | 0 violations, 0 errors |
+| **E2E** | `bun run test:e2e` | pre-push (when present) | 6 integration tests against live server |
+
+### E2E Test Scenarios
+
+Run via `bun run test:e2e` (sets `RUN_E2E=true`, starts server on port 10728):
+
+1. **New client sync** — POST sessions without `end_time` -> 202 Accepted -> sessions API returns computed `end_time`
+2. **Backward-compatible sync** — Old client sends `end_time` in payload -> server accepts gracefully
+3. **Validation** — Missing required fields -> 400, Empty sessions array -> 400
+4. **Batch size enforcement** — >1000 sessions -> 413
+
+### Running Tests
+
+```bash
+# Unit tests only (both platforms, runs on every commit)
+bun test                            # web dashboard
+cd apps/mac-client && xcodebuild test -scheme GeckoTests -destination 'platform=macOS'
+
+# Lint (runs on push)
+cd apps/web-dashboard && bun run lint
+cd apps/mac-client && swiftlint lint --strict
+
+# E2E tests (explicit invocation)
+cd apps/web-dashboard && bun run test:e2e
+```
