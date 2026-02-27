@@ -11,6 +11,7 @@
     "lint": "eslint",
     "test": "bun test src/__tests__/ --timeout 30000",
     "test:coverage": "bun test src/__tests__/ --coverage --timeout 30000",
+    "test:e2e": "RUN_E2E=true bun test src/__tests__/e2e/ --timeout 60000",
     "prepare": "husky"
   },
   "devDependencies": {
