@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getHashColor, type HashColor } from "../../lib/hash-color";
+import { getHashColor } from "../../lib/hash-color";
 
 describe("getHashColor", () => {
   test("returns an object with hue, fg, bg, and bgSubtle", () => {
