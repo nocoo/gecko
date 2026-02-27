@@ -38,6 +38,8 @@ interface NavItem {
   href: string;
   label: string;
   icon: IconComponent;
+  /** When true, only exact pathname match counts as active (no prefix matching). */
+  exact?: boolean;
 }
 
 interface NavGroup {
@@ -59,7 +61,7 @@ const navGroups: NavGroup[] = [
     label: "Settings",
     defaultOpen: true,
     items: [
-      { href: "/settings", label: "General", icon: SlidersHorizontal },
+      { href: "/settings", label: "General", icon: SlidersHorizontal, exact: true },
       { href: "/settings/categories", label: "Categories", icon: Layers },
       { href: "/settings/tags", label: "Tags", icon: Tags },
     ],
@@ -70,8 +72,8 @@ const navGroups: NavGroup[] = [
 const allNavItems = navGroups.flatMap((g) => g.items);
 
 /** Check if a nav item is currently active. */
-function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+function isActive(pathname: string, href: string, exact?: boolean): boolean {
+  if (href === "/" || exact) return pathname === href;
   return pathname === href || pathname.startsWith(href + "/");
 }
 
@@ -117,7 +119,7 @@ function NavGroupSection({
         <div className="min-h-0 overflow-hidden">
           <div className="flex flex-col gap-0.5 px-3">
             {group.items.map((item) => {
-              const active = isActive(pathname, item.href);
+              const active = isActive(pathname, item.href, item.exact);
               return (
                 <Link
                   key={item.href}
@@ -205,7 +207,7 @@ export function Sidebar() {
             {/* Navigation — collapsed: flat icon list, no separators */}
             <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto pt-1">
               {allNavItems.map((item) => {
-                const active = isActive(pathname, item.href);
+                const active = isActive(pathname, item.href, item.exact);
                 return (
                   <Tooltip key={item.href}>
                     <TooltipTrigger asChild>

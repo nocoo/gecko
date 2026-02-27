@@ -91,5 +91,14 @@ describe("sidebar navigation", () => {
     it("returns false for partial prefix matches that are not path segments", () => {
       expect(isActive("/settingsmore", "/settings")).toBe(false);
     });
+
+    it("exact mode: returns true only for exact pathname match", () => {
+      expect(isActive("/settings", "/settings", true)).toBe(true);
+    });
+
+    it("exact mode: returns false for child paths", () => {
+      expect(isActive("/settings/tags", "/settings", true)).toBe(false);
+      expect(isActive("/settings/categories", "/settings", true)).toBe(false);
+    });
   });
 });
