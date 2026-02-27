@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
 import { query, execute } from "@/lib/d1";
+import { seedDefaultCategories } from "@/lib/seed-categories";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,9 @@ function slugify(title: string): string {
 export async function GET(_req: Request): Promise<Response> {
   const { user, error } = await requireSession();
   if (error) return error;
+
+  // Seed defaults on first access (idempotent — no-op if already seeded).
+  await seedDefaultCategories(user.userId);
 
   const rows = await query<{
     id: string;

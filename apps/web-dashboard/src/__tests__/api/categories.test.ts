@@ -55,8 +55,11 @@ describe("/api/categories", () => {
   // GET — list categories for the current user
   // -------------------------------------------------------------------------
   describe("GET /api/categories", () => {
-    test("returns list of categories", async () => {
+    test("returns list of categories (existing user, seeding skipped)", async () => {
       mockD1([
+        // seedDefaultCategories: COUNT query — user already has categories
+        [{ cnt: 1 }],
+        // Main SELECT query
         [
           {
             id: "cat-1",
@@ -82,8 +85,26 @@ describe("/api/categories", () => {
       expect(data.categories[0].isDefault).toBe(true);
     });
 
-    test("returns empty array when no categories", async () => {
-      mockD1([[]]);
+    test("seeds defaults on first access when user has no categories", async () => {
+      // We need to import the constants to calculate batch count
+      const { BUNDLE_ID_MAPPINGS } = await import("../../lib/default-categories");
+      const mappingBatches = Math.ceil(BUNDLE_ID_MAPPINGS.size / 25);
+
+      const { calls } = mockD1([
+        // seedDefaultCategories: COUNT query — 0 categories
+        [{ cnt: 0 }],
+        // seedDefaultCategories: INSERT categories
+        [],
+        // seedDefaultCategories: INSERT mapping batches
+        ...Array(mappingBatches).fill([]),
+        // Main SELECT query — returns the newly seeded defaults
+        [
+          { id: "cat-1", title: "System Core", icon: "cpu", is_default: 1, slug: "system-core", created_at: "2026-01-01T00:00:00.000Z" },
+          { id: "cat-2", title: "System App", icon: "monitor", is_default: 1, slug: "system-app", created_at: "2026-01-01T00:00:00.000Z" },
+          { id: "cat-3", title: "Browser", icon: "globe", is_default: 1, slug: "browser", created_at: "2026-01-01T00:00:00.000Z" },
+          { id: "cat-4", title: "Application", icon: "app-window", is_default: 1, slug: "application", created_at: "2026-01-01T00:00:00.000Z" },
+        ],
+      ]);
       const { GET } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories");
@@ -91,7 +112,12 @@ describe("/api/categories", () => {
       expect(res.status).toBe(200);
 
       const data = await res.json();
-      expect(data.categories).toEqual([]);
+      expect(data.categories).toHaveLength(4);
+      expect(data.categories.every((c: { isDefault: boolean }) => c.isDefault)).toBe(true);
+
+      // Verify seeding was triggered: COUNT + INSERT categories + mapping batches + SELECT
+      expect(calls[0].sql).toContain("COUNT(*)");
+      expect(calls[1].sql).toContain("INSERT INTO categories");
     });
   });
 
