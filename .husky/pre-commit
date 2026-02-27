@@ -1,0 +1,22 @@
+# pre-commit: run unit tests for both mac-client and web-dashboard
+
+set -euo pipefail
+
+echo "==> [pre-commit] Running unit tests..."
+
+# Mac client tests
+cd apps/mac-client
+xcodebuild test \
+  -project Gecko.xcodeproj \
+  -scheme GeckoTests \
+  -destination 'platform=macOS' \
+  -quiet \
+  2>&1 | tail -5
+cd ../..
+
+# Web dashboard tests
+cd apps/web-dashboard
+bun test src/__tests__/ --timeout 30000 2>&1 | tail -5
+cd ../..
+
+echo "==> [pre-commit] Tests passed."

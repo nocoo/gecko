@@ -2,6 +2,10 @@
   "name": "gecko",
   "private": true,
   "scripts": {
-    "dev": "bun run --cwd apps/web-dashboard dev"
+    "dev": "bun run --cwd apps/web-dashboard dev",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
   }
 }

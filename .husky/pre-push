@@ -1,0 +1,60 @@
+# pre-push: run UT + Lint + E2E — full verification gate before pushing
+
+set -euo pipefail
+
+# ----------------------------------------------------------
+# 1. Unit tests (both platforms)
+# ----------------------------------------------------------
+echo "==> [pre-push] Running unit tests..."
+
+cd apps/mac-client
+xcodebuild test \
+  -project Gecko.xcodeproj \
+  -scheme GeckoTests \
+  -destination 'platform=macOS' \
+  -quiet \
+  2>&1 | tail -5
+cd ../..
+
+cd apps/web-dashboard
+bun test src/__tests__/ --timeout 30000 2>&1 | tail -5
+cd ../..
+
+echo "==> [pre-push] Unit tests passed."
+
+# ----------------------------------------------------------
+# 2. Lint
+# ----------------------------------------------------------
+echo "==> [pre-push] Running lint..."
+
+# SwiftLint (mac-client)
+LINT_RESULT=$(cd apps/mac-client && swiftlint lint --reporter json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(len(d))" 2>/dev/null || echo "error")
+
+if [ "$LINT_RESULT" != "0" ]; then
+  echo "==> [pre-push] FAILED: swiftlint found $LINT_RESULT violations"
+  cd apps/mac-client && swiftlint lint 2>/dev/null
+  exit 1
+fi
+echo "==> [pre-push] SwiftLint passed (0 violations)."
+
+# ESLint (web-dashboard)
+cd apps/web-dashboard
+bun run lint 2>&1 | tail -5
+cd ../..
+
+echo "==> [pre-push] ESLint passed."
+
+# ----------------------------------------------------------
+# 3. E2E / Integration tests (when available)
+# ----------------------------------------------------------
+if [ -d "apps/web-dashboard/src/__tests__/e2e" ]; then
+  echo "==> [pre-push] Running E2E tests..."
+  cd apps/web-dashboard
+  bun test src/__tests__/e2e/ --timeout 60000 2>&1 | tail -10
+  cd ../..
+  echo "==> [pre-push] E2E tests passed."
+else
+  echo "==> [pre-push] Skipping E2E (no test directory yet)."
+fi
+
+echo "==> [pre-push] All checks passed. Pushing..."
