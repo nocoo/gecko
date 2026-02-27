@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
+import { Collapsible } from "radix-ui";
 import {
   LayoutDashboard,
   List,
@@ -12,6 +14,7 @@ import {
   SlidersHorizontal,
   Layers,
   Tags,
+  ChevronUp,
 } from "lucide-react";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
@@ -274,63 +277,36 @@ export function Sidebar() {
                       const hasChildren =
                         item.children && item.children.length > 0;
 
-                      return (
-                        <div key={item.href}>
-                          {/* Parent item */}
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
-                              parentActive && !hasChildren
-                                ? "bg-accent text-foreground"
-                                : parentActive && hasChildren
-                                  ? "text-foreground"
-                                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                            )}
-                          >
-                            <item.icon
-                              className="h-4 w-4 shrink-0"
-                              strokeWidth={1.5}
-                            />
-                            <span className="flex-1 text-left">
-                              {item.label}
-                            </span>
-                          </Link>
+                      if (hasChildren) {
+                        return (
+                          <NavGroupCollapsible
+                            key={item.href}
+                            item={item}
+                            parentActive={parentActive}
+                            pathname={pathname}
+                          />
+                        );
+                      }
 
-                          {/* Children — shown when parent is active */}
-                          {hasChildren && parentActive && (
-                            <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-border pl-3">
-                              {item.children!.map((child) => {
-                                // For /settings (General), use exact match
-                                // For /settings/categories, /settings/tags, use prefix match
-                                const childActive =
-                                  child.href === "/settings"
-                                    ? isExactActive(pathname, child.href)
-                                    : isActive(pathname, child.href);
-                                return (
-                                  <Link
-                                    key={child.href}
-                                    href={child.href}
-                                    className={cn(
-                                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
-                                      childActive
-                                        ? "bg-accent text-foreground"
-                                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                                    )}
-                                  >
-                                    <child.icon
-                                      className="h-3.5 w-3.5 shrink-0"
-                                      strokeWidth={1.5}
-                                    />
-                                    <span className="flex-1 text-left">
-                                      {child.label}
-                                    </span>
-                                  </Link>
-                                );
-                              })}
-                            </div>
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          className={cn(
+                            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
+                            parentActive
+                              ? "bg-accent text-foreground"
+                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
                           )}
-                        </div>
+                        >
+                          <item.icon
+                            className="h-4 w-4 shrink-0"
+                            strokeWidth={1.5}
+                          />
+                          <span className="flex-1 text-left">
+                            {item.label}
+                          </span>
+                        </Link>
                       );
                     })}
                   </div>
@@ -384,6 +360,74 @@ export function Sidebar() {
         )}
       </aside>
     </TooltipProvider>
+  );
+}
+
+// =============================================================================
+// Collapsible navigation group (Settings → General / Categories / Tags)
+// =============================================================================
+
+function NavGroupCollapsible({
+  item,
+  parentActive,
+  pathname,
+}: {
+  item: NavItem;
+  parentActive: boolean;
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(parentActive);
+
+  return (
+    <Collapsible.Root open={open} onOpenChange={setOpen}>
+      <Collapsible.Trigger className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-normal transition-colors text-muted-foreground hover:bg-accent hover:text-foreground">
+        <span className="flex items-center gap-3">
+          <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+          <span>{item.label}</span>
+        </span>
+        <ChevronUp
+          className={cn(
+            "h-4 w-4 text-muted-foreground transition-transform duration-200",
+            !open && "rotate-180",
+          )}
+          strokeWidth={1.5}
+        />
+      </Collapsible.Trigger>
+
+      <div
+        className="grid overflow-hidden"
+        style={{
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 200ms ease-out",
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="flex flex-col gap-0.5 px-3">
+            {item.children!.map((child) => {
+              const childActive = isExactActive(pathname, child.href);
+              return (
+                <Link
+                  key={child.href}
+                  href={child.href}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
+                    childActive
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <child.icon
+                    className="h-4 w-4 shrink-0"
+                    strokeWidth={1.5}
+                  />
+                  <span className="flex-1 text-left">{child.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </Collapsible.Root>
   );
 }
 
