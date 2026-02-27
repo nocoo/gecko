@@ -412,7 +412,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Tag Mappings", () => {
   });
 
   test("POST /api/tags/mappings with empty tagIds removes all tags", async () => {
-    const { status, body } = await api(
+    const { status } = await api(
       "/api/tags/mappings",
       json({ apps: [{ bundleId, tagIds: [] }] }),
     );

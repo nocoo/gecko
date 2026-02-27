@@ -24,7 +24,6 @@ import {
   ArrowRightLeft,
   Search,
   Check,
-  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 

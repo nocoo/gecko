@@ -2,7 +2,6 @@ import { describe, test, expect } from "bun:test";
 import {
   DEFAULT_CATEGORIES,
   BUNDLE_ID_MAPPINGS,
-  type DefaultCategoryDef,
 } from "../../lib/default-categories";
 
 describe("default-categories constants", () => {
@@ -33,7 +32,7 @@ describe("default-categories constants", () => {
 
   test("all bundle_id mappings point to valid category slugs", () => {
     const validSlugs = new Set(DEFAULT_CATEGORIES.map((c) => c.slug));
-    for (const [bundleId, slug] of BUNDLE_ID_MAPPINGS) {
+    for (const [_bundleId, slug] of BUNDLE_ID_MAPPINGS) {
       expect(validSlugs.has(slug)).toBe(true);
     }
   });

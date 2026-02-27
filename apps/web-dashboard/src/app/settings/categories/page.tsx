@@ -29,8 +29,6 @@ import {
   Folder,
   ArrowRightLeft,
   Search,
-  Check,
-  ChevronsUpDown,
   type LucideProps,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -54,11 +52,6 @@ interface TrackedApp {
   appName: string;
   totalDuration: number;
   sessionCount: number;
-}
-
-interface CategoryMapping {
-  bundleId: string;
-  categoryId: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -752,8 +745,6 @@ function AppMappingRow({
   onCategoryChange: (categoryId: string) => void;
   formatDuration: (seconds: number) => string;
 }) {
-  const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
-
   return (
     <div
       className={cn(

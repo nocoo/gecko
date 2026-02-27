@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
-import { DEFAULT_CATEGORIES, BUNDLE_ID_MAPPINGS } from "../../lib/default-categories";
+import { BUNDLE_ID_MAPPINGS } from "../../lib/default-categories";
 
 // ---------------------------------------------------------------------------
 // seed-categories tests
