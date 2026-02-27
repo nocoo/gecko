@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
+  List,
   Settings,
   PanelLeft,
   LogOut,
@@ -41,6 +42,7 @@ const navSections: NavSection[] = [
     title: null,
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/sessions", label: "Sessions", icon: List },
     ],
   },
   {

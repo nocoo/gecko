@@ -7,9 +7,9 @@ describe("sidebar navigation", () => {
       expect(navSections).toHaveLength(2);
     });
 
-    it("section 0 has Dashboard", () => {
+    it("section 0 has Dashboard and Sessions", () => {
       expect(navSections[0]!.title).toBeNull();
-      expect(navSections[0]!.items.map((i) => i.label)).toEqual(["Dashboard"]);
+      expect(navSections[0]!.items.map((i) => i.label)).toEqual(["Dashboard", "Sessions"]);
     });
 
     it("section 1 has Settings", () => {
