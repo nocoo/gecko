@@ -1,14 +1,13 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, mock } from "bun:test";
+import {
+  createSyncQueue,
+  buildMultiRowInsert,
+} from "../../lib/sync-queue";
 
 // ---------------------------------------------------------------------------
 // SyncQueue unit tests
 // Tests the in-memory queue + background drain worker.
-// Mocks the D1 execute function to avoid real Cloudflare calls.
 // ---------------------------------------------------------------------------
-
-// We'll import from the module under test after each reset
-let SyncQueue: typeof import("../../lib/sync-queue").SyncQueue;
-let createSyncQueue: typeof import("../../lib/sync-queue").createSyncQueue;
 
 // Sample session factory
 function sampleItem(overrides: Record<string, unknown> = {}) {
@@ -32,14 +31,6 @@ function sampleItem(overrides: Record<string, unknown> = {}) {
     ...overrides,
   };
 }
-
-beforeEach(async () => {
-  // Fresh import each test to reset singleton state
-  // We use dynamic import to get a clean module
-  const mod = await import("../../lib/sync-queue");
-  SyncQueue = mod.SyncQueue;
-  createSyncQueue = mod.createSyncQueue;
-});
 
 describe("SyncQueue", () => {
   // -------------------------------------------------------------------------
@@ -242,7 +233,6 @@ describe("SyncQueue", () => {
 
   describe("buildMultiRowInsert()", () => {
     test("builds correct SQL and params for a single session", () => {
-      const { buildMultiRowInsert } = require("../../lib/sync-queue");
       const item = sampleItem();
       const { sql, params } = buildMultiRowInsert([item]);
 
@@ -254,7 +244,6 @@ describe("SyncQueue", () => {
     });
 
     test("builds correct SQL for multiple sessions", () => {
-      const { buildMultiRowInsert } = require("../../lib/sync-queue");
       const items = [
         sampleItem({ id: "id-1" }),
         sampleItem({ id: "id-2" }),
@@ -274,7 +263,6 @@ describe("SyncQueue", () => {
     });
 
     test("correctly maps boolean fields to 0/1", () => {
-      const { buildMultiRowInsert } = require("../../lib/sync-queue");
       const item = sampleItem({ is_full_screen: true, is_minimized: false });
       const { params } = buildMultiRowInsert([item]);
 

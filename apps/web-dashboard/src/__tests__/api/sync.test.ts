@@ -1,57 +1,22 @@
 import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { resetSyncQueue } from "../../lib/sync-queue";
 
 // ---------------------------------------------------------------------------
 // /api/sync route handler tests
-// Uses E2E_SKIP_AUTH=true to bypass API key auth.
-// Mocks D1 client to avoid real Cloudflare calls.
+// Validates the 202 Accepted + enqueue behavior.
+// No D1 mock needed — the route no longer calls D1 directly.
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
 
 beforeEach(() => {
   process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
+  // Reset the singleton queue before each test
+  resetSyncQueue();
 });
 
 afterEach(() => {
   delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
+  resetSyncQueue();
 });
-
-// Mock D1 — captures all SQL calls
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [
-            {
-              results,
-              success: true,
-              meta: { changes: results.length || 1, last_row_id: 0 },
-            },
-          ],
-          errors: [],
-        }),
-        { status: 200 }
-      )
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 // Sample session for testing
 function sampleSession(overrides: Record<string, unknown> = {}) {
@@ -74,9 +39,7 @@ function sampleSession(overrides: Record<string, unknown> = {}) {
 }
 
 describe("POST /api/sync", () => {
-  test("uploads sessions and returns count", async () => {
-    // Two D1 calls: INSERT OR IGNORE for sessions, INSERT for sync_log
-    mockD1([[], []]);
+  test("returns 202 Accepted with accepted count and sync_id", async () => {
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {
@@ -91,16 +54,15 @@ describe("POST /api/sync", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
 
     const data = await res.json();
-    expect(data.inserted).toBeGreaterThanOrEqual(0);
-    expect(data.duplicates).toBeGreaterThanOrEqual(0);
+    expect(data.accepted).toBe(1);
     expect(data.sync_id).toBeTruthy();
+    expect(typeof data.sync_id).toBe("string");
   });
 
-  test("handles multiple sessions", async () => {
-    const { calls } = mockD1([[], []]);
+  test("accepts multiple sessions and returns correct count", async () => {
     const { POST } = await import("../../app/api/sync/route");
 
     const sessions = [
@@ -119,18 +81,80 @@ describe("POST /api/sync", () => {
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(202);
 
     const data = await res.json();
-    expect(typeof data.inserted).toBe("number");
-    expect(typeof data.duplicates).toBe("number");
+    expect(data.accepted).toBe(3);
+    expect(data.sync_id).toBeTruthy();
+  });
 
-    // Should have INSERT OR IGNORE calls for sessions + INSERT for sync log
-    expect(calls.length).toBeGreaterThanOrEqual(2);
+  test("does not make any D1 calls in the request path", async () => {
+    // Capture all fetch calls — none should go to D1
+    const originalFetch = globalThis.fetch;
+    const fetchCalls: string[] = [];
+    globalThis.fetch = mock((...args: unknown[]) => {
+      const url =
+        typeof args[0] === "string"
+          ? args[0]
+          : args[0] instanceof Request
+            ? args[0].url
+            : "";
+      fetchCalls.push(url);
+      return originalFetch(...(args as Parameters<typeof fetch>));
+    }) as unknown as typeof fetch;
+
+    try {
+      const { POST } = await import("../../app/api/sync/route");
+
+      const req = new Request("http://localhost/api/sync", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer gk_test123",
+        },
+        body: JSON.stringify({
+          sessions: [sampleSession()],
+        }),
+      });
+
+      await POST(req);
+
+      // No fetch calls should have been made to cloudflare D1
+      const d1Calls = fetchCalls.filter((url) =>
+        url.includes("api.cloudflare.com"),
+      );
+      expect(d1Calls.length).toBe(0);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  test("enqueues sessions into the sync queue", async () => {
+    const { getSyncQueue } = await import("../../lib/sync-queue");
+    const { POST } = await import("../../app/api/sync/route");
+
+    const sessions = [
+      sampleSession({ id: "id-1" }),
+      sampleSession({ id: "id-2" }),
+    ];
+
+    const req = new Request("http://localhost/api/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer gk_test123",
+      },
+      body: JSON.stringify({ sessions }),
+    });
+
+    await POST(req);
+
+    const queue = getSyncQueue();
+    const stats = queue.getStats();
+    expect(stats.pending).toBe(2);
   });
 
   test("returns 400 for empty sessions array", async () => {
-    mockD1();
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {
@@ -150,7 +174,6 @@ describe("POST /api/sync", () => {
   });
 
   test("returns 400 for missing sessions field", async () => {
-    mockD1();
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {
@@ -167,11 +190,10 @@ describe("POST /api/sync", () => {
   });
 
   test("returns 413 for batch larger than 1000", async () => {
-    mockD1();
     const { POST } = await import("../../app/api/sync/route");
 
     const sessions = Array.from({ length: 1001 }, (_, i) =>
-      sampleSession({ id: `id-${i}` })
+      sampleSession({ id: `id-${i}` }),
     );
 
     const req = new Request("http://localhost/api/sync", {
@@ -188,7 +210,6 @@ describe("POST /api/sync", () => {
   });
 
   test("returns 400 for invalid JSON", async () => {
-    mockD1();
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {
@@ -205,7 +226,6 @@ describe("POST /api/sync", () => {
   });
 
   test("validates required fields in sessions", async () => {
-    mockD1();
     const { POST } = await import("../../app/api/sync/route");
 
     const req = new Request("http://localhost/api/sync", {
@@ -224,5 +244,29 @@ describe("POST /api/sync", () => {
 
     const data = await res.json();
     expect(data.error).toContain("required");
+  });
+
+  test("maps boolean fields correctly in queued sessions", async () => {
+    const { getSyncQueue } = await import("../../lib/sync-queue");
+    const { POST } = await import("../../app/api/sync/route");
+
+    const req = new Request("http://localhost/api/sync", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer gk_test123",
+      },
+      body: JSON.stringify({
+        sessions: [
+          sampleSession({ is_full_screen: true, is_minimized: true }),
+        ],
+      }),
+    });
+
+    await POST(req);
+
+    // Verify the queue has sessions with correct types
+    const queue = getSyncQueue();
+    expect(queue.getStats().pending).toBe(1);
   });
 });

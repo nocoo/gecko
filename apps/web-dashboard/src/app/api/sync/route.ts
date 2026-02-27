@@ -1,9 +1,13 @@
 // POST /api/sync — Batch upload focus sessions from macOS app.
 // Authenticated via API key (Bearer gk_<hex>).
+//
+// Accepts sessions, validates, enqueues into in-memory queue,
+// and returns 202 Accepted immediately. Background drain worker
+// writes batches to Cloudflare D1 asynchronously.
 
 import { randomUUID } from "node:crypto";
 import { requireApiKey, jsonOk, jsonError } from "@/lib/api-helpers";
-import { execute } from "@/lib/d1";
+import { getSyncQueue, type QueuedSession } from "@/lib/sync-queue";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +39,7 @@ interface SyncSession {
   is_minimized: boolean;
 }
 
-/** POST /api/sync — Batch upload focus sessions. */
+/** POST /api/sync — Validate + enqueue, return 202 Accepted. */
 export async function POST(req: Request): Promise<Response> {
   const { user, error } = await requireApiKey(req);
   if (error) return error;
@@ -75,55 +79,37 @@ export async function POST(req: Request): Promise<Response> {
 
   const now = new Date().toISOString();
   const { userId, deviceId } = user;
-
-  // INSERT OR IGNORE each session — idempotent on session id
-  let insertedCount = 0;
-  for (const session of sessions) {
-    const result = await execute(
-      `INSERT OR IGNORE INTO focus_sessions
-       (id, user_id, device_id, app_name, window_title, url,
-        start_time, end_time, duration, bundle_id, tab_title,
-        tab_count, document_path, is_full_screen, is_minimized, synced_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        session.id,
-        userId,
-        deviceId,
-        session.app_name,
-        session.window_title,
-        session.url ?? null,
-        session.start_time,
-        session.end_time,
-        session.duration,
-        session.bundle_id ?? null,
-        session.tab_title ?? null,
-        session.tab_count ?? null,
-        session.document_path ?? null,
-        session.is_full_screen ? 1 : 0,
-        session.is_minimized ? 1 : 0,
-        now,
-      ]
-    );
-    insertedCount += result.meta.changes;
-  }
-
-  const duplicates = sessions.length - insertedCount;
-
-  // Create sync log entry
   const syncId = randomUUID();
-  const startTimes = sessions.map((s) => s.start_time);
-  const firstStart = Math.min(...startTimes);
-  const lastStart = Math.max(...startTimes);
 
-  await execute(
-    `INSERT INTO sync_logs (id, user_id, device_id, session_count, first_start, last_start, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [syncId, userId, deviceId, sessions.length, firstStart, lastStart, now]
+  // Map incoming sessions to QueuedSession (add server-side fields)
+  const queuedSessions: QueuedSession[] = sessions.map((s) => ({
+    id: s.id,
+    user_id: userId,
+    device_id: deviceId,
+    app_name: s.app_name,
+    window_title: s.window_title,
+    url: s.url ?? null,
+    start_time: s.start_time,
+    end_time: s.end_time,
+    duration: s.duration,
+    bundle_id: s.bundle_id ?? null,
+    tab_title: s.tab_title ?? null,
+    tab_count: s.tab_count ?? null,
+    document_path: s.document_path ?? null,
+    is_full_screen: s.is_full_screen,
+    is_minimized: s.is_minimized,
+    synced_at: now,
+  }));
+
+  // Enqueue — no D1 calls in the request path
+  const queue = getSyncQueue();
+  const accepted = queue.enqueue(queuedSessions);
+
+  return jsonOk(
+    {
+      accepted,
+      sync_id: syncId,
+    },
+    202,
   );
-
-  return jsonOk({
-    inserted: insertedCount,
-    duplicates,
-    sync_id: syncId,
-  });
 }
