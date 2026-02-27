@@ -109,14 +109,15 @@ describe("auth", () => {
   // ---------------------------------------------------------------------------
 
   describe("jwt callback", () => {
-    // Mirrors auth.ts: token.id = token.sub (stable OIDC sub), NOT user.id
-    // (which is a random UUID per login in NextAuth JWT mode).
+    // Mirrors auth.ts: token.id = account.providerAccountId (stable OIDC sub),
+    // NOT user.id or token.sub — both are random UUIDs in JWT mode (no adapter).
     function jwtCallback(
       token: Record<string, unknown>,
-      user?: { id?: string; email?: string; name?: string; image?: string }
+      user?: { id?: string; email?: string; name?: string; image?: string },
+      account?: { providerAccountId?: string }
     ): Record<string, unknown> {
       if (user) {
-        token.id = token.sub;
+        token.id = account?.providerAccountId ?? token.sub;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
@@ -124,22 +125,37 @@ describe("auth", () => {
       return token;
     }
 
-    test("uses stable token.sub (OIDC provider sub) instead of user.id", () => {
-      const token = { sub: "104834567890" }; // Google OIDC sub claim
+    test("uses stable account.providerAccountId (Google sub) instead of user.id", () => {
+      const token = { sub: "random-uuid-also" }; // token.sub is also random in JWT mode
       const user = {
         id: "random-uuid-per-login", // NextAuth generates this fresh each login
         email: "alice@example.com",
         name: "Alice",
         image: "https://avatar.url/alice.jpg",
       };
+      const account = { providerAccountId: "104834567890" }; // stable Google sub
 
-      const result = jwtCallback(token, user);
-      // token.id should be the stable sub, NOT the random user.id
+      const result = jwtCallback(token, user, account);
+      // token.id should be the stable providerAccountId, NOT the random user.id
       expect(result.id).toBe("104834567890");
       expect(result.id).not.toBe("random-uuid-per-login");
+      expect(result.id).not.toBe("random-uuid-also");
       expect(result.email).toBe("alice@example.com");
       expect(result.name).toBe("Alice");
       expect(result.picture).toBe("https://avatar.url/alice.jpg");
+    });
+
+    test("falls back to token.sub when account is missing", () => {
+      const token = { sub: "fallback-sub" };
+      const user = {
+        id: "random-uuid",
+        email: "alice@example.com",
+        name: "Alice",
+        image: "https://avatar.url/alice.jpg",
+      };
+
+      const result = jwtCallback(token, user, undefined);
+      expect(result.id).toBe("fallback-sub");
     });
 
     test("preserves existing token when no user (subsequent calls)", () => {

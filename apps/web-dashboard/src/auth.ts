@@ -86,14 +86,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        // IMPORTANT: Do NOT use user.id here — NextAuth JWT mode generates
-        // a random UUID per login (crypto.randomUUID() in oauth/callback.js).
-        // token.sub is set by NextAuth to the OIDC provider's stable `sub`
-        // claim (e.g. Google's numeric ID "104834..."), which persists across
-        // logins and environments.
-        token.id = token.sub;
+        // IMPORTANT: Do NOT use user.id or token.sub here — in NextAuth JWT
+        // mode (no DB adapter) both are set to a random UUID generated per
+        // login (crypto.randomUUID() in oauth/callback.js line 224, then
+        // copied to token.sub in callback/index.js line 76).
+        //
+        // account.providerAccountId is the Google profile().id — the stable
+        // OIDC `sub` claim (e.g. "104834...") that persists across logins
+        // and environments. See oauth/callback.js line 233.
+        token.id = account?.providerAccountId ?? token.sub;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
