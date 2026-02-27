@@ -181,13 +181,12 @@ final class SyncServiceTests: XCTestCase {
 
     func testSyncResponseDecodesSnakeCase() throws {
         let json = Data("""
-        {"inserted": 42, "duplicates": 3, "sync_id": "abc-123"}
+        {"accepted": 42, "sync_id": "abc-123"}
         """.utf8)
 
         let response = try JSONDecoder().decode(SyncResponse.self, from: json)
 
-        XCTAssertEqual(response.inserted, 42)
-        XCTAssertEqual(response.duplicates, 3)
+        XCTAssertEqual(response.accepted, 42)
         XCTAssertEqual(response.syncId, "abc-123")
     }
 
@@ -233,8 +232,8 @@ final class SyncServiceTests: XCTestCase {
         ]
 
         MockURLProtocol.handler = { _ in
-            jsonResponse(statusCode: 200, body: [
-                "inserted": 2, "duplicates": 0, "sync_id": "sync-1"
+            jsonResponse(statusCode: 202, body: [
+                "accepted": 2, "sync_id": "sync-1"
             ])
         }
 
@@ -341,8 +340,8 @@ final class SyncServiceTests: XCTestCase {
         var capturedRequest: URLRequest?
         MockURLProtocol.handler = { request in
             capturedRequest = request
-            return jsonResponse(statusCode: 200, body: [
-                "inserted": 1, "duplicates": 0, "sync_id": "sync-1"
+            return jsonResponse(statusCode: 202, body: [
+                "accepted": 1, "sync_id": "sync-1"
             ])
         }
 
@@ -373,8 +372,8 @@ final class SyncServiceTests: XCTestCase {
             if let data = request.httpBody ?? request.httpBodyStream?.readAll() {
                 capturedBody = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
             }
-            return jsonResponse(statusCode: 200, body: [
-                "inserted": 1, "duplicates": 0, "sync_id": "sync-1"
+            return jsonResponse(statusCode: 202, body: [
+                "accepted": 1, "sync_id": "sync-1"
             ])
         }
 
@@ -418,9 +417,9 @@ final class SyncServiceTests: XCTestCase {
         }
     }
 
-    // MARK: - Handles Duplicates
+    // MARK: - Accepted Count
 
-    func testHandlesDuplicatesGracefully() async {
+    func testAcceptedCountMatchesSessions() async {
         settings.syncEnabled = true
         settings.apiKey = "gk_test"
         settings.syncServerUrl = "https://test.example.com"
@@ -431,8 +430,8 @@ final class SyncServiceTests: XCTestCase {
         ]
 
         MockURLProtocol.handler = { _ in
-            jsonResponse(statusCode: 200, body: [
-                "inserted": 1, "duplicates": 1, "sync_id": "sync-dup"
+            jsonResponse(statusCode: 202, body: [
+                "accepted": 2, "sync_id": "sync-acc"
             ])
         }
 
@@ -441,7 +440,7 @@ final class SyncServiceTests: XCTestCase {
 
         await syncService.syncNow()
 
-        // Both inserted+duplicates count toward total synced
+        // Server accepted all sessions
         XCTAssertEqual(syncService.lastSyncCount, 2)
         XCTAssertEqual(syncService.status, .idle)
     }

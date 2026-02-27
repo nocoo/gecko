@@ -256,11 +256,10 @@ final class SyncService: ObservableObject {
 
             logger.info("""
                 Batch \(batchNumber) done in \(elapsed, format: .fixed(precision: 2))s — \
-                inserted: \(result.inserted), duplicates: \(result.duplicates), \
-                syncId: \(result.syncId)
+                accepted: \(result.accepted), syncId: \(result.syncId)
                 """)
 
-            totalSynced += result.inserted + result.duplicates
+            totalSynced += result.accepted
 
             // Advance watermark to the last session's start_time
             if let lastSession = sessions.last {
@@ -305,12 +304,12 @@ final class SyncService: ObservableObject {
         }
 
         let statusCode = httpResponse.statusCode
-        if statusCode != 200 {
+        if statusCode != 202 {
             logger.warning("Server returned HTTP \(statusCode), body: \(data.count) bytes")
         }
 
         switch statusCode {
-        case 200:
+        case 200, 202:
             return try JSONDecoder().decode(SyncResponse.self, from: data)
         case 401:
             throw SyncError.unauthorized
@@ -428,15 +427,13 @@ struct SyncSessionDTO: Codable, Equatable {
     }
 }
 
-/// The JSON response from POST /api/sync.
+/// The JSON response from POST /api/sync (202 Accepted).
 struct SyncResponse: Codable, Equatable {
-    let inserted: Int
-    let duplicates: Int
+    let accepted: Int
     let syncId: String
 
     enum CodingKeys: String, CodingKey {
-        case inserted
-        case duplicates
+        case accepted
         case syncId = "sync_id"
     }
 }
