@@ -12,7 +12,23 @@ import {
   RefreshCw,
   BarChart3,
   Loader2,
+  PieChart as PieChartIcon,
+  TrendingUp,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact } from "@/lib/chart-config";
+import { CHART_COLORS, chartPrimary, withAlpha } from "@/lib/palette";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,6 +52,13 @@ interface TopApp {
   sessionCount: number;
 }
 
+interface TimelineEntry {
+  date: string;
+  totalDuration: number;
+  sessionCount: number;
+  appCount: number;
+}
+
 // ---------------------------------------------------------------------------
 // Dashboard Page
 // ---------------------------------------------------------------------------
@@ -44,19 +67,35 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const userName = session?.user?.name?.split(" ")[0] ?? "there";
 
-  const [period, setPeriod] = useState<Period>("today");
+  const [period, setPeriod] = useState<Period>("week");
   const [stats, setStats] = useState<Stats | null>(null);
+  const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async (p: Period) => {
+  const fetchData = useCallback(async (p: Period) => {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch(`/api/stats?period=${p}`);
-      if (!res.ok) throw new Error("Failed to load stats");
-      const data = await res.json();
-      setStats(data);
+
+      // Map period for timeline API (today → week for chart context)
+      const timelinePeriod = p === "today" ? "week" : p === "all" ? "all" : p;
+
+      const [statsRes, timelineRes] = await Promise.all([
+        fetch(`/api/stats?period=${p}`),
+        fetch(`/api/stats/timeline?period=${timelinePeriod}`),
+      ]);
+
+      if (!statsRes.ok) throw new Error("Failed to load stats");
+      if (!timelineRes.ok) throw new Error("Failed to load timeline");
+
+      const [statsData, timelineData] = await Promise.all([
+        statsRes.json(),
+        timelineRes.json(),
+      ]);
+
+      setStats(statsData);
+      setTimeline(timelineData.timeline ?? []);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -65,8 +104,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    fetchStats(period);
-  }, [period, fetchStats]);
+    fetchData(period);
+  }, [period, fetchData]);
+
+  const hasData = stats && stats.totalSessions > 0;
 
   return (
     <AppShell>
@@ -84,7 +125,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => fetchStats(period)}
+              onClick={() => fetchData(period)}
               disabled={loading}
             >
               <RefreshCw
@@ -132,15 +173,24 @@ export default function DashboardPage() {
           />
         </div>
 
+        {/* Charts row */}
+        {loading ? (
+          <div className="grid gap-4 lg:grid-cols-5">
+            <ChartSkeleton className="lg:col-span-3" />
+            <ChartSkeleton className="lg:col-span-2" />
+          </div>
+        ) : hasData ? (
+          <div className="grid gap-4 lg:grid-cols-5">
+            <DailyChart timeline={timeline} className="lg:col-span-3" />
+            <AppDonut apps={stats.topApps} className="lg:col-span-2" />
+          </div>
+        ) : null}
+
         {/* Top apps */}
-        {!loading && stats && stats.topApps.length > 0 ? (
+        {!loading && hasData ? (
           <TopAppsTable apps={stats.topApps} totalDuration={stats.totalDuration} />
         ) : !loading && stats && stats.topApps.length === 0 ? (
           <EmptyState period={period} />
-        ) : loading ? (
-          <div className="flex items-center justify-center rounded-2xl bg-secondary py-16">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
-          </div>
         ) : null}
       </div>
     </AppShell>
@@ -218,6 +268,202 @@ function StatCard({
 }
 
 // =============================================================================
+// Daily Screen Time Bar Chart
+// =============================================================================
+
+function DailyChart({
+  timeline,
+  className = "",
+}: {
+  timeline: TimelineEntry[];
+  className?: string;
+}) {
+  // Format dates for display: "Mon 24", "Tue 25", etc.
+  const chartData = timeline.map((entry) => {
+    const d = new Date(entry.date + "T00:00:00");
+    const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
+    const dayNum = d.getDate();
+    return {
+      label: `${dayName} ${dayNum}`,
+      hours: Number((entry.totalDuration / 3600).toFixed(2)),
+      duration: entry.totalDuration,
+      sessions: entry.sessionCount,
+      apps: entry.appCount,
+    };
+  });
+
+  return (
+    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
+      <div className="flex items-center gap-2 mb-4">
+        <TrendingUp className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <h2 className="text-lg font-semibold">Daily Screen Time</h2>
+      </div>
+      <div className="h-[280px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -12 }}>
+            <CartesianGrid
+              strokeDasharray="3 3"
+              vertical={false}
+              stroke={withAlpha("chart-muted", 0.5)}
+            />
+            <XAxis
+              dataKey="label"
+              {...AXIS_CONFIG}
+            />
+            <YAxis
+              {...AXIS_CONFIG}
+              tickFormatter={(v: number) => formatDurationCompact(v * 3600)}
+            />
+            <RechartsTooltip content={<DailyTooltip />} />
+            <Bar
+              dataKey="hours"
+              fill={chartPrimary}
+              radius={BAR_RADIUS.vertical}
+              maxBarSize={48}
+            />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function DailyTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { label: string; duration: number; sessions: number; apps: number } }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+
+  return (
+    <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
+      <p className="font-medium">{data.label}</p>
+      <p className="text-muted-foreground">
+        {formatDuration(data.duration)} &middot; {data.sessions} sessions
+      </p>
+    </div>
+  );
+}
+
+// =============================================================================
+// App Usage Donut Chart
+// =============================================================================
+
+function AppDonut({
+  apps,
+  className = "",
+}: {
+  apps: TopApp[];
+  className?: string;
+}) {
+  // Take top 5, merge rest into "Other"
+  const top = apps.slice(0, 5);
+  const rest = apps.slice(5);
+  const restTotal = rest.reduce((sum, a) => sum + a.totalDuration, 0);
+
+  const chartData = top.map((app, i) => ({
+    name: app.appName,
+    value: app.totalDuration,
+    color: CHART_COLORS[i],
+  }));
+
+  if (restTotal > 0) {
+    chartData.push({
+      name: "Other",
+      value: restTotal,
+      color: CHART_COLORS[5],
+    });
+  }
+
+  const totalDuration = apps.reduce((sum, a) => sum + a.totalDuration, 0);
+
+  return (
+    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
+      <div className="flex items-center gap-2 mb-4">
+        <PieChartIcon className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <h2 className="text-lg font-semibold">App Usage</h2>
+      </div>
+      <div className="h-[200px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={chartData}
+              cx="50%"
+              cy="50%"
+              innerRadius={55}
+              outerRadius={85}
+              paddingAngle={2}
+              dataKey="value"
+              stroke="none"
+            >
+              {chartData.map((entry, i) => (
+                <Cell key={i} fill={entry.color} />
+              ))}
+            </Pie>
+            <RechartsTooltip content={<DonutTooltip total={totalDuration} />} />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+        {chartData.map((entry, i) => (
+          <div key={i} className="flex items-center gap-1.5 text-xs">
+            <span
+              className="inline-block size-2.5 rounded-full shrink-0"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="text-muted-foreground truncate max-w-[100px]">
+              {entry.name}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DonutTooltip({
+  active,
+  payload,
+  total,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: { name: string; value: number } }>;
+  total: number;
+}) {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+  const pct = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0";
+
+  return (
+    <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
+      <p className="font-medium">{data.name}</p>
+      <p className="text-muted-foreground">
+        {formatDuration(data.value)} ({pct}%)
+      </p>
+    </div>
+  );
+}
+
+// =============================================================================
+// Chart Skeleton
+// =============================================================================
+
+function ChartSkeleton({ className = "" }: { className?: string }) {
+  return (
+    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
+      <div className="h-5 w-40 animate-pulse rounded-md bg-muted mb-4" />
+      <div className="h-[280px] flex items-center justify-center">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Top Apps Table
 // =============================================================================
 
@@ -266,8 +512,11 @@ function TopAppsTable({
                 {/* Progress bar */}
                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-primary transition-all"
-                    style={{ width: `${Math.max(pct, 1)}%` }}
+                    className="h-full rounded-full transition-all"
+                    style={{
+                      width: `${Math.max(pct, 1)}%`,
+                      backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+                    }}
                   />
                 </div>
                 <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
