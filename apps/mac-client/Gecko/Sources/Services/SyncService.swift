@@ -146,8 +146,10 @@ final class SyncService: ObservableObject {
             stopTimer()
             if !settings.syncEnabled {
                 status = .disabled
+                logger.debug("Sync disabled by user")
             } else {
                 status = .idle
+                logger.debug("Sync idle — missing API key or server URL")
             }
         }
     }
@@ -167,6 +169,9 @@ final class SyncService: ObservableObject {
     }
 
     private func stopTimer() {
+        if timer != nil {
+            logger.info("Sync timer stopped")
+        }
         timer?.invalidate()
         timer = nil
     }
@@ -188,41 +193,25 @@ final class SyncService: ObservableObject {
         status = .syncing
         lastError = nil
 
-        var totalSynced = 0
+        let cycleStart = Date()
+        logger.info("""
+            Sync cycle started — server: \(self.settings.syncServerUrl), \
+            watermark: \(self.settings.lastSyncedStartTime, format: .fixed(precision: 3))
+            """)
 
         do {
-            while true {
-                let sessions = try db.fetchUnsynced(
-                    since: settings.lastSyncedStartTime,
-                    limit: 1000
-                )
-
-                if sessions.isEmpty {
-                    logger.debug("No sessions to sync")
-                    break
-                }
-
-                logger.info("Syncing \(sessions.count) sessions...")
-
-                let result = try await uploadBatch(sessions)
-                totalSynced += result.inserted + result.duplicates
-
-                // Advance watermark to the last session's start_time
-                if let lastSession = sessions.last {
-                    settings.lastSyncedStartTime = lastSession.startTime
-                }
-
-                // If we got fewer than 1000, we're done
-                if sessions.count < 1000 {
-                    break
-                }
-            }
-
+            let (totalSynced, batchCount) = try await drainBatches()
+            let totalElapsed = Date().timeIntervalSince(cycleStart)
             lastSyncTime = Date()
             lastSyncCount = totalSynced
             status = .idle
             if totalSynced > 0 {
-                logger.info("Sync complete: \(totalSynced) sessions")
+                logger.info("""
+                    Sync cycle complete: \(totalSynced) sessions in \(batchCount) batch(es), \
+                    took \(totalElapsed, format: .fixed(precision: 2))s
+                    """)
+            } else {
+                logger.debug("Sync cycle complete: nothing to sync")
             }
         } catch let error as SyncError {
             handleSyncError(error)
@@ -231,6 +220,65 @@ final class SyncService: ObservableObject {
             status = .error(error.localizedDescription)
             logger.error("Sync failed: \(error.localizedDescription)")
         }
+    }
+
+    /// Upload sessions in batches of 1000 until all pending sessions are drained.
+    /// Returns (totalSynced, batchCount).
+    private func drainBatches() async throws -> (Int, Int) {
+        var totalSynced = 0
+        var batchNumber = 0
+
+        while true {
+            batchNumber += 1
+            let sessions = try db.fetchUnsynced(
+                since: settings.lastSyncedStartTime,
+                limit: 1000
+            )
+
+            if sessions.isEmpty {
+                if batchNumber == 1 {
+                    logger.debug("No sessions to sync (watermark up-to-date)")
+                }
+                break
+            }
+
+            let firstTime = sessions.first?.startTime ?? 0
+            let lastTime = sessions.last?.startTime ?? 0
+            logger.info("""
+                Batch \(batchNumber): \(sessions.count) sessions \
+                [startTime \(firstTime, format: .fixed(precision: 3))…\
+                \(lastTime, format: .fixed(precision: 3))]
+                """)
+
+            let batchStart = Date()
+            let result = try await uploadBatch(sessions)
+            let elapsed = Date().timeIntervalSince(batchStart)
+
+            logger.info("""
+                Batch \(batchNumber) done in \(elapsed, format: .fixed(precision: 2))s — \
+                inserted: \(result.inserted), duplicates: \(result.duplicates), \
+                syncId: \(result.syncId)
+                """)
+
+            totalSynced += result.inserted + result.duplicates
+
+            // Advance watermark to the last session's start_time
+            if let lastSession = sessions.last {
+                let oldWatermark = settings.lastSyncedStartTime
+                settings.lastSyncedStartTime = lastSession.startTime
+                logger.debug("""
+                    Watermark advanced: \(oldWatermark, format: .fixed(precision: 3)) → \
+                    \(lastSession.startTime, format: .fixed(precision: 3))
+                    """)
+            }
+
+            // If we got fewer than 1000, we're done
+            if sessions.count < 1000 {
+                break
+            }
+        }
+
+        return (totalSynced, batchNumber)
     }
 
     // MARK: - HTTP Upload
@@ -244,7 +292,11 @@ final class SyncService: ObservableObject {
         request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
 
         let payload = SyncPayload(sessions: sessions.map(SyncSessionDTO.init))
-        request.httpBody = try JSONEncoder().encode(payload)
+        let body = try JSONEncoder().encode(payload)
+        request.httpBody = body
+
+        let bodyKB = Double(body.count) / 1024.0
+        logger.debug("POST \(url.absoluteString) (\(bodyKB, format: .fixed(precision: 1)) KB)")
 
         let (data, response) = try await session.data(for: request)
 
@@ -252,7 +304,12 @@ final class SyncService: ObservableObject {
             throw SyncError.invalidResponse
         }
 
-        switch httpResponse.statusCode {
+        let statusCode = httpResponse.statusCode
+        if statusCode != 200 {
+            logger.warning("Server returned HTTP \(statusCode), body: \(data.count) bytes")
+        }
+
+        switch statusCode {
         case 200:
             return try JSONDecoder().decode(SyncResponse.self, from: data)
         case 401:
@@ -263,7 +320,7 @@ final class SyncService: ObservableObject {
         case 413:
             throw SyncError.batchTooLarge
         default:
-            throw SyncError.serverError(httpResponse.statusCode)
+            throw SyncError.serverError(statusCode)
         }
     }
 
