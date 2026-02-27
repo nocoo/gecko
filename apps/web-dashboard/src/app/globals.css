@@ -60,6 +60,11 @@
   --color-chart-3: hsl(var(--chart-3));
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
+  --color-chart-6: hsl(var(--chart-6));
+  --color-chart-7: hsl(var(--chart-7));
+  --color-chart-8: hsl(var(--chart-8));
+  --color-chart-9: hsl(var(--chart-9));
+  --color-chart-10: hsl(var(--chart-10));
 
   /* Radius tokens */
   --radius-card: 14px;
@@ -140,12 +145,21 @@
   --info: 217 91% 60%;
   --info-foreground: 0 0% 100%;
 
-  /* Chart palette */
+  /* Chart palette (10 colors) */
   --chart-1: 146 49% 35%;
   --chart-2: 199 89% 48%;
   --chart-3: 45 93% 47%;
   --chart-4: 0 72% 51%;
   --chart-5: 280 68% 60%;
+  --chart-6: 160 60% 45%;
+  --chart-7: 25 95% 53%;
+  --chart-8: 230 70% 55%;
+  --chart-9: 320 60% 52%;
+  --chart-10: 80 60% 45%;
+
+  /* Semantic chart tokens */
+  --chart-axis: 0 0% 45%;
+  --chart-muted: 0 0% 90%;
 }
 
 .dark {
@@ -198,12 +212,21 @@
   --info: 217 70% 45%;
   --info-foreground: 217 70% 92%;
 
-  /* Chart palette (dark mode) */
+  /* Chart palette (dark mode, 10 colors) */
   --chart-1: 146 42% 38%;
   --chart-2: 199 70% 50%;
   --chart-3: 45 80% 48%;
   --chart-4: 0 60% 48%;
   --chart-5: 280 55% 55%;
+  --chart-6: 160 50% 48%;
+  --chart-7: 25 80% 55%;
+  --chart-8: 230 60% 58%;
+  --chart-9: 320 50% 55%;
+  --chart-10: 80 50% 48%;
+
+  /* Semantic chart tokens (dark mode) */
+  --chart-axis: 0 0% 48%;
+  --chart-muted: 0 0% 20%;
 }
 
 /*

@@ -259,6 +259,10 @@ The dashboard uses sync logs to display:
 | `GET /api/sync/status` — sync health | Done | Per-device last sync |
 | Settings page — API key management UI | Done | Create, list, revoke keys with dialogs |
 | Dashboard page — real data from D1 | Done | Period selector, stat cards, top apps table |
-| macOS `SyncService.swift` | Not started | |
-| macOS `DatabaseManager` additions | Not started | fetchUnsynced query |
-| macOS Settings UI for sync config | Not started | API key input, sync status |
+| macOS `DatabaseManager` additions | Done | `fetchUnsynced(since:limit:)` — watermark-based query |
+| macOS `SettingsManager` sync settings | Done | apiKey, syncEnabled, syncServerUrl, lastSyncedStartTime |
+| macOS `SyncService.swift` | Done | Timer-based (5m), batch upload, 401/5xx handling, 15 tests |
+| macOS `SettingsViewModel` sync state | Done | Two-way binding, sync actions, SyncService forwarding |
+| macOS `SettingsView` sync UI | Done | Toggle, API key, server URL, status display, Sync Now |
+| macOS `GeckoApp` wiring | Done | SyncService instantiated and passed to SettingsViewModel |
+| macOS tests | Done | 183 total tests, 0 lint violations |
