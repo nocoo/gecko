@@ -109,12 +109,14 @@ describe("auth", () => {
   // ---------------------------------------------------------------------------
 
   describe("jwt callback", () => {
+    // Mirrors auth.ts: token.id = token.sub (stable OIDC sub), NOT user.id
+    // (which is a random UUID per login in NextAuth JWT mode).
     function jwtCallback(
       token: Record<string, unknown>,
       user?: { id?: string; email?: string; name?: string; image?: string }
     ): Record<string, unknown> {
       if (user) {
-        token.id = user.id;
+        token.id = token.sub;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
@@ -122,17 +124,19 @@ describe("auth", () => {
       return token;
     }
 
-    test("persists user info into token on initial sign-in", () => {
-      const token = {};
+    test("uses stable token.sub (OIDC provider sub) instead of user.id", () => {
+      const token = { sub: "104834567890" }; // Google OIDC sub claim
       const user = {
-        id: "u1",
+        id: "random-uuid-per-login", // NextAuth generates this fresh each login
         email: "alice@example.com",
         name: "Alice",
         image: "https://avatar.url/alice.jpg",
       };
 
       const result = jwtCallback(token, user);
-      expect(result.id).toBe("u1");
+      // token.id should be the stable sub, NOT the random user.id
+      expect(result.id).toBe("104834567890");
+      expect(result.id).not.toBe("random-uuid-per-login");
       expect(result.email).toBe("alice@example.com");
       expect(result.name).toBe("Alice");
       expect(result.picture).toBe("https://avatar.url/alice.jpg");
@@ -140,14 +144,15 @@ describe("auth", () => {
 
     test("preserves existing token when no user (subsequent calls)", () => {
       const token = {
-        id: "u1",
+        sub: "104834567890",
+        id: "104834567890",
         email: "alice@example.com",
         name: "Alice",
         picture: "https://avatar.url/alice.jpg",
       };
 
       const result = jwtCallback(token);
-      expect(result.id).toBe("u1");
+      expect(result.id).toBe("104834567890");
       expect(result.email).toBe("alice@example.com");
     });
   });

@@ -88,7 +88,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
+        // IMPORTANT: Do NOT use user.id here — NextAuth JWT mode generates
+        // a random UUID per login (crypto.randomUUID() in oauth/callback.js).
+        // token.sub is set by NextAuth to the OIDC provider's stable `sub`
+        // claim (e.g. Google's numeric ID "104834..."), which persists across
+        // logins and environments.
+        token.id = token.sub;
         token.email = user.email;
         token.name = user.name;
         token.picture = user.image;
