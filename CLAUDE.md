@@ -12,3 +12,19 @@
 - **Problem**: `testCustomPathPersistedToDefaults` failed because `SettingsManager.databasePath.didSet` hardcoded `UserDefaults.standard`, but tests inject a custom suite.
 - **Fix**: Added a `private let defaults: UserDefaults` instance property, used consistently in both `init` and `didSet`.
 - **Lesson**: When a class accepts a dependency via init (like UserDefaults), store it and use it everywhere. Never mix injected and hardcoded instances.
+
+### 2026-02-28: NextAuth JWT mode — all three IDs are random UUIDs
+- **Problem**: Production dashboard showed no data after deployment. The `user_id` stored in D1 (from dev) didn't match the session `user.id` on prod.
+- **Root cause**: In NextAuth v5 JWT mode (no database adapter), THREE things are random UUIDs per login:
+  1. `user.id` — `crypto.randomUUID()` at `oauth/callback.js:224`
+  2. `token.sub` — copied from `user.id` at `callback/index.js:76`
+  3. Only `account.providerAccountId` carries the stable Google OIDC `sub` claim (from `oauth/callback.js:233`)
+- **Fix**: Changed jwt callback to use `account?.providerAccountId ?? token.sub` instead of `user.id`. Migrated all D1 `user_id` values to the Google sub.
+- **Additional gotcha**: After deploying the fix, existing JWT session cookies still contain the old UUID. Users must sign out and sign back in to get a new token with the correct ID. Stateless JWTs are never "refreshed" — their payload is frozen at signing time.
+- **Lesson**: In NextAuth JWT mode, never trust `user.id` or `token.sub` for stable identity. Always use `account.providerAccountId` which maps to the OAuth provider's stable subject identifier.
+
+### 2026-02-28: Railway auto-deploy requires explicit GitHub repo connection
+- **Problem**: `git push` to GitHub didn't trigger Railway deployments. Had to use `railway up` manually.
+- **Root cause**: The Railway service was created without connecting a GitHub repo (`source.repo: null`). `railway up` uploads local files directly — it doesn't set up GitHub integration.
+- **Fix**: `railway environment edit --json` to set `source.repo` and `source.branch`.
+- **Lesson**: After creating a Railway service, always verify `source.repo` is set if you want push-triggered deploys. `railway up` is for manual/one-off deploys only.
