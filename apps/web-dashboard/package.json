@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vinext dev --port 7028",
     "build": "vinext build",
-    "start": "vinext start --port 7028",
+    "start": "vinext start --port ${PORT:-7028}",
     "dev:e2e": "E2E_SKIP_AUTH=true vinext dev --port 10728",
     "lint": "eslint",
     "test": "bun test src/__tests__/ --timeout 30000",
