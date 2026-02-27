@@ -5,17 +5,22 @@
 Focus session data flows from the macOS client's local SQLite to the cloud Cloudflare D1 database via a batch sync protocol. The web dashboard reads from D1 to display per-user analytics.
 
 ```
-┌─────────────┐    POST /api/sync     ┌──────────────────────┐    D1 REST API    ┌────────┐
-│  macOS App   │ ── (API Key auth) ──>│  Web Dashboard       │ ────────────────>│ CF D1  │
+┌─────────────┐    POST /api/sync     ┌──────────────────────┐                    ┌────────┐
+│  macOS App   │ ── (API Key auth) ──>│  Web Dashboard       │                   │ CF D1  │
 │ local SQLite │   batch JSON body    │  (vinext on Bun)     │                   │ gecko  │
-└─────────────┘                       └──────────────────────┘                   └────────┘
-                                             │
-                                    Session auth (Google OAuth)
-                                             │
-                                      ┌──────┴──────┐
-                                      │ Dashboard UI │
-                                      │  (per-user)  │
-                                      └─────────────┘
+└─────────────┘                       │                      │                   └────────┘
+                                      │  ┌────────────────┐  │                       ▲
+                                      │  │ In-Memory Queue │──│── async drain ───────┘
+                                      │  │ (SyncQueue)     │  │   (2s interval,
+                                      │  └────────────────┘  │    50 rows/batch)
+                                      └──────────────────────┘
+                                              │
+                                     Session auth (Google OAuth)
+                                              │
+                                       ┌──────┴──────┐
+                                       │ Dashboard UI │
+                                       │  (per-user)  │
+                                       └─────────────┘
 ```
 
 ---
@@ -97,15 +102,16 @@ Content-Type: application/json
 
 ### Response
 
-**Success (200):**
+**Success (202 Accepted):**
 
 ```json
 {
-  "inserted": 42,
-  "duplicates": 3,
+  "accepted": 42,
   "sync_id": "uuid-of-sync-log-entry"
 }
 ```
+
+The server validates sessions, enqueues them into an in-memory queue, and returns immediately. Sessions are written to D1 asynchronously by a background drain worker (every 2 seconds, 50 rows per multi-row INSERT).
 
 **Errors:**
 
@@ -114,7 +120,6 @@ Content-Type: application/json
 | 400 | Invalid JSON or empty sessions array |
 | 401 | Missing or invalid API key |
 | 413 | Batch too large (> 1000 sessions) |
-| 500 | D1 write failure |
 
 ### Batch Size
 
@@ -145,7 +150,7 @@ On each sync cycle:
 
 1. Query local SQLite: `SELECT * FROM focus_sessions WHERE start_time > ? AND duration > 0 ORDER BY start_time ASC LIMIT 1000`
 2. POST to `/api/sync`
-3. On success: update `lastSyncedStartTime` to the `start_time` of the last session in the batch
+3. On **202 Accepted**: server has enqueued sessions — advance `lastSyncedStartTime` to the `start_time` of the last session in the batch
 4. If more sessions remain: repeat immediately
 
 ### Failure Handling
@@ -209,6 +214,41 @@ The D1 client is encapsulated in `src/lib/d1.ts`, providing a typed interface ov
 
 ---
 
+## Async Sync Queue
+
+The sync endpoint (`POST /api/sync`) does **not** write to D1 in the request path. Instead, it validates sessions, enriches them with server-side fields (`user_id`, `device_id`, `synced_at`), and enqueues them into an in-memory queue (`src/lib/sync-queue.ts`).
+
+### Why
+
+Each D1 REST API call takes ~100-300ms. Inserting 500 sessions one-by-one = ~100 seconds, which exceeds URLSession's 60-second timeout on the Mac client.
+
+### Architecture
+
+```
+POST /api/sync          In-Memory Queue          Cloudflare D1
+     │                       │                        │
+     │── validate ──────────>│                        │
+     │── enqueue ───────────>│                        │
+     │<── 202 Accepted ──────│                        │
+     │                       │                        │
+     │                       │── drain (2s) ────────> │
+     │                       │   multi-row INSERT     │
+     │                       │   (50 rows/batch)      │
+     │                       │                        │
+     │                       │── drain (2s) ────────> │
+     │                       │   ...                  │
+```
+
+### Key design decisions
+
+1. **In-memory queue** (not file-based) — process restart data loss is acceptable; Mac client re-syncs on next tick, `INSERT OR IGNORE` is idempotent
+2. **Multi-row INSERT** — batch 50 sessions into a single `INSERT OR IGNORE INTO ... VALUES (...), (...), ...` statement
+3. **Fire-and-forget drain** — drain errors are logged but don't block future drains. Mac re-syncs naturally
+4. **Concurrency guard** — `drain()` is a no-op if already draining, preventing overlapping writes
+5. **Module-level singleton** — `getSyncQueue()` returns a shared instance for the Bun process lifetime
+
+---
+
 ## Data Isolation
 
 All cloud queries are scoped by `user_id`:
@@ -253,7 +293,8 @@ The dashboard uses sync logs to display:
 | `POST /api/keys` — create key | Done | |
 | `GET /api/keys` — list keys | Done | |
 | `DELETE /api/keys/[id]` — revoke key | Done | |
-| `POST /api/sync` — batch upload | Done | 7 tests |
+| `POST /api/sync` — batch upload (202) | Done | 10 tests, enqueues to in-memory queue |
+| Sync queue (`src/lib/sync-queue.ts`) | Done | 16 tests, background drain + multi-row INSERT |
 | `GET /api/sessions` — list sessions | Done | Paginated |
 | `GET /api/stats` — aggregated stats | Done | Period filter (today/week/month/all) |
 | `GET /api/sync/status` — sync health | Done | Per-device last sync |
@@ -261,8 +302,9 @@ The dashboard uses sync logs to display:
 | Dashboard page — real data from D1 | Done | Period selector, stat cards, top apps table |
 | macOS `DatabaseManager` additions | Done | `fetchUnsynced(since:limit:)` — watermark-based query |
 | macOS `SettingsManager` sync settings | Done | apiKey, syncEnabled, syncServerUrl, lastSyncedStartTime |
-| macOS `SyncService.swift` | Done | Timer-based (5m), batch upload, 401/5xx handling, 15 tests |
+| macOS `SyncService.swift` | Done | Timer-based (5m), batch upload, 202 support, 14 tests |
 | macOS `SettingsViewModel` sync state | Done | Two-way binding, sync actions, SyncService forwarding |
 | macOS `SettingsView` sync UI | Done | Toggle, API key, server URL, status display, Sync Now |
 | macOS `GeckoApp` wiring | Done | SyncService instantiated and passed to SettingsViewModel |
-| macOS tests | Done | 183 total tests, 0 lint violations |
+| macOS tests | Done | 185 total tests, 0 lint violations |
+| Web dashboard tests | Done | 165 total tests, 0 lint errors |
