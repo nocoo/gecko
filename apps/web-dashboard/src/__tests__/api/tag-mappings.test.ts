@@ -170,4 +170,118 @@ describe("/api/tags/mappings", () => {
       expect(calls[1].params.length).toBe(21);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // POST — replace all tags for given apps
+  // -------------------------------------------------------------------------
+  describe("POST /api/tags/mappings", () => {
+    test("replaces all tags for a single app", async () => {
+      // Response 1: DELETE existing
+      // Response 2: INSERT new tags
+      const { calls } = mockD1([[], []]);
+      const { POST } = await import("../../app/api/tags/mappings/route");
+
+      const req = new Request("http://localhost/api/tags/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apps: [
+            {
+              bundleId: "com.google.Chrome",
+              tagIds: ["tag-work", "tag-browser"],
+            },
+          ],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.updated).toBe(1);
+
+      // First call: DELETE
+      expect(calls[0].sql).toContain("DELETE FROM app_tag_mappings");
+      expect(calls[0].params).toContain("com.google.Chrome");
+
+      // Second call: INSERT 2 tags
+      expect(calls[1].sql).toContain("INSERT OR REPLACE");
+      expect(calls[1].params).toHaveLength(6); // 2 tags × 3 params
+    });
+
+    test("removes all tags when tagIds is empty", async () => {
+      const { calls } = mockD1([[]]);
+      const { POST } = await import("../../app/api/tags/mappings/route");
+
+      const req = new Request("http://localhost/api/tags/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apps: [{ bundleId: "com.google.Chrome", tagIds: [] }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      // Only DELETE, no INSERT
+      expect(calls).toHaveLength(1);
+      expect(calls[0].sql).toContain("DELETE");
+    });
+
+    test("handles multiple apps", async () => {
+      // App 1: DELETE + INSERT (2 calls)
+      // App 2: DELETE + INSERT (2 calls)
+      const { calls } = mockD1([[], [], [], []]);
+      const { POST } = await import("../../app/api/tags/mappings/route");
+
+      const req = new Request("http://localhost/api/tags/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apps: [
+            { bundleId: "com.google.Chrome", tagIds: ["tag-1"] },
+            { bundleId: "com.apple.Safari", tagIds: ["tag-2"] },
+          ],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.updated).toBe(2);
+      expect(calls).toHaveLength(4);
+    });
+
+    test("returns 400 when apps array is empty", async () => {
+      mockD1();
+      const { POST } = await import("../../app/api/tags/mappings/route");
+
+      const req = new Request("http://localhost/api/tags/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ apps: [] }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+    });
+
+    test("returns 400 when bundleId is missing", async () => {
+      mockD1();
+      const { POST } = await import("../../app/api/tags/mappings/route");
+
+      const req = new Request("http://localhost/api/tags/mappings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apps: [{ tagIds: ["tag-1"] }],
+        }),
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+    });
+  });
 });

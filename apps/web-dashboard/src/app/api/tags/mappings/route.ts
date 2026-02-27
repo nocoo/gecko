@@ -1,5 +1,6 @@
-// GET /api/tags/mappings — List app->tag mappings for the current user
-// PUT /api/tags/mappings — Set app->tag mappings (upsert)
+// GET  /api/tags/mappings — List app->tag mappings for the current user
+// PUT  /api/tags/mappings — Set app->tag mappings (upsert)
+// POST /api/tags/mappings — Replace all tags for given apps (full sync per app)
 
 import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
 import { query, execute } from "@/lib/d1";
@@ -84,4 +85,78 @@ export async function PUT(req: Request): Promise<Response> {
   }
 
   return jsonOk({ upserted });
+}
+
+interface AppTagSet {
+  bundleId?: string;
+  tagIds?: string[];
+}
+
+/**
+ * POST /api/tags/mappings — Replace all tag mappings for the given apps.
+ * For each app, deletes existing mappings then inserts the new set.
+ * If tagIds is empty or missing for an app, all its tags are removed.
+ */
+export async function POST(req: Request): Promise<Response> {
+  const { user, error } = await requireSession();
+  if (error) return error;
+
+  let body: { apps?: AppTagSet[] };
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("Invalid JSON body", 400);
+  }
+
+  if (!Array.isArray(body.apps) || body.apps.length === 0) {
+    return jsonError("apps array is required", 400);
+  }
+
+  for (const app of body.apps) {
+    if (!app.bundleId?.trim()) {
+      return jsonError("Each app must have a bundleId", 400);
+    }
+  }
+
+  let updated = 0;
+
+  for (const app of body.apps) {
+    const bundleId = app.bundleId!.trim();
+    const tagIds = (app.tagIds ?? [])
+      .map((t) => t.trim())
+      .filter((t) => t.length > 0);
+
+    // Delete all existing tag mappings for this app
+    await execute(
+      "DELETE FROM app_tag_mappings WHERE user_id = ? AND bundle_id = ?",
+      [user.userId, bundleId],
+    );
+
+    // Insert new tag mappings (if any)
+    if (tagIds.length > 0) {
+      // Batch: 3 params per row, batch size 33
+      const BATCH_SIZE = 33;
+      for (let i = 0; i < tagIds.length; i += BATCH_SIZE) {
+        const batch = tagIds.slice(i, i + BATCH_SIZE);
+        const placeholders = batch
+          .map(() => "(?, ?, ?, datetime('now'))")
+          .join(", ");
+        const params = batch.flatMap((tagId) => [
+          user.userId,
+          bundleId,
+          tagId,
+        ]);
+
+        await execute(
+          `INSERT OR REPLACE INTO app_tag_mappings (user_id, bundle_id, tag_id, created_at)
+           VALUES ${placeholders}`,
+          params,
+        );
+      }
+    }
+
+    updated++;
+  }
+
+  return jsonOk({ updated });
 }
