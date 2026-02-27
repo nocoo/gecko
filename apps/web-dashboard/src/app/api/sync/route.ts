@@ -19,7 +19,6 @@ const REQUIRED_FIELDS = [
   "app_name",
   "window_title",
   "start_time",
-  "end_time",
   "duration",
 ] as const;
 
@@ -29,7 +28,6 @@ interface SyncSession {
   window_title: string;
   url: string | null;
   start_time: number;
-  end_time: number;
   duration: number;
   bundle_id: string | null;
   tab_title: string | null;
@@ -77,7 +75,6 @@ export async function POST(req: Request): Promise<Response> {
     }
   }
 
-  const now = new Date().toISOString();
   const { userId, deviceId } = user;
   const syncId = randomUUID();
 
@@ -90,7 +87,6 @@ export async function POST(req: Request): Promise<Response> {
     window_title: s.window_title,
     url: s.url ?? null,
     start_time: s.start_time,
-    end_time: s.end_time,
     duration: s.duration,
     bundle_id: s.bundle_id ?? null,
     tab_title: s.tab_title ?? null,
@@ -98,7 +94,6 @@ export async function POST(req: Request): Promise<Response> {
     document_path: s.document_path ?? null,
     is_full_screen: s.is_full_screen,
     is_minimized: s.is_minimized,
-    synced_at: now,
   }));
 
   // Enqueue — no D1 calls in the request path

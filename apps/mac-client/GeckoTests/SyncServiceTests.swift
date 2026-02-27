@@ -145,7 +145,7 @@ final class SyncServiceTests: XCTestCase {
         XCTAssertNotNil(json?["app_name"])
         XCTAssertNotNil(json?["window_title"])
         XCTAssertNotNil(json?["start_time"])
-        XCTAssertNotNil(json?["end_time"])
+        XCTAssertNil(json?["end_time"]) // end_time is no longer sent
         XCTAssertNotNil(json?["is_full_screen"])
         XCTAssertNotNil(json?["is_minimized"])
         XCTAssertNotNil(json?["bundle_id"])
@@ -173,7 +173,7 @@ final class SyncServiceTests: XCTestCase {
         XCTAssertTrue(dto.isFullScreen)
         XCTAssertFalse(dto.isMinimized)
         XCTAssertEqual(dto.startTime, 2000.0)
-        XCTAssertEqual(dto.endTime, 2120.0)
+        // endTime is no longer part of DTO — server computes it
         XCTAssertEqual(dto.duration, 120.0)
     }
 

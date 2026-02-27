@@ -19,7 +19,6 @@ function sampleItem(overrides: Record<string, unknown> = {}) {
     window_title: "GitHub - gecko",
     url: "https://github.com/user/gecko",
     start_time: 1740600000.0,
-    end_time: 1740600120.0,
     duration: 120.0,
     bundle_id: "com.google.Chrome",
     tab_title: "gecko: Screen time tracker",
@@ -27,7 +26,6 @@ function sampleItem(overrides: Record<string, unknown> = {}) {
     document_path: null,
     is_full_screen: false,
     is_minimized: false,
-    synced_at: "2026-02-27T00:00:00.000Z",
     ...overrides,
   };
 }
@@ -238,9 +236,9 @@ describe("SyncQueue", () => {
 
       expect(sql).toContain("INSERT OR IGNORE INTO focus_sessions");
       expect(sql).toContain("VALUES");
-      // 16 columns → 16 placeholders
-      expect((sql.match(/\?/g) || []).length).toBe(16);
-      expect(params.length).toBe(16);
+      // 14 columns → 14 placeholders
+      expect((sql.match(/\?/g) || []).length).toBe(14);
+      expect(params.length).toBe(14);
     });
 
     test("builds correct SQL for multiple sessions", () => {
@@ -251,9 +249,9 @@ describe("SyncQueue", () => {
       ];
       const { sql, params } = buildMultiRowInsert(items);
 
-      // 3 rows × 16 columns = 48 placeholders
-      expect((sql.match(/\?/g) || []).length).toBe(48);
-      expect(params.length).toBe(48);
+      // 3 rows × 14 columns = 42 placeholders
+      expect((sql.match(/\?/g) || []).length).toBe(42);
+      expect(params.length).toBe(42);
 
       // Should have 3 value groups
       const valueGroups = sql.match(/\([\s\S]*?\)/g);
@@ -266,9 +264,9 @@ describe("SyncQueue", () => {
       const item = sampleItem({ is_full_screen: true, is_minimized: false });
       const { params } = buildMultiRowInsert([item]);
 
-      // is_full_screen is at index 13, is_minimized at 14
-      expect(params[13]).toBe(1);
-      expect(params[14]).toBe(0);
+      // is_full_screen is at index 12, is_minimized at 13
+      expect(params[12]).toBe(1);
+      expect(params[13]).toBe(0);
     });
   });
 });

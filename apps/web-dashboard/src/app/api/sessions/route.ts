@@ -37,7 +37,8 @@ export async function GET(req: Request): Promise<Response> {
     device_id: string;
     synced_at: string;
   }>(
-    `SELECT id, app_name, window_title, url, start_time, end_time, duration,
+    `SELECT id, app_name, window_title, url, start_time,
+            (start_time + duration) AS end_time, duration,
             bundle_id, tab_title, tab_count, document_path,
             is_full_screen, is_minimized, device_id, synced_at
      FROM focus_sessions

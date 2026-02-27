@@ -17,7 +17,6 @@ export interface QueuedSession {
   window_title: string;
   url: string | null;
   start_time: number;
-  end_time: number;
   duration: number;
   bundle_id: string | null;
   tab_title: string | null;
@@ -25,7 +24,6 @@ export interface QueuedSession {
   document_path: string | null;
   is_full_screen: boolean;
   is_minimized: boolean;
-  synced_at: string;
 }
 
 export interface QueueStats {
@@ -43,7 +41,7 @@ export interface SyncQueueOptions {
   autoStart?: boolean;
   /** Drain interval in milliseconds. Default: 2000. */
   drainIntervalMs?: number;
-  /** Max sessions per D1 INSERT statement. Default: 50. */
+  /** Max sessions per D1 INSERT statement. Default: 7 (D1 limit: 100 bind params / 14 cols). */
   batchSize?: number;
   /** Custom write function (for testing). Default: writes to D1. */
   writeFn?: WriteFn;
@@ -61,7 +59,6 @@ const COLUMNS = [
   "window_title",
   "url",
   "start_time",
-  "end_time",
   "duration",
   "bundle_id",
   "tab_title",
@@ -69,7 +66,6 @@ const COLUMNS = [
   "document_path",
   "is_full_screen",
   "is_minimized",
-  "synced_at",
 ] as const;
 
 /** Build a multi-row INSERT OR IGNORE statement for a batch of sessions. */
@@ -94,7 +90,6 @@ export function buildMultiRowInsert(sessions: QueuedSession[]): {
       s.window_title,
       s.url ?? null,
       s.start_time,
-      s.end_time,
       s.duration,
       s.bundle_id ?? null,
       s.tab_title ?? null,
@@ -102,7 +97,6 @@ export function buildMultiRowInsert(sessions: QueuedSession[]): {
       s.document_path ?? null,
       s.is_full_screen ? 1 : 0,
       s.is_minimized ? 1 : 0,
-      s.synced_at,
     );
   }
 
@@ -133,7 +127,9 @@ export class SyncQueue {
 
   constructor(options: SyncQueueOptions = {}) {
     this.writeFn = options.writeFn ?? defaultWriteFn;
-    this.batchSize = options.batchSize ?? 50;
+    // D1 has a 100 bind parameter limit per statement.
+    // 14 columns per row → max 7 rows per INSERT (7 × 14 = 98).
+    this.batchSize = options.batchSize ?? 7;
 
     if (options.autoStart !== false) {
       const ms = options.drainIntervalMs ?? 2000;

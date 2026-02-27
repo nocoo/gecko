@@ -26,7 +26,6 @@ function sampleSession(overrides: Record<string, unknown> = {}) {
     window_title: "GitHub - gecko",
     url: "https://github.com/user/gecko",
     start_time: 1740600000.0,
-    end_time: 1740600120.0,
     duration: 120.0,
     bundle_id: "com.google.Chrome",
     tab_title: "gecko: Screen time tracker",

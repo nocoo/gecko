@@ -379,13 +379,14 @@ private struct SyncPayload: Encodable {
 }
 
 /// Maps FocusSession to the snake_case JSON the server expects.
+/// Note: end_time is intentionally excluded — the server computes it
+/// from start_time + duration. This reduces bind parameters for D1.
 struct SyncSessionDTO: Codable, Equatable {
     let id: String
     let appName: String
     let windowTitle: String
     let url: String?
     let startTime: Double
-    let endTime: Double
     let duration: Double
     let bundleId: String?
     let tabTitle: String?
@@ -400,7 +401,6 @@ struct SyncSessionDTO: Codable, Equatable {
         case windowTitle = "window_title"
         case url
         case startTime = "start_time"
-        case endTime = "end_time"
         case duration
         case bundleId = "bundle_id"
         case tabTitle = "tab_title"
@@ -416,7 +416,6 @@ struct SyncSessionDTO: Codable, Equatable {
         self.windowTitle = session.windowTitle
         self.url = session.url
         self.startTime = session.startTime
-        self.endTime = session.endTime
         self.duration = session.duration
         self.bundleId = session.bundleId
         self.tabTitle = session.tabTitle
