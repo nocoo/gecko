@@ -1,5 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { navSections, isActive } from "@/components/layout/sidebar";
+import {
+  navSections,
+  isActive,
+  isExactActive,
+  isParentActive,
+} from "@/components/layout/sidebar";
 
 describe("sidebar navigation", () => {
   describe("navSections", () => {
@@ -9,7 +14,10 @@ describe("sidebar navigation", () => {
 
     it("section 0 has Dashboard and Sessions", () => {
       expect(navSections[0]!.title).toBeNull();
-      expect(navSections[0]!.items.map((i) => i.label)).toEqual(["Dashboard", "Sessions"]);
+      expect(navSections[0]!.items.map((i) => i.label)).toEqual([
+        "Dashboard",
+        "Sessions",
+      ]);
     });
 
     it("section 1 has Settings", () => {
@@ -27,7 +35,7 @@ describe("sidebar navigation", () => {
       }
     });
 
-    it("all hrefs are unique", () => {
+    it("all top-level hrefs are unique", () => {
       const hrefs = navSections.flatMap((s) => s.items.map((i) => i.href));
       expect(new Set(hrefs).size).toBe(hrefs.length);
     });
@@ -37,6 +45,37 @@ describe("sidebar navigation", () => {
         for (const item of section.items) {
           expect(item.href.startsWith("/")).toBe(true);
         }
+      }
+    });
+  });
+
+  describe("Settings children", () => {
+    const settingsItem = navSections[1]!.items[0]!;
+
+    it("Settings has children", () => {
+      expect(settingsItem.children).toBeDefined();
+      expect(settingsItem.children!.length).toBe(3);
+    });
+
+    it("children are General, Categories, Tags", () => {
+      expect(settingsItem.children!.map((c) => c.label)).toEqual([
+        "General",
+        "Categories",
+        "Tags",
+      ]);
+    });
+
+    it("children have correct hrefs", () => {
+      expect(settingsItem.children!.map((c) => c.href)).toEqual([
+        "/settings",
+        "/settings/categories",
+        "/settings/tags",
+      ]);
+    });
+
+    it("every child has an icon", () => {
+      for (const child of settingsItem.children!) {
+        expect(child.icon).toBeTruthy();
       }
     });
   });
@@ -64,6 +103,50 @@ describe("sidebar navigation", () => {
 
     it("returns false for partial prefix matches that are not path segments", () => {
       expect(isActive("/settingsmore", "/settings")).toBe(false);
+    });
+  });
+
+  describe("isExactActive", () => {
+    it("returns true for exact match", () => {
+      expect(isExactActive("/settings", "/settings")).toBe(true);
+    });
+
+    it("returns false for child path", () => {
+      expect(isExactActive("/settings/categories", "/settings")).toBe(false);
+    });
+
+    it("returns false for parent path", () => {
+      expect(isExactActive("/settings", "/settings/categories")).toBe(false);
+    });
+  });
+
+  describe("isParentActive", () => {
+    const settingsItem = navSections[1]!.items[0]!;
+
+    it("returns true when on /settings", () => {
+      expect(isParentActive("/settings", settingsItem)).toBe(true);
+    });
+
+    it("returns true when on a child route /settings/categories", () => {
+      expect(isParentActive("/settings/categories", settingsItem)).toBe(true);
+    });
+
+    it("returns true when on a child route /settings/tags", () => {
+      expect(isParentActive("/settings/tags", settingsItem)).toBe(true);
+    });
+
+    it("returns false when on unrelated route", () => {
+      expect(isParentActive("/sessions", settingsItem)).toBe(false);
+    });
+
+    it("returns true for item without children when path matches", () => {
+      const dashboardItem = navSections[0]!.items[0]!;
+      expect(isParentActive("/", dashboardItem)).toBe(true);
+    });
+
+    it("returns false for item without children when path does not match", () => {
+      const dashboardItem = navSections[0]!.items[0]!;
+      expect(isParentActive("/settings", dashboardItem)).toBe(false);
     });
   });
 });

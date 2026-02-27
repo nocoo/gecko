@@ -9,6 +9,9 @@ import {
   Settings,
   PanelLeft,
   LogOut,
+  SlidersHorizontal,
+  Layers,
+  Tags,
 } from "lucide-react";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
@@ -26,10 +29,16 @@ import { useSidebar } from "./sidebar-context";
 // Navigation structure
 // =============================================================================
 
+type IconComponent = React.ComponentType<
+  React.SVGProps<SVGSVGElement> & { strokeWidth?: number }
+>;
+
 interface NavItem {
   href: string;
   label: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement> & { strokeWidth?: number }>;
+  icon: IconComponent;
+  /** Sub-navigation items. Shown when this item (or any child) is active. */
+  children?: NavItem[];
 }
 
 interface NavSection {
@@ -48,14 +57,44 @@ const navSections: NavSection[] = [
   {
     title: null,
     items: [
-      { href: "/settings", label: "Settings", icon: Settings },
+      {
+        href: "/settings",
+        label: "Settings",
+        icon: Settings,
+        children: [
+          { href: "/settings", label: "General", icon: SlidersHorizontal },
+          {
+            href: "/settings/categories",
+            label: "Categories",
+            icon: Layers,
+          },
+          { href: "/settings/tags", label: "Tags", icon: Tags },
+        ],
+      },
     ],
   },
 ];
 
+/** Check if a nav item is currently active. */
 function isActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+/** Exact match — used for child items like /settings vs /settings/categories. */
+function isExactActive(pathname: string, href: string): boolean {
+  return pathname === href;
+}
+
+/** Check if a parent or any of its children matches the current path. */
+function isParentActive(pathname: string, item: NavItem): boolean {
+  if (isActive(pathname, item.href)) return true;
+  return (
+    item.children?.some(
+      (child) =>
+        isExactActive(pathname, child.href) || isActive(pathname, child.href),
+    ) ?? false
+  );
 }
 
 export function Sidebar() {
@@ -73,7 +112,7 @@ export function Sidebar() {
       <aside
         className={cn(
           "sticky top-0 flex h-screen shrink-0 flex-col bg-background transition-all duration-300 ease-in-out overflow-hidden",
-          collapsed ? "w-[68px]" : "w-[260px]"
+          collapsed ? "w-[68px]" : "w-[260px]",
         )}
       >
         {collapsed ? (
@@ -120,7 +159,7 @@ export function Sidebar() {
                     <div className="my-1 h-px w-6 bg-border" />
                   )}
                   {section.items.map((item) => {
-                    const active = isActive(pathname, item.href);
+                    const active = isParentActive(pathname, item);
                     return (
                       <Tooltip key={item.href}>
                         <TooltipTrigger asChild>
@@ -130,7 +169,7 @@ export function Sidebar() {
                               "relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
                               active
                                 ? "bg-accent text-foreground"
-                                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                                : "text-muted-foreground hover:bg-accent hover:text-foreground",
                             )}
                           >
                             <item.icon className="h-4 w-4" strokeWidth={1.5} />
@@ -161,7 +200,7 @@ export function Sidebar() {
                       <AvatarFallback
                         className={cn(
                           "text-xs text-white",
-                          getAvatarColor(userName)
+                          getAvatarColor(userName),
                         )}
                       >
                         {userInitial}
@@ -194,7 +233,10 @@ export function Sidebar() {
                   <span className="text-lg font-bold tracking-tight">
                     Gecko
                   </span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground">
+                  <Badge
+                    variant="secondary"
+                    className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
+                  >
                     v{APP_VERSION}
                   </Badge>
                 </div>
@@ -228,24 +270,67 @@ export function Sidebar() {
                       </div>
                     )}
                     {section.items.map((item) => {
-                      const active = isActive(pathname, item.href);
+                      const parentActive = isParentActive(pathname, item);
+                      const hasChildren =
+                        item.children && item.children.length > 0;
+
                       return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
-                            active
-                              ? "bg-accent text-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                        <div key={item.href}>
+                          {/* Parent item */}
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
+                              parentActive && !hasChildren
+                                ? "bg-accent text-foreground"
+                                : parentActive && hasChildren
+                                  ? "text-foreground"
+                                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                            )}
+                          >
+                            <item.icon
+                              className="h-4 w-4 shrink-0"
+                              strokeWidth={1.5}
+                            />
+                            <span className="flex-1 text-left">
+                              {item.label}
+                            </span>
+                          </Link>
+
+                          {/* Children — shown when parent is active */}
+                          {hasChildren && parentActive && (
+                            <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l border-border pl-3">
+                              {item.children!.map((child) => {
+                                // For /settings (General), use exact match
+                                // For /settings/categories, /settings/tags, use prefix match
+                                const childActive =
+                                  child.href === "/settings"
+                                    ? isExactActive(pathname, child.href)
+                                    : isActive(pathname, child.href);
+                                return (
+                                  <Link
+                                    key={child.href}
+                                    href={child.href}
+                                    className={cn(
+                                      "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-normal transition-colors",
+                                      childActive
+                                        ? "bg-accent text-foreground"
+                                        : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                                    )}
+                                  >
+                                    <child.icon
+                                      className="h-3.5 w-3.5 shrink-0"
+                                      strokeWidth={1.5}
+                                    />
+                                    <span className="flex-1 text-left">
+                                      {child.label}
+                                    </span>
+                                  </Link>
+                                );
+                              })}
+                            </div>
                           )}
-                        >
-                          <item.icon
-                            className="h-4 w-4 shrink-0"
-                            strokeWidth={1.5}
-                          />
-                          <span className="flex-1 text-left">{item.label}</span>
-                        </Link>
+                        </div>
                       );
                     })}
                   </div>
@@ -263,7 +348,7 @@ export function Sidebar() {
                   <AvatarFallback
                     className={cn(
                       "text-xs text-white",
-                      getAvatarColor(userName)
+                      getAvatarColor(userName),
                     )}
                   >
                     {userInitial}
@@ -303,5 +388,5 @@ export function Sidebar() {
 }
 
 // Export for testing
-export { navSections, isActive };
+export { navSections, isActive, isExactActive, isParentActive };
 export type { NavItem, NavSection };
