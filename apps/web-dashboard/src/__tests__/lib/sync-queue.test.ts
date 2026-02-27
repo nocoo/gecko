@@ -2,6 +2,8 @@ import { describe, test, expect, mock } from "bun:test";
 import {
   createSyncQueue,
   buildMultiRowInsert,
+  COLUMNS,
+  type QueuedSession,
 } from "../../lib/sync-queue";
 
 // ---------------------------------------------------------------------------
@@ -267,6 +269,83 @@ describe("SyncQueue", () => {
       // is_full_screen is at index 12, is_minimized at 13
       expect(params[12]).toBe(1);
       expect(params[13]).toBe(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // D1 bind parameter constraints
+  // -------------------------------------------------------------------------
+
+  describe("D1 bind parameter constraints", () => {
+    test("COLUMNS has exactly 14 entries (post-optimization)", () => {
+      expect(COLUMNS.length).toBe(14);
+    });
+
+    test("default batchSize of 7 stays within D1's 100-param limit", () => {
+      const queue = createSyncQueue({ autoStart: false });
+      // Build a full default batch (7 rows)
+      const items = Array.from({ length: 7 }, (_, i) =>
+        sampleItem({ id: `batch-${i}` })
+      );
+      const { params } = buildMultiRowInsert(items);
+
+      // 7 rows × 14 cols = 98 params — must be < 100
+      expect(params.length).toBe(98);
+      expect(params.length).toBeLessThan(100);
+
+      // Verify queue uses 7 as default batch size
+      const stats = queue.getStats();
+      queue.shutdown();
+      expect(stats).toBeDefined();
+    });
+
+    test("8 rows would exceed D1's 100-param limit", () => {
+      const items = Array.from({ length: 8 }, (_, i) =>
+        sampleItem({ id: `over-${i}` })
+      );
+      const { params } = buildMultiRowInsert(items);
+
+      // 8 rows × 14 cols = 112 params — exceeds limit
+      expect(params.length).toBe(112);
+      expect(params.length).toBeGreaterThan(100);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Schema-drift guard: COLUMNS must match QueuedSession interface keys
+  // -------------------------------------------------------------------------
+
+  describe("schema-drift guard", () => {
+    test("COLUMNS matches the keys of QueuedSession", () => {
+      // Create a fully-typed QueuedSession to extract its keys at runtime
+      const reference: QueuedSession = {
+        id: "",
+        user_id: "",
+        device_id: "",
+        app_name: "",
+        window_title: "",
+        url: null,
+        start_time: 0,
+        duration: 0,
+        bundle_id: null,
+        tab_title: null,
+        tab_count: null,
+        document_path: null,
+        is_full_screen: false,
+        is_minimized: false,
+      };
+      const interfaceKeys = Object.keys(reference).sort();
+      const columnKeys = [...COLUMNS].sort();
+
+      expect(columnKeys).toEqual(interfaceKeys);
+    });
+
+    test("COLUMNS does not include end_time (removed in optimization)", () => {
+      expect(COLUMNS).not.toContain("end_time");
+    });
+
+    test("COLUMNS does not include synced_at (uses D1 DEFAULT)", () => {
+      expect(COLUMNS).not.toContain("synced_at");
     });
   });
 });

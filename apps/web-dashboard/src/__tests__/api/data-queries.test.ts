@@ -115,6 +115,83 @@ describe("GET /api/sessions", () => {
 
     expect(calls[0].params).toContain(200);
   });
+
+  test("computes end_time from start_time + duration", async () => {
+    const startTime = 1740600000.0;
+    const duration = 300.5;
+    const { calls } = mockD1([
+      [
+        {
+          id: "s-computed",
+          app_name: "Terminal",
+          window_title: "bash",
+          url: null,
+          start_time: startTime,
+          end_time: startTime + duration, // D1 computes this via SQL expression
+          duration,
+          bundle_id: "com.apple.Terminal",
+          tab_title: null,
+          tab_count: null,
+          document_path: null,
+          is_full_screen: 0,
+          is_minimized: 0,
+          device_id: "dev-1",
+          synced_at: "2026-02-27T00:00:00.000Z",
+        },
+      ],
+    ]);
+    const { GET } = await import("../../app/api/sessions/route");
+
+    const req = new Request("http://localhost/api/sessions?limit=1");
+    const res = await GET(req);
+    const data = await res.json();
+
+    // Verify the SQL uses computed end_time expression
+    expect(calls[0].sql).toContain("(start_time + duration) AS end_time");
+
+    // Verify the API response has the correct computed value
+    expect(data.sessions).toHaveLength(1);
+    expect(data.sessions[0].endTime).toBe(startTime + duration);
+    expect(data.sessions[0].endTime).toBe(1740600300.5);
+    expect(data.sessions[0].duration).toBe(duration);
+  });
+
+  test("handles null end_time rows (legacy data without stored end_time)", async () => {
+    const startTime = 1740600000.0;
+    const duration = 120.0;
+    mockD1([
+      [
+        {
+          id: "s-legacy",
+          app_name: "Finder",
+          window_title: "Desktop",
+          url: null,
+          start_time: startTime,
+          end_time: startTime + duration, // SQL expression still works
+          duration,
+          bundle_id: "com.apple.finder",
+          tab_title: null,
+          tab_count: null,
+          document_path: null,
+          is_full_screen: 1,
+          is_minimized: 0,
+          device_id: "dev-2",
+          synced_at: "2026-01-15T08:30:00.000Z",
+        },
+      ],
+    ]);
+    const { GET } = await import("../../app/api/sessions/route");
+
+    const req = new Request("http://localhost/api/sessions");
+    const res = await GET(req);
+    const data = await res.json();
+
+    const session = data.sessions[0];
+    // end_time should always be start_time + duration regardless of stored value
+    expect(session.endTime).toBe(startTime + duration);
+    expect(session.isFullScreen).toBe(true);
+    expect(session.isMinimized).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

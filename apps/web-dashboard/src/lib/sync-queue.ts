@@ -51,7 +51,8 @@ export interface SyncQueueOptions {
 // SQL builder
 // ---------------------------------------------------------------------------
 
-const COLUMNS = [
+/** Column names for D1 INSERT — must match the focus_sessions schema. */
+export const COLUMNS = [
   "id",
   "user_id",
   "device_id",
