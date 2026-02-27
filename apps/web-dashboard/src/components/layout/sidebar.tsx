@@ -8,18 +8,16 @@ import { Collapsible } from "radix-ui";
 import {
   LayoutDashboard,
   List,
-  Settings,
-  PanelLeft,
-  LogOut,
   SlidersHorizontal,
   Layers,
   Tags,
+  PanelLeft,
+  LogOut,
   ChevronUp,
 } from "lucide-react";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +27,7 @@ import {
 import { useSidebar } from "./sidebar-context";
 
 // =============================================================================
-// Navigation structure
+// Navigation structure — flat groups with labels (basalt pattern)
 // =============================================================================
 
 type IconComponent = React.ComponentType<
@@ -40,43 +38,36 @@ interface NavItem {
   href: string;
   label: string;
   icon: IconComponent;
-  /** Sub-navigation items. Shown when this item (or any child) is active. */
-  children?: NavItem[];
 }
 
-interface NavSection {
-  title: string | null;
+interface NavGroup {
+  label: string;
   items: NavItem[];
+  defaultOpen?: boolean;
 }
 
-const navSections: NavSection[] = [
+const navGroups: NavGroup[] = [
   {
-    title: null,
+    label: "Overview",
+    defaultOpen: true,
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/sessions", label: "Sessions", icon: List },
     ],
   },
   {
-    title: null,
+    label: "Settings",
+    defaultOpen: true,
     items: [
-      {
-        href: "/settings",
-        label: "Settings",
-        icon: Settings,
-        children: [
-          { href: "/settings", label: "General", icon: SlidersHorizontal },
-          {
-            href: "/settings/categories",
-            label: "Categories",
-            icon: Layers,
-          },
-          { href: "/settings/tags", label: "Tags", icon: Tags },
-        ],
-      },
+      { href: "/settings", label: "General", icon: SlidersHorizontal },
+      { href: "/settings/categories", label: "Categories", icon: Layers },
+      { href: "/settings/tags", label: "Tags", icon: Tags },
     ],
   },
 ];
+
+/** All items flattened — used for collapsed icon-only view. */
+const allNavItems = navGroups.flatMap((g) => g.items);
 
 /** Check if a nav item is currently active. */
 function isActive(pathname: string, href: string): boolean {
@@ -84,21 +75,78 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-/** Exact match — used for child items like /settings vs /settings/categories. */
-function isExactActive(pathname: string, href: string): boolean {
-  return pathname === href;
-}
+// =============================================================================
+// NavGroupSection — collapsible group with label header (basalt pattern)
+// =============================================================================
 
-/** Check if a parent or any of its children matches the current path. */
-function isParentActive(pathname: string, item: NavItem): boolean {
-  if (isActive(pathname, item.href)) return true;
+function NavGroupSection({
+  group,
+  pathname,
+}: {
+  group: NavGroup;
+  pathname: string;
+}) {
+  const [open, setOpen] = useState(group.defaultOpen ?? true);
+
   return (
-    item.children?.some(
-      (child) =>
-        isExactActive(pathname, child.href) || isActive(pathname, child.href),
-    ) ?? false
+    <Collapsible.Root open={open} onOpenChange={setOpen}>
+      <div className="px-3 mt-2">
+        <Collapsible.Trigger className="flex w-full items-center justify-between px-3 py-2.5">
+          <span className="text-sm font-normal text-muted-foreground">
+            {group.label}
+          </span>
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center">
+            <ChevronUp
+              className={cn(
+                "h-4 w-4 text-muted-foreground transition-transform duration-200",
+                !open && "rotate-180",
+              )}
+              strokeWidth={1.5}
+            />
+          </span>
+        </Collapsible.Trigger>
+      </div>
+
+      <div
+        className="grid overflow-hidden"
+        style={{
+          gridTemplateRows: open ? "1fr" : "0fr",
+          transition: "grid-template-rows 200ms ease-out",
+        }}
+      >
+        <div className="min-h-0 overflow-hidden">
+          <div className="flex flex-col gap-0.5 px-3">
+            {group.items.map((item) => {
+              const active = isActive(pathname, item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
+                    active
+                      ? "bg-accent text-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                  )}
+                >
+                  <item.icon
+                    className="h-4 w-4 shrink-0"
+                    strokeWidth={1.5}
+                  />
+                  <span className="flex-1 text-left">{item.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </Collapsible.Root>
   );
 }
+
+// =============================================================================
+// Main sidebar
+// =============================================================================
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -154,38 +202,31 @@ export function Sidebar() {
               </TooltipContent>
             </Tooltip>
 
-            {/* Navigation — collapsed: flat icon list with separators */}
+            {/* Navigation — collapsed: flat icon list, no separators */}
             <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto pt-1">
-              {navSections.map((section, sIdx) => (
-                <div key={sIdx} className="flex flex-col items-center gap-1">
-                  {sIdx > 0 && (
-                    <div className="my-1 h-px w-6 bg-border" />
-                  )}
-                  {section.items.map((item) => {
-                    const active = isParentActive(pathname, item);
-                    return (
-                      <Tooltip key={item.href}>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={item.href}
-                            className={cn(
-                              "relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-                              active
-                                ? "bg-accent text-foreground"
-                                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                            )}
-                          >
-                            <item.icon className="h-4 w-4" strokeWidth={1.5} />
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" sideOffset={8}>
-                          {item.label}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              ))}
+              {allNavItems.map((item) => {
+                const active = isActive(pathname, item.href);
+                return (
+                  <Tooltip key={item.href}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+                          active
+                            ? "bg-accent text-foreground"
+                            : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" strokeWidth={1.5} />
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" sideOffset={8}>
+                      {item.label}
+                    </TooltipContent>
+                  </Tooltip>
+                );
+              })}
             </nav>
 
             {/* User avatar + sign out */}
@@ -236,12 +277,9 @@ export function Sidebar() {
                   <span className="text-lg font-bold tracking-tight">
                     Gecko
                   </span>
-                  <Badge
-                    variant="secondary"
-                    className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground"
-                  >
+                  <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground leading-none">
                     v{APP_VERSION}
-                  </Badge>
+                  </span>
                 </div>
                 <button
                   onClick={toggle}
@@ -257,61 +295,15 @@ export function Sidebar() {
               </div>
             </div>
 
-            {/* Navigation — expanded: grouped sections */}
+            {/* Navigation — expanded: collapsible groups with labels */}
             <nav className="flex-1 overflow-y-auto pt-1">
-              <div className="flex flex-col gap-0.5 px-3">
-                {navSections.map((section, sIdx) => (
-                  <div key={sIdx}>
-                    {sIdx > 0 && (
-                      <div className="my-2 h-px bg-border mx-1" />
-                    )}
-                    {section.title && (
-                      <div className="px-3 pb-1 pt-2">
-                        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                          {section.title}
-                        </span>
-                      </div>
-                    )}
-                    {section.items.map((item) => {
-                      const parentActive = isParentActive(pathname, item);
-                      const hasChildren =
-                        item.children && item.children.length > 0;
-
-                      if (hasChildren) {
-                        return (
-                          <NavGroupCollapsible
-                            key={item.href}
-                            item={item}
-                            parentActive={parentActive}
-                            pathname={pathname}
-                          />
-                        );
-                      }
-
-                      return (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          className={cn(
-                            "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
-                            parentActive
-                              ? "bg-accent text-foreground"
-                              : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                          )}
-                        >
-                          <item.icon
-                            className="h-4 w-4 shrink-0"
-                            strokeWidth={1.5}
-                          />
-                          <span className="flex-1 text-left">
-                            {item.label}
-                          </span>
-                        </Link>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+              {navGroups.map((group) => (
+                <NavGroupSection
+                  key={group.label}
+                  group={group}
+                  pathname={pathname}
+                />
+              ))}
             </nav>
 
             {/* User info + sign out */}
@@ -363,74 +355,6 @@ export function Sidebar() {
   );
 }
 
-// =============================================================================
-// Collapsible navigation group (Settings → General / Categories / Tags)
-// =============================================================================
-
-function NavGroupCollapsible({
-  item,
-  parentActive,
-  pathname,
-}: {
-  item: NavItem;
-  parentActive: boolean;
-  pathname: string;
-}) {
-  const [open, setOpen] = useState(parentActive);
-
-  return (
-    <Collapsible.Root open={open} onOpenChange={setOpen}>
-      <Collapsible.Trigger className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm font-normal transition-colors text-muted-foreground hover:bg-accent hover:text-foreground">
-        <span className="flex items-center gap-3">
-          <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-          <span>{item.label}</span>
-        </span>
-        <ChevronUp
-          className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform duration-200",
-            !open && "rotate-180",
-          )}
-          strokeWidth={1.5}
-        />
-      </Collapsible.Trigger>
-
-      <div
-        className="grid overflow-hidden"
-        style={{
-          gridTemplateRows: open ? "1fr" : "0fr",
-          transition: "grid-template-rows 200ms ease-out",
-        }}
-      >
-        <div className="min-h-0 overflow-hidden">
-          <div className="flex flex-col gap-0.5 px-3">
-            {item.children!.map((child) => {
-              const childActive = isExactActive(pathname, child.href);
-              return (
-                <Link
-                  key={child.href}
-                  href={child.href}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
-                    childActive
-                      ? "bg-accent text-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                  )}
-                >
-                  <child.icon
-                    className="h-4 w-4 shrink-0"
-                    strokeWidth={1.5}
-                  />
-                  <span className="flex-1 text-left">{child.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    </Collapsible.Root>
-  );
-}
-
 // Export for testing
-export { navSections, isActive, isExactActive, isParentActive };
-export type { NavItem, NavSection };
+export { navGroups, allNavItems, isActive };
+export type { NavItem, NavGroup };
