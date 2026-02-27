@@ -12,7 +12,7 @@ Focus session data flows from the macOS client's local SQLite to the cloud Cloud
                                       │  ┌────────────────┐  │                       ▲
                                       │  │ In-Memory Queue │──│── async drain ───────┘
                                       │  │ (SyncQueue)     │  │   (2s interval,
-                                      │  └────────────────┘  │    50 rows/batch)
+                                      │  └────────────────┘  │    7 rows/batch)
                                       └──────────────────────┘
                                               │
                                      Session auth (Google OAuth)
@@ -85,7 +85,6 @@ Content-Type: application/json
       "window_title": "GitHub - gecko",
       "url": "https://github.com/user/gecko",
       "start_time": 1740600000.0,
-      "end_time": 1740600120.0,
       "duration": 120.0,
       "bundle_id": "com.google.Chrome",
       "tab_title": "gecko: Screen time tracker",
@@ -98,7 +97,7 @@ Content-Type: application/json
 }
 ```
 
-**Field mapping:** The JSON field names use snake_case, matching the local SQLite column names. The server adds `user_id`, `device_id`, and `synced_at` before inserting into D1.
+**Field mapping:** The JSON field names use snake_case, matching the local SQLite column names. The server adds `user_id` and `device_id` before inserting into D1. `end_time` is not sent — the server/dashboard computes it as `start_time + duration`. `synced_at` is auto-populated by D1 via DEFAULT.
 
 ### Response
 
@@ -111,7 +110,7 @@ Content-Type: application/json
 }
 ```
 
-The server validates sessions, enqueues them into an in-memory queue, and returns immediately. Sessions are written to D1 asynchronously by a background drain worker (every 2 seconds, 50 rows per multi-row INSERT).
+The server validates sessions, enqueues them into an in-memory queue, and returns immediately. Sessions are written to D1 asynchronously by a background drain worker (every 2 seconds, 7 rows per multi-row INSERT — capped by D1's 100 bind parameter limit with 14 columns per row).
 
 **Errors:**
 
@@ -216,7 +215,7 @@ The D1 client is encapsulated in `src/lib/d1.ts`, providing a typed interface ov
 
 ## Async Sync Queue
 
-The sync endpoint (`POST /api/sync`) does **not** write to D1 in the request path. Instead, it validates sessions, enriches them with server-side fields (`user_id`, `device_id`, `synced_at`), and enqueues them into an in-memory queue (`src/lib/sync-queue.ts`).
+The sync endpoint (`POST /api/sync`) does **not** write to D1 in the request path. Instead, it validates sessions, enriches them with server-side fields (`user_id`, `device_id`), and enqueues them into an in-memory queue (`src/lib/sync-queue.ts`).
 
 ### Why
 
@@ -233,7 +232,7 @@ POST /api/sync          In-Memory Queue          Cloudflare D1
      │                       │                        │
      │                       │── drain (2s) ────────> │
      │                       │   multi-row INSERT     │
-     │                       │   (50 rows/batch)      │
+     │                       │   (7 rows/batch)      │
      │                       │                        │
      │                       │── drain (2s) ────────> │
      │                       │   ...                  │
@@ -242,7 +241,7 @@ POST /api/sync          In-Memory Queue          Cloudflare D1
 ### Key design decisions
 
 1. **In-memory queue** (not file-based) — process restart data loss is acceptable; Mac client re-syncs on next tick, `INSERT OR IGNORE` is idempotent
-2. **Multi-row INSERT** — batch 50 sessions into a single `INSERT OR IGNORE INTO ... VALUES (...), (...), ...` statement
+2. **Multi-row INSERT** — batch 7 sessions into a single `INSERT OR IGNORE INTO ... VALUES (...), (...), ...` statement (14 columns × 7 rows = 98 params, under D1's 100 limit)
 3. **Fire-and-forget drain** — drain errors are logged but don't block future drains. Mac re-syncs naturally
 4. **Concurrency guard** — `drain()` is a no-op if already draining, preventing overlapping writes
 5. **Module-level singleton** — `getSyncQueue()` returns a shared instance for the Bun process lifetime

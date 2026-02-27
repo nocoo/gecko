@@ -94,15 +94,15 @@ Mirrors the local schema with three additional columns for multi-user and multi-
 | `window_title` | TEXT | NOT NULL | Focused window title |
 | `url` | TEXT | nullable | Browser tab URL |
 | `start_time` | REAL | NOT NULL | Unix timestamp (seconds) |
-| `end_time` | REAL | NOT NULL | Unix timestamp (seconds) |
-| `duration` | REAL | NOT NULL, DEFAULT 0 | `end_time - start_time` |
+| `end_time` | REAL | nullable | Legacy; no longer INSERTed (computed as `start_time + duration`) |
+| `duration` | REAL | NOT NULL, DEFAULT 0 | Session length in seconds |
 | `bundle_id` | TEXT | nullable | App bundle ID |
 | `tab_title` | TEXT | nullable | Browser tab title |
 | `tab_count` | INTEGER | nullable | Open tab count |
 | `document_path` | TEXT | nullable | Editor document path |
 | `is_full_screen` | INTEGER | DEFAULT 0 | 0/1 boolean |
 | `is_minimized` | INTEGER | DEFAULT 0 | 0/1 boolean |
-| `synced_at` | TEXT | NOT NULL | ISO 8601 upload timestamp |
+| `synced_at` | TEXT | DEFAULT `datetime('now')` | ISO 8601 upload timestamp (auto-populated) |
 
 **Indexes:**
 
@@ -144,7 +144,7 @@ Audit trail for each batch upload from macOS app.
 | `session_count` | INTEGER | NOT NULL | Sessions in this batch |
 | `first_start` | REAL | NOT NULL | Earliest `start_time` in batch |
 | `last_start` | REAL | NOT NULL | Latest `start_time` in batch |
-| `synced_at` | TEXT | NOT NULL | ISO 8601 |
+| `synced_at` | TEXT | DEFAULT `datetime('now')` | ISO 8601 (auto-populated) |
 
 **Indexes:**
 
@@ -203,13 +203,22 @@ CREATE TABLE sync_logs (
 CREATE INDEX idx_sync_user ON sync_logs(user_id, synced_at);
 ```
 
+### Cloud Migration: `v2_slim_columns`
+
+Optimizes for D1's 100 bind parameter limit by reducing INSERT columns from 16 to 14:
+
+- `end_time`: Changed from `NOT NULL` to nullable. No longer INSERTed during sync — the sessions API computes it as `start_time + duration`. Existing data is preserved.
+- `synced_at`: Changed from explicit `NOT NULL` to `DEFAULT (datetime('now'))`. D1 auto-populates on INSERT — no longer sent from the sync queue.
+
+This allows 7 rows per multi-row INSERT (14 × 7 = 98 < 100) vs the previous 6 rows (16 × 6 = 96).
+
 ---
 
 ## Design Decisions
 
-### `duration` is a redundant field
+### `duration` is the source of truth for session length
 
-`duration` always equals `end_time - start_time`. Kept to simplify aggregation queries without runtime computation.
+`duration` always equals `end_time - start_time` in the local DB. In the cloud D1, `end_time` is no longer stored on new rows — instead, `duration` is the canonical field and `end_time` can be derived as `start_time + duration` when needed.
 
 ### `isActive` is a computed property
 
