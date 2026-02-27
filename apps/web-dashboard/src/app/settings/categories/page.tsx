@@ -767,7 +767,7 @@ function AppMappingRow({
           value={selectedCategoryId}
           onChange={(e) => onCategoryChange(e.target.value)}
           className={cn(
-            "h-8 rounded-lg border bg-background px-2 text-sm outline-none transition-colors",
+            "h-8 rounded-lg border bg-background pl-2 pr-7 text-sm outline-none transition-colors",
             "focus:ring-2 focus:ring-ring focus:ring-offset-1",
             hasChange && "border-primary/40",
           )}
