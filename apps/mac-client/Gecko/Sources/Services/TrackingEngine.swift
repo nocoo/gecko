@@ -21,7 +21,6 @@ final class TrackingEngine: ObservableObject {
 
     @Published private(set) var isTracking: Bool = false
     @Published private(set) var currentSession: FocusSession?
-    @Published private(set) var recentSessions: [FocusSession] = []
 
     // MARK: - Dependencies
 
@@ -39,13 +38,11 @@ final class TrackingEngine: ObservableObject {
     // MARK: - Constants
 
     private static let fallbackInterval: TimeInterval = 3.0
-    private static let recentSessionsLimit = 50
 
     // MARK: - Init
 
     init(db: any DatabaseService = DatabaseManager.shared) {
         self.db = db
-        loadRecentSessions()
     }
 
     // MARK: - Public API
@@ -94,7 +91,7 @@ final class TrackingEngine: ObservableObject {
         fallbackTimer?.invalidate()
         fallbackTimer = nil
 
-        finalizeCurrentSession()
+        finalizeCurrentSessionQuietly()
     }
 
     // MARK: - Event Handlers
@@ -194,7 +191,7 @@ final class TrackingEngine: ObservableObject {
 
     /// Handle a focus switch: finalize previous session, start new one.
     private func switchFocus(_ ctx: FocusContext) {
-        // Finalize the previous session (without reloading recent — we'll reload once at the end)
+        // Finalize the previous session
         finalizeCurrentSessionQuietly()
 
         // Update tracking state
@@ -224,17 +221,9 @@ final class TrackingEngine: ObservableObject {
                 print("[TrackingEngine] Failed to insert session: \(error)")
             }
         }
-        loadRecentSessions()
     }
 
-    /// Finalize the current session by setting end_time and duration, then reload.
-    private func finalizeCurrentSession() {
-        finalizeCurrentSessionQuietly()
-        loadRecentSessions()
-    }
-
-    /// Finalize the current session without reloading recent sessions.
-    /// Used internally by `switchFocus` to avoid a redundant reload.
+    /// Finalize the current session by setting end_time and duration.
     private func finalizeCurrentSessionQuietly() {
         guard var session = currentSession else { return }
         guard session.isActive else { return }
@@ -342,23 +331,5 @@ final class TrackingEngine: ObservableObject {
 
         // swiftlint:disable:next force_cast
         return (window as! AXUIElement)
-    }
-
-    // MARK: - Data Loading
-
-    /// Reload recent sessions from the database on a background thread.
-    func loadRecentSessions() {
-        let database = db
-        let limit = Self.recentSessionsLimit
-        Task.detached(priority: .userInitiated) {
-            do {
-                let sessions = try database.fetchRecent(limit: limit)
-                await MainActor.run {
-                    self.recentSessions = sessions
-                }
-            } catch {
-                print("[TrackingEngine] Failed to load recent sessions: \(error)")
-            }
-        }
     }
 }

@@ -1,19 +1,6 @@
 import Foundation
 import Combine
 
-/// Abstract interface for the focus tracking engine.
-///
-/// Extracted from `TrackingEngine` to enable testing ViewModels
-/// without requiring Accessibility permissions or AppleScript.
-@MainActor
-protocol TrackingService: ObservableObject {
-    var isTracking: Bool { get }
-    var currentSession: FocusSession? { get }
-    func start()
-    func stop()
-    func loadRecentSessions()
-}
-
 /// ViewModel for the tracking status view.
 ///
 /// Combines tracking state and permission state into a single observable object,
