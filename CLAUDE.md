@@ -1,5 +1,30 @@
 # Gecko Project Notes
 
+## Release Process
+
+This project includes both a **web dashboard** and a **Mac app** — both are versioned and released together.
+
+### Version management
+- **Single source of truth**: `/package.json` → `version` field (format: `1.2.3`)
+- **Display format**: `v1.2.3` (in CHANGELOG, git tags, GitHub Releases, UI)
+- **Default bump**: patch (`1.2.3` → `1.2.4`) unless user specifies otherwise
+- **Locations to update** (all must match):
+  1. `/package.json` — root workspace (source of truth)
+  2. `/apps/web-dashboard/package.json` — web dashboard
+  3. `/apps/mac-client/project.yml` — `MARKETING_VERSION` (Mac app)
+  4. `/apps/mac-client/Gecko/Sources/Views/AboutView.swift` — fallback string
+  5. `/apps/mac-client/Gecko.xcodeproj/` — regenerated via `xcodegen generate`
+
+### Release steps
+1. Determine new version (default: patch bump)
+2. Update all version locations listed above
+3. Run `xcodegen generate` in `apps/mac-client/`
+4. Update `CHANGELOG.md` with changes since last tag (based on `git log`)
+5. Commit: `chore: release v1.2.4`
+6. Push to trigger Vercel/Railway auto-deploy
+7. Tag: `git tag v1.2.4 && git push origin v1.2.4`
+8. GitHub Release: `gh release create v1.2.4 --title "v1.2.4" --notes-file -` (pipe CHANGELOG section)
+
 ## Retrospective
 
 ### 2026-02-26: Signing identity matters for TCC persistence
