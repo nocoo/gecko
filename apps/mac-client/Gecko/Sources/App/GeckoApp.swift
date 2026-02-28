@@ -66,7 +66,7 @@ struct GeckoApp: App {
         .defaultSize(width: 700, height: 600)
 
         // Menu bar icon — always visible
-        MenuBarExtra("Gecko", systemImage: "eye.circle") {
+        MenuBarExtra("Gecko", image: "MenuBarIcon") {
             MenuBarView(
                 viewModel: menuBarViewModel,
                 tabSelection: tabSelection
