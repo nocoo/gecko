@@ -58,9 +58,19 @@ final class TrackingEngine: ObservableObject {
 
     private var workspaceObserver: NSObjectProtocol?
 
-    /// Tracks the last known window title + URL to detect in-app changes.
+    /// Tracks the last known app + window title + URL to detect in-app changes.
+    private var lastAppName: String = ""
     private var lastWindowTitle: String = ""
     private var lastURL: String?
+
+    // MARK: - Energy: Title Debounce
+
+    /// Pending title awaiting debounce confirmation.
+    private var pendingTitleChange: String?
+    /// The debounce task that will commit the title change after the interval.
+    private var titleDebounceTask: Task<Void, Never>?
+    /// Debounce interval for title-only changes (seconds).
+    private static let titleDebounceInterval: TimeInterval = 2.0
 
     // MARK: - Energy: System Observers
 
@@ -152,6 +162,7 @@ final class TrackingEngine: ObservableObject {
 
         switch newState {
         case .stopped:
+            cancelTitleDebounce()
             cancelFallbackTimer()
             removeWorkspaceObserver()
             removeSystemObservers()
@@ -177,14 +188,17 @@ final class TrackingEngine: ObservableObject {
             }
 
         case .idle:
+            cancelTitleDebounce()
             finalizeCurrentSessionQuietly()
             // Timer keeps running so we can detect return-to-active
 
         case .locked:
+            cancelTitleDebounce()
             fallbackSource?.suspend()
             finalizeCurrentSessionQuietly()
 
         case .asleep:
+            cancelTitleDebounce()
             cancelFallbackTimer()
             finalizeCurrentSessionQuietly()
         }
@@ -196,6 +210,8 @@ final class TrackingEngine: ObservableObject {
     private func handleAppActivation(_ notification: Notification) async {
         guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
                 as? NSRunningApplication else { return }
+
+        cancelTitleDebounce()
 
         let appName = app.localizedName ?? "Unknown"
         let bundleId = app.bundleIdentifier
@@ -236,16 +252,40 @@ final class TrackingEngine: ObservableObject {
             : nil
         let url = browserInfo?.url
 
-        let titleChanged = wCtx.title != lastWindowTitle
+        let appChanged = appName != lastAppName
         let urlChanged = url != lastURL
+        let titleChanged = wCtx.title != lastWindowTitle
 
-        if titleChanged || urlChanged {
+        // App change or URL change: immediate switch (high confidence)
+        if appChanged || urlChanged {
+            cancelTitleDebounce()
             switchFocus(FocusContext(
                 appName: appName, bundleId: bundleId,
                 windowTitle: wCtx.title, browserInfo: browserInfo,
                 documentPath: wCtx.documentPath,
                 isFullScreen: wCtx.isFullScreen, isMinimized: wCtx.isMinimized
             ))
+            return
+        }
+
+        // Title-only change: debounce to avoid micro-sessions from rapid title churn
+        if titleChanged {
+            if pendingTitleChange != wCtx.title {
+                pendingTitleChange = wCtx.title
+                cancelTitleDebounce()
+                let context = FocusContext(
+                    appName: appName, bundleId: bundleId,
+                    windowTitle: wCtx.title, browserInfo: browserInfo,
+                    documentPath: wCtx.documentPath,
+                    isFullScreen: wCtx.isFullScreen, isMinimized: wCtx.isMinimized
+                )
+                titleDebounceTask = Task { @MainActor [weak self] in
+                    try? await Task.sleep(for: .seconds(Self.titleDebounceInterval))
+                    guard !Task.isCancelled, let self else { return }
+                    self.switchFocus(context)
+                    self.pendingTitleChange = nil
+                }
+            }
         }
     }
 
@@ -297,6 +337,7 @@ final class TrackingEngine: ObservableObject {
     private func switchFocus(_ ctx: FocusContext) {
         finalizeCurrentSessionQuietly()
 
+        lastAppName = ctx.appName
         lastWindowTitle = ctx.windowTitle
         lastURL = ctx.browserInfo?.url
 
@@ -386,6 +427,13 @@ final class TrackingEngine: ObservableObject {
     private func cancelFallbackTimer() {
         fallbackSource?.cancel()
         fallbackSource = nil
+    }
+
+    /// Cancel any pending title debounce.
+    private func cancelTitleDebounce() {
+        titleDebounceTask?.cancel()
+        titleDebounceTask = nil
+        pendingTitleChange = nil
     }
 
     // MARK: - Observer Management
