@@ -1,5 +1,6 @@
 import Foundation
 import Combine
+import Network
 import os
 import Security
 
@@ -82,6 +83,12 @@ final class SyncService: ObservableObject {
     private var settingsCancellable: AnyCancellable?
     private let logger = Logger(subsystem: "ai.hexly.gecko", category: "SyncService")
 
+    // MARK: - Network Awareness
+
+    /// Monitors network reachability to skip futile sync attempts when offline.
+    private let networkMonitor = NWPathMonitor()
+    private var isNetworkAvailable = true
+
     // MARK: - Init
 
     /// Creates a new SyncService.
@@ -134,6 +141,7 @@ final class SyncService: ObservableObject {
 
     deinit {
         timer?.invalidate()
+        networkMonitor.cancel()
     }
 
     // MARK: - Timer Management
@@ -158,6 +166,8 @@ final class SyncService: ObservableObject {
         guard timer == nil else { return }
         logger.info("Sync timer started (interval: \(self.syncInterval)s)")
 
+        startNetworkMonitor()
+
         // Fire immediately, then on interval
         Task { await syncNow() }
 
@@ -176,6 +186,24 @@ final class SyncService: ObservableObject {
         }
         timer?.invalidate()
         timer = nil
+        stopNetworkMonitor()
+    }
+
+    // MARK: - Network Monitor
+
+    /// Start observing network reachability.
+    private func startNetworkMonitor() {
+        networkMonitor.pathUpdateHandler = { [weak self] path in
+            Task { @MainActor [weak self] in
+                self?.isNetworkAvailable = (path.status == .satisfied)
+            }
+        }
+        networkMonitor.start(queue: DispatchQueue.global(qos: .utility))
+    }
+
+    /// Stop the network monitor.
+    private func stopNetworkMonitor() {
+        networkMonitor.cancel()
     }
 
     // MARK: - Sync Execution
@@ -184,6 +212,11 @@ final class SyncService: ObservableObject {
     func syncNow() async {
         guard settings.isSyncConfigured else {
             logger.debug("Sync skipped — not configured")
+            return
+        }
+
+        guard isNetworkAvailable else {
+            logger.debug("Sync skipped — no network")
             return
         }
 
