@@ -68,10 +68,18 @@ struct SessionListView: View {
     // MARK: - Session List
 
     private var sessionList: some View {
-        List(viewModel.recentSessions) { session in
-            SessionRowView(session: session)
+        ScrollViewReader { proxy in
+            List(viewModel.recentSessions) { session in
+                SessionRowView(session: session)
+                    .id(session.id)
+            }
+            .listStyle(.inset(alternatesRowBackgrounds: true))
+            .onChange(of: viewModel.recentSessions.first?.id) {
+                if let firstID = viewModel.recentSessions.first?.id {
+                    proxy.scrollTo(firstID, anchor: .top)
+                }
+            }
         }
-        .listStyle(.inset(alternatesRowBackgrounds: true))
     }
 }
 
