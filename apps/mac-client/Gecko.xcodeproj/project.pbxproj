@@ -38,6 +38,7 @@
 		D35425D211829E816CB9BA10 /* SessionListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEE6FF0BF3AB00EA90E4BD9 /* SessionListViewModel.swift */; };
 		D4B020F413518A5FFC4C5A06 /* SyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 934D41D2ED463A40DA706BED /* SyncService.swift */; };
 		DD2BA44B44B422D76749C2A4 /* PermissionManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2357FDBE576E42911EB112C /* PermissionManager.swift */; };
+		DF591C9123AF160C5B83B6A7 /* TrackingEngine+Observers.swift in Sources */ = {isa = PBXBuildFile; fileRef = B619267C2F321AF5D6A57450 /* TrackingEngine+Observers.swift */; };
 		E2E02E8B0C4A2B6A8C651673 /* TabIdentifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85EEA3C58188F9DA8A7FA883 /* TabIdentifier.swift */; };
 		E7A2DD9A3AB6ED024CFAC066 /* BrowserURLFetcherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27F91918CD0F5E00F6C58320 /* BrowserURLFetcherTests.swift */; };
 		EF5B485080A9B3C354AB9966 /* SessionListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05058F5358C1B87D72263DBB /* SessionListView.swift */; };
@@ -88,6 +89,7 @@
 		A2357FDBE576E42911EB112C /* PermissionManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PermissionManager.swift; sourceTree = "<group>"; };
 		AA0CEFF5C1B16F613CF4961B /* SessionFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionFormatter.swift; sourceTree = "<group>"; };
 		B4C272E57F72F6825A0CC3B3 /* TrackingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingViewModel.swift; sourceTree = "<group>"; };
+		B619267C2F321AF5D6A57450 /* TrackingEngine+Observers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrackingEngine+Observers.swift"; sourceTree = "<group>"; };
 		C56FE8674C179EBB8582A1C9 /* BrowserURLFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserURLFetcher.swift; sourceTree = "<group>"; };
 		C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrackingEngine.swift; sourceTree = "<group>"; };
 		CA7D088BEC2C01178D2E9918 /* SessionListViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionListViewModelTests.swift; sourceTree = "<group>"; };
@@ -229,6 +231,7 @@
 				F3C8B226E462249412DE7B16 /* SettingsManager.swift */,
 				934D41D2ED463A40DA706BED /* SyncService.swift */,
 				C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */,
+				B619267C2F321AF5D6A57450 /* TrackingEngine+Observers.swift */,
 				68A167C87A54CC06849A77EF /* TrackingEngine+WindowContext.swift */,
 			);
 			path = Services;
@@ -348,6 +351,7 @@
 				165E19E96BF97F2B093B81F3 /* SettingsViewModel.swift in Sources */,
 				D4B020F413518A5FFC4C5A06 /* SyncService.swift in Sources */,
 				E2E02E8B0C4A2B6A8C651673 /* TabIdentifier.swift in Sources */,
+				DF591C9123AF160C5B83B6A7 /* TrackingEngine+Observers.swift in Sources */,
 				BAF606C425C86D27A049DA9E /* TrackingEngine+WindowContext.swift in Sources */,
 				9AA0C79ADEA06A3F6B0C1540 /* TrackingEngine.swift in Sources */,
 				67F36B5C006A23A4AB2B4A78 /* TrackingStatusView.swift in Sources */,

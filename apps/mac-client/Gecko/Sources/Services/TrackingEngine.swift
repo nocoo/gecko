@@ -54,9 +54,9 @@ final class TrackingEngine: ObservableObject {
 
     private let db: any DatabaseService
 
-    // MARK: - Private State
+    // MARK: - State (shared with extensions)
 
-    private var workspaceObserver: NSObjectProtocol?
+    var workspaceObserver: NSObjectProtocol?
 
     /// Tracks the last known app + window title + URL to detect in-app changes.
     private var lastAppName: String = ""
@@ -74,11 +74,11 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Energy: System Observers
 
-    private var lockObserver: NSObjectProtocol?
-    private var unlockObserver: NSObjectProtocol?
-    private var sleepObserver: NSObjectProtocol?
-    private var wakeObserver: NSObjectProtocol?
-    private var powerStateObserver: NSObjectProtocol?
+    var lockObserver: NSObjectProtocol?
+    var unlockObserver: NSObjectProtocol?
+    var sleepObserver: NSObjectProtocol?
+    var wakeObserver: NSObjectProtocol?
+    var powerStateObserver: NSObjectProtocol?
 
     // MARK: - Energy: Adaptive Polling
 
@@ -154,7 +154,7 @@ final class TrackingEngine: ObservableObject {
     /// 1. One state at a time — no boolean combinations.
     /// 2. Each notification maps to exactly one transition.
     /// 3. Side effects (timer, session, observers) are handled here, not scattered.
-    private func transition(to newState: TrackingState) {
+    func transition(to newState: TrackingState) {
         guard state != newState else { return }
         let oldState = state
         state = newState
@@ -207,7 +207,7 @@ final class TrackingEngine: ObservableObject {
     // MARK: - Event Handlers
 
     /// Called when a new app is activated (event-driven, zero polling).
-    private func handleAppActivation(_ notification: Notification) async {
+    func handleAppActivation(_ notification: Notification) async {
         guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
                 as? NSRunningApplication else { return }
 
@@ -414,7 +414,7 @@ final class TrackingEngine: ObservableObject {
     }
 
     /// Reschedule the GCD timer if the adaptive interval tier has changed.
-    private func rescheduleIfNeeded() {
+    func rescheduleIfNeeded() {
         let newInterval = adaptiveInterval
         guard newInterval != currentIntervalTier else { return }
         currentIntervalTier = newInterval
@@ -434,87 +434,6 @@ final class TrackingEngine: ObservableObject {
         titleDebounceTask?.cancel()
         titleDebounceTask = nil
         pendingTitleChange = nil
-    }
-
-    // MARK: - Observer Management
-
-    /// Register the workspace app-activation observer.
-    private func registerWorkspaceObserver() {
-        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil, queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                await self?.handleAppActivation(notification)
-            }
-        }
-    }
-
-    /// Remove the workspace app-activation observer.
-    private func removeWorkspaceObserver() {
-        if let obs = workspaceObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(obs)
-            workspaceObserver = nil
-        }
-    }
-
-    /// Register observers for screen lock/unlock, system sleep/wake, and power state.
-    private func registerSystemObservers() {
-        let workspaceCenter = NSWorkspace.shared.notificationCenter
-        let distCenter = DistributedNotificationCenter.default()
-
-        lockObserver = distCenter.addObserver(
-            forName: NSNotification.Name("com.apple.screenIsLocked"),
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.transition(to: .locked) }
-        }
-
-        unlockObserver = distCenter.addObserver(
-            forName: NSNotification.Name("com.apple.screenIsUnlocked"),
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.transition(to: .active) }
-        }
-
-        sleepObserver = workspaceCenter.addObserver(
-            forName: NSWorkspace.willSleepNotification,
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.transition(to: .asleep) }
-        }
-
-        wakeObserver = workspaceCenter.addObserver(
-            forName: NSWorkspace.didWakeNotification,
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.transition(to: .active) }
-        }
-
-        powerStateObserver = NotificationCenter.default.addObserver(
-            forName: .NSProcessInfoPowerStateDidChange,
-            object: nil, queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in self?.rescheduleIfNeeded() }
-        }
-    }
-
-    /// Remove all system observers (lock/unlock, sleep/wake, power state).
-    private func removeSystemObservers() {
-        let workspaceCenter = NSWorkspace.shared.notificationCenter
-        let distCenter = DistributedNotificationCenter.default()
-
-        if let obs = lockObserver { distCenter.removeObserver(obs) }
-        if let obs = unlockObserver { distCenter.removeObserver(obs) }
-        if let obs = sleepObserver { workspaceCenter.removeObserver(obs) }
-        if let obs = wakeObserver { workspaceCenter.removeObserver(obs) }
-        if let obs = powerStateObserver { NotificationCenter.default.removeObserver(obs) }
-
-        lockObserver = nil
-        unlockObserver = nil
-        sleepObserver = nil
-        wakeObserver = nil
-        powerStateObserver = nil
     }
 
     // MARK: - AX Window Context (Cached Lookup)
