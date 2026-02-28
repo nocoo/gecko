@@ -201,7 +201,7 @@ final class TrackingEngine: ObservableObject {
         lastWindowTitle = ctx.windowTitle
         lastURL = ctx.browserInfo?.url
 
-        // Create and persist the new session
+        // Create the new session
         let session = FocusSession.start(
             appName: ctx.appName,
             windowTitle: ctx.windowTitle,
@@ -214,13 +214,17 @@ final class TrackingEngine: ObservableObject {
             isMinimized: ctx.isMinimized
         )
 
-        do {
-            try db.insert(session)
-            currentSession = session
-            loadRecentSessions()
-        } catch {
-            print("[TrackingEngine] Failed to insert session: \(error)")
+        // Optimistic UI update, then persist on a background thread
+        currentSession = session
+        let database = db
+        Task.detached(priority: .userInitiated) {
+            do {
+                try database.insert(session)
+            } catch {
+                print("[TrackingEngine] Failed to insert session: \(error)")
+            }
         }
+        loadRecentSessions()
     }
 
     /// Finalize the current session by setting end_time and duration, then reload.
@@ -237,11 +241,15 @@ final class TrackingEngine: ObservableObject {
 
         session.finish()
 
-        do {
-            try db.update(session)
-            currentSession = nil
-        } catch {
-            print("[TrackingEngine] Failed to finalize session: \(error)")
+        // Clear UI state immediately, persist on background thread
+        currentSession = nil
+        let database = db
+        Task.detached(priority: .userInitiated) {
+            do {
+                try database.update(session)
+            } catch {
+                print("[TrackingEngine] Failed to finalize session: \(error)")
+            }
         }
     }
 
