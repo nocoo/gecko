@@ -314,7 +314,7 @@ function DailyChart({
               {...AXIS_CONFIG}
               tickFormatter={(v: number) => formatDurationCompact(v * 3600)}
             />
-            <RechartsTooltip content={<DailyTooltip />} />
+            <RechartsTooltip content={<DailyTooltip />} isAnimationActive={false} />
             <Bar
               dataKey="hours"
               fill={chartPrimary}
@@ -403,7 +403,7 @@ function AppDonut({
                 <Cell key={i} fill={entry.color} />
               ))}
             </Pie>
-            <RechartsTooltip content={<DonutTooltip total={totalDuration} />} />
+            <RechartsTooltip content={<DonutTooltip total={totalDuration} />} isAnimationActive={false} />
           </PieChart>
         </ResponsiveContainer>
       </div>
