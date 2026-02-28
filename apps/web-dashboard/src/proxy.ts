@@ -5,13 +5,18 @@ import type { NextRequest } from "next/server";
 // Skip auth in E2E test environment
 const SKIP_AUTH = process.env.E2E_SKIP_AUTH === "true";
 
-// Build redirect URL respecting reverse proxy headers
+// Build redirect URL respecting reverse proxy headers.
+// In production, always force HTTPS to prevent Mixed Content errors
+// (Railway's reverse proxy may forward x-forwarded-proto: http).
 function buildRedirectUrl(req: NextRequest, pathname: string): URL {
   const forwardedHost = req.headers.get("x-forwarded-host");
-  const forwardedProto = req.headers.get("x-forwarded-proto") || "https";
 
   if (forwardedHost) {
-    return new URL(pathname, `${forwardedProto}://${forwardedHost}`);
+    const proto =
+      process.env.NODE_ENV === "production"
+        ? "https"
+        : req.headers.get("x-forwarded-proto") || "https";
+    return new URL(pathname, `${proto}://${forwardedHost}`);
   }
 
   return new URL(pathname, req.nextUrl.origin);
