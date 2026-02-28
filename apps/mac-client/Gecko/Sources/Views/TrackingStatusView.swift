@@ -192,6 +192,7 @@ struct TrackingStatusView: View {
                     : "exclamationmark.triangle.fill"
             )
             .foregroundStyle(viewModel.allPermissionsGranted ? .green : .orange)
+            .accessibilityHidden(true)
 
             Text(
                 viewModel.allPermissionsGranted
@@ -220,6 +221,7 @@ struct TrackingStatusView: View {
                 .font(.system(size: 20))
                 .foregroundStyle(isGranted ? .green : .red)
                 .frame(width: 28)
+                .accessibilityLabel(isGranted ? "\(title) granted" : "\(title) not granted")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

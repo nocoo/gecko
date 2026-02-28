@@ -96,6 +96,7 @@ struct SessionRowView: View {
                 .fill(session.isActive ? Color.green : Color.clear)
                 .frame(width: 8, height: 8)
                 .padding(.top, 5)
+                .accessibilityLabel(session.isActive ? "Active session" : "Inactive session")
 
             VStack(alignment: .leading, spacing: 3) {
                 // App name + window title

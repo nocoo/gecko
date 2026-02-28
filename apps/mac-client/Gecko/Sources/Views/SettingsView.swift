@@ -211,15 +211,19 @@ struct SettingsView: View {
         case .idle:
             Image(systemName: "checkmark.circle")
                 .foregroundStyle(.green)
+                .accessibilityLabel("Sync idle")
         case .syncing:
             ProgressView()
                 .controlSize(.small)
+                .accessibilityLabel("Syncing")
         case .error:
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(.red)
+                .accessibilityLabel("Sync error")
         case .disabled:
             Image(systemName: "minus.circle")
                 .foregroundStyle(.secondary)
+                .accessibilityLabel("Sync disabled")
         }
     }
 
