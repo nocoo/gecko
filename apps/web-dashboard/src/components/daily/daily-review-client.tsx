@@ -364,6 +364,36 @@ function AiAnalysisPanel({
           </div>
         )}
 
+        {/* Time Segments */}
+        {ai.result.timeSegments && ai.result.timeSegments.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-xs text-muted-foreground mb-2">
+              Time Segments
+            </h4>
+            <div className="space-y-2">
+              {ai.result.timeSegments.map((seg, i) => (
+                <div
+                  key={i}
+                  className="rounded-widget border border-border bg-card px-3 py-2.5"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                    <span className="text-xs font-medium text-muted-foreground font-display tracking-tight">
+                      {seg.timeRange}
+                    </span>
+                    <span className="text-[11px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                      {seg.label}
+                    </span>
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {seg.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Summary (Markdown rendered) */}
         {ai.result.summary && (
           <div className="pt-3 border-t border-border/50">
