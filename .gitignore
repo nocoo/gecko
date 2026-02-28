@@ -25,6 +25,9 @@ node_modules/
 .env*.local
 .wrangler/
 
+# Build artifacts
+build/
+
 # IDE
 .vscode/
 .idea/
