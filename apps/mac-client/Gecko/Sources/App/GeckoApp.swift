@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @main
 struct GeckoApp: App {
@@ -58,6 +59,9 @@ struct GeckoApp: App {
                 settingsViewModel: settingsViewModel,
                 tabSelection: tabSelection
             )
+            .task {
+                await autoStartTrackingIfNeeded()
+            }
         }
         .defaultSize(width: 700, height: 600)
 
@@ -67,6 +71,24 @@ struct GeckoApp: App {
                 viewModel: menuBarViewModel,
                 tabSelection: tabSelection
             )
+        }
+    }
+
+    // MARK: - Auto-Start
+
+    /// If the user enabled "auto-start tracking", wait for permissions then start.
+    @MainActor
+    private func autoStartTrackingIfNeeded() async {
+        guard settingsManager.autoStartTracking else { return }
+        guard !trackingEngine.isTracking else { return }
+
+        // Permissions are polled asynchronously — wait up to ~6 s for them.
+        for _ in 0..<6 {
+            if permissionManager.allPermissionsGranted {
+                trackingEngine.start()
+                return
+            }
+            try? await Task.sleep(for: .seconds(1))
         }
     }
 }

@@ -195,4 +195,28 @@ final class SettingsManagerTests: XCTestCase {
 
         XCTAssertEqual(manager.lastSyncedStartTime, 0)
     }
+
+    // MARK: - Auto-Start Tracking
+
+    func testAutoStartTrackingDefaultsToFalse() {
+        let manager = SettingsManager(defaults: defaults)
+        XCTAssertFalse(manager.autoStartTracking)
+    }
+
+    func testAutoStartTrackingPersistedToDefaults() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.autoStartTracking = true
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertTrue(manager2.autoStartTracking)
+    }
+
+    func testAutoStartTrackingCanBeDisabled() {
+        let manager = SettingsManager(defaults: defaults)
+        manager.autoStartTracking = true
+        manager.autoStartTracking = false
+
+        let manager2 = SettingsManager(defaults: defaults)
+        XCTAssertFalse(manager2.autoStartTracking)
+    }
 }

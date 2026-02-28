@@ -18,6 +18,9 @@ struct SessionListView: View {
                 sessionList
             }
         }
+        .onAppear {
+            viewModel.refresh()
+        }
     }
 
     // MARK: - Header

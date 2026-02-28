@@ -32,23 +32,23 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// The API key being edited.
-    @Published var editingApiKey: String = "" {
-        didSet {
-            isSyncEditing = (editingApiKey != settingsManager.apiKey
-                || editingSyncServerUrl != settingsManager.syncServerUrl)
-        }
-    }
+    @Published var editingApiKey: String = ""
 
     /// The sync server URL being edited.
-    @Published var editingSyncServerUrl: String = "" {
-        didSet {
-            isSyncEditing = (editingApiKey != settingsManager.apiKey
-                || editingSyncServerUrl != settingsManager.syncServerUrl)
-        }
-    }
+    @Published var editingSyncServerUrl: String = ""
 
     /// Whether sync settings have unsaved changes.
-    @Published private(set) var isSyncEditing: Bool = false
+    var isSyncEditing: Bool {
+        editingApiKey != settingsManager.apiKey
+            || editingSyncServerUrl != settingsManager.syncServerUrl
+    }
+
+    /// Whether to auto-start tracking on launch (bound to toggle).
+    @Published var autoStartTracking: Bool = false {
+        didSet {
+            settingsManager.autoStartTracking = autoStartTracking
+        }
+    }
 
     // MARK: - Sync Service State (read-only, forwarded from SyncService)
 
@@ -84,6 +84,9 @@ final class SettingsViewModel: ObservableObject {
         self.syncEnabled = settingsManager.syncEnabled
         self.editingApiKey = settingsManager.apiKey
         self.editingSyncServerUrl = settingsManager.syncServerUrl
+
+        // Auto-start tracking
+        self.autoStartTracking = settingsManager.autoStartTracking
 
         // Observe SyncService state
         bindSyncService()
@@ -172,7 +175,6 @@ final class SettingsViewModel: ObservableObject {
     func saveSyncSettings() {
         settingsManager.apiKey = editingApiKey
         settingsManager.syncServerUrl = editingSyncServerUrl
-        isSyncEditing = false
     }
 
     /// Reset sync settings to defaults.
@@ -185,7 +187,6 @@ final class SettingsViewModel: ObservableObject {
         editingApiKey = ""
         editingSyncServerUrl = SettingsManager.defaultSyncServerUrl
         syncEnabled = false
-        isSyncEditing = false
     }
 
     /// Trigger an immediate sync.

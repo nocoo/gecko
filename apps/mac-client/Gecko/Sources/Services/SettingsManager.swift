@@ -16,6 +16,7 @@ final class SettingsManager: ObservableObject {
         static let apiKey = "gecko.sync.apiKey"
         static let syncServerUrl = "gecko.sync.serverUrl"
         static let lastSyncedStartTime = "gecko.sync.lastSyncedStartTime"
+        static let autoStartTracking = "gecko.settings.autoStartTracking"
     }
 
     // MARK: - Defaults
@@ -63,6 +64,13 @@ final class SettingsManager: ObservableObject {
         }
     }
 
+    /// Whether to automatically start tracking on launch (when permissions are granted).
+    @Published var autoStartTracking: Bool {
+        didSet {
+            defaults.set(autoStartTracking, forKey: Keys.autoStartTracking)
+        }
+    }
+
     // MARK: - Init
 
     init() {
@@ -74,6 +82,7 @@ final class SettingsManager: ObservableObject {
         self.syncServerUrl = UserDefaults.standard.string(forKey: Keys.syncServerUrl)
             ?? Self.defaultSyncServerUrl
         self.lastSyncedStartTime = UserDefaults.standard.double(forKey: Keys.lastSyncedStartTime)
+        self.autoStartTracking = UserDefaults.standard.bool(forKey: Keys.autoStartTracking)
     }
 
     /// For testing: init with a custom UserDefaults suite.
@@ -87,6 +96,7 @@ final class SettingsManager: ObservableObject {
         self.syncServerUrl = defaults.string(forKey: Keys.syncServerUrl)
             ?? Self.defaultSyncServerUrl
         self.lastSyncedStartTime = defaults.double(forKey: Keys.lastSyncedStartTime)
+        self.autoStartTracking = defaults.bool(forKey: Keys.autoStartTracking)
     }
 
     // MARK: - Default Path

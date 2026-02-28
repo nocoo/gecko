@@ -9,6 +9,9 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 0) {
                 headerSection
                 Divider()
+                generalSection
+                Divider()
+                    .padding(.horizontal)
                 databasePathSection
                 Divider()
                     .padding(.horizontal)
@@ -34,6 +37,23 @@ struct SettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
+        }
+        .padding()
+    }
+
+    // MARK: - General
+
+    private var generalSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label("General", systemImage: "switch.2")
+                .font(.headline)
+
+            Toggle("Auto-start tracking on launch", isOn: $viewModel.autoStartTracking)
+                .toggleStyle(.switch)
+
+            Text("When enabled, tracking starts automatically if permissions are granted.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding()
     }
