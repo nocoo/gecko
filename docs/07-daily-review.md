@@ -1,6 +1,6 @@
 # 07 — Daily Review Page
 
-> **Status**: In Progress
+> **Status**: Complete
 > **Route**: `/daily/:date` (e.g. `/daily/2026-02-27`)
 
 Left-right split layout: rule-based visualization (left) + AI analysis in Markdown (right).
@@ -12,14 +12,14 @@ Date picker at top (arrow nav + calendar popup). Today is excluded (incomplete d
 
 | # | Module | Type | Key Files | Status |
 |---|--------|------|-----------|--------|
-| M1 | DB Migration | infra | `drizzle/0005_daily_summaries.sql` | [ ] |
-| M2 | Daily Stats Service | service | `src/services/daily-stats.ts` | [ ] |
-| M3 | Daily Summary Repo | repo | `src/lib/daily-summary-repo.ts` | [ ] |
-| M4 | API GET /api/daily/:date | route | `src/app/api/daily/[date]/route.ts` | [ ] |
-| M5 | API POST /api/daily/:date/analyze | route | `src/app/api/daily/[date]/analyze/route.ts` | [ ] |
-| M6 | Gantt Chart Component | component | `src/components/daily/gantt-chart.tsx` | [ ] |
-| M7 | Score Cards Component | component | `src/components/daily/score-cards.tsx` | [ ] |
-| M8 | Daily Review Page | page | `src/app/daily/[date]/page.tsx` | [ ] |
+| M1 | DB Migration | infra | `drizzle/0005_daily_summaries.sql` | [x] |
+| M2 | Daily Stats Service | service | `src/services/daily-stats.ts` | [x] |
+| M3 | Daily Summary Repo | repo | `src/lib/daily-summary-repo.ts` | [x] |
+| M4 | API GET /api/daily/:date | route | `src/app/api/daily/[date]/route.ts` | [x] |
+| M5 | API POST /api/daily/:date/analyze | route | `src/app/api/daily/[date]/analyze/route.ts` | [x] |
+| M6 | Gantt Chart Component | component | `src/components/daily/gantt-chart.tsx` | [x] |
+| M7 | Score Cards Component | component | `src/components/daily/score-cards.tsx` | [x] |
+| M8 | Daily Review Page | page | `src/app/daily/[date]/page.tsx` | [x] |
 
 ---
 
