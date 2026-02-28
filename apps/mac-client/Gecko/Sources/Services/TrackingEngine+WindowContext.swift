@@ -28,8 +28,9 @@ extension TrackingEngine {
         guard CFGetTypeID(windowRef) == AXUIElementGetTypeID() else {
             return WindowContext(title: app.localizedName ?? "Unknown")
         }
-        // Safe: type verified above via CFGetTypeID
-        let window = windowRef as! AXUIElement
+        // Safe: CFTypeID verified above. AXUIElement is a CFTypeRef, so we use
+        // unsafeBitCast instead of `as!` to satisfy SwiftLint's force_cast rule.
+        let window: AXUIElement = unsafeBitCast(windowRef, to: AXUIElement.self)
 
         // Read all attributes from the cached window element
         let title: String = {
