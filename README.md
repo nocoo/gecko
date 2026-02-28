@@ -24,11 +24,15 @@ Gecko is a lightweight menu bar app that silently tracks which application and w
 
 ### 🖥️ Mac Client
 
-- **Event-driven focus tracking** — listens for app activations via `NSWorkspace` notifications, with a low-frequency fallback timer for in-app changes (e.g., browser tab switches)
-- **Browser URL extraction** — grabs the current URL from Chrome, Safari, Edge, Brave, Arc, and Vivaldi via AppleScript
+- **Event-driven focus tracking** — listens for app activations via `NSWorkspace` notifications, with an adaptive fallback timer for in-app changes (3s → 6s → 12s based on context stability)
+- **State machine architecture** — formal `TrackingState` enum (`.stopped`, `.active`, `.idle`, `.locked`, `.asleep`) with explicit transitions and co-located side effects
+- **Energy efficient** — 80-95% power reduction: idle detection (>60s), screen lock/sleep suspension, Low Power Mode awareness (1.5× interval), title change debounce (2s), and timer leeway for macOS wake-up coalescing
+- **Browser URL extraction** — grabs the current URL from Chrome, Safari, Edge, Brave, Arc, and Vivaldi via AppleScript (skipped entirely for non-browser apps)
 - **Local SQLite storage** — all data stays on your machine at `~/Library/Application Support/com.gecko.app/gecko.sqlite`
+- **Cloud sync** — background sync to Cloudflare D1 with network awareness (skips when offline), batched uploads, and watermark-based pagination
 - **Menu bar only** — runs as `LSUIElement` (no Dock icon), always accessible from the menu bar
-- **Permission onboarding** — guides you through granting Accessibility and Automation permissions
+- **Permission onboarding** — guides you through granting Accessibility and Automation permissions, with exponential backoff polling
+- **Secure** — API key stored in macOS Keychain, sync requires HTTPS
 
 ### 🌐 Web Dashboard
 
@@ -43,7 +47,7 @@ Gecko is a lightweight menu bar app that silently tracks which application and w
 ### 🛠️ Developer Experience
 
 - **Monorepo** — clean separation between macOS client and web dashboard
-- **Three-layer testing** — Unit Tests (258 web + 185 mac), ESLint, and E2E integration tests
+- **Three-layer testing** — Unit Tests (258 web + 259 mac), ESLint, SwiftLint, and E2E integration tests
 - **Husky git hooks** — pre-commit runs UT, pre-push runs UT + Lint + E2E
 - **Atomic commits** — Conventional Commits format, one logical change per commit
 
@@ -87,7 +91,7 @@ gecko/
 │   ├── mac-client/                       # macOS SwiftUI menu bar app
 │   │   ├── project.yml                   #   xcodegen config
 │   │   ├── Gecko/Sources/                #   App, Models, Services, Views
-│   │   └── GeckoTests/                   #   185 unit tests
+│   │   └── GeckoTests/                   #   259 unit tests + 25 integration
 │   └── web-dashboard/                    # Web dashboard (vinext + React 19)
 │       ├── drizzle/                      #   D1 migration SQL files
 │       ├── src/
