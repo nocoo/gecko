@@ -179,6 +179,9 @@ export async function POST(
       model: cached.ai_model,
       generatedAt: cached.ai_generated_at,
       cached: true,
+      // No usage/timing for cached results
+      usage: null,
+      durationMs: null,
     });
   }
 
@@ -208,11 +211,13 @@ export async function POST(
 
   try {
     const client = createAiClient(config);
-    const { text } = await generateText({
+    const startMs = Date.now();
+    const { text, usage } = await generateText({
       model: client(config.model),
       prompt,
       maxOutputTokens: 2048,
     });
+    const durationMs = Date.now() - startMs;
 
     const result = parseAiResponse(text);
 
@@ -229,8 +234,15 @@ export async function POST(
       score: result.score,
       result,
       model: config.model,
+      provider: config.provider,
       generatedAt: new Date().toISOString(),
       cached: false,
+      usage: {
+        promptTokens: usage?.promptTokens ?? 0,
+        completionTokens: usage?.completionTokens ?? 0,
+        totalTokens: usage?.totalTokens ?? 0,
+      },
+      durationMs,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "AI analysis failed";

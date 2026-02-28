@@ -4,6 +4,9 @@
  * Displays 4 dimension score cards (focus, deepWork, switchRate, concentration)
  * plus a weighted overall score.
  * Color coding: <40 red, 40-70 amber, >70 green.
+ *
+ * Design: basalt L2 card (rounded-card bg-secondary), inner elements
+ * step back to L1 (rounded-widget border border-border bg-card).
  */
 
 "use client";
@@ -107,7 +110,7 @@ export function getScoreLabel(score: number): string {
 
 function ScoreRing({
   score,
-  size = 64,
+  size = 72,
   strokeWidth = 5,
 }: {
   score: number;
@@ -148,7 +151,7 @@ function ScoreRing({
         />
       </svg>
       <span
-        className={`absolute text-sm font-bold ${color.text}`}
+        className={`absolute text-base font-semibold font-display tracking-tight ${color.text}`}
       >
         {score}
       </span>
@@ -170,24 +173,22 @@ function DimensionCard({
   const color = getScoreColor(score);
 
   return (
-    <div
-      className={`rounded-xl p-3 ring-1 ${color.bg} ${color.ring}`}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-medium text-muted-foreground">
+    <div className="rounded-widget border border-border bg-card p-3">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-xs text-muted-foreground">
           {dimension.label}
         </span>
-        <span className="text-xs text-muted-foreground">
+        <span className="text-[11px] text-muted-foreground">
           {Math.round(dimension.weight * 100)}%
         </span>
       </div>
-      <div className="flex items-center gap-2">
-        <span className={`text-2xl font-bold ${color.text}`}>
+      <div className="flex items-baseline gap-1.5">
+        <span className={`text-xl font-semibold font-display tracking-tight ${color.text}`}>
           {score}
         </span>
         <span className="text-xs text-muted-foreground">/ 100</span>
       </div>
-      <p className="mt-1 text-[11px] text-muted-foreground">
+      <p className="mt-1.5 text-[11px] text-muted-foreground">
         {dimension.description}
       </p>
     </div>
@@ -198,8 +199,8 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
   const overallColor = getScoreColor(scores.overall);
 
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">
+    <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
+      <h3 className="text-sm font-normal text-muted-foreground mb-3">
         Productivity Score
       </h3>
 
@@ -207,7 +208,7 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
       <div className="flex items-center gap-4 mb-4">
         <ScoreRing score={scores.overall} size={72} strokeWidth={6} />
         <div>
-          <p className={`text-lg font-semibold ${overallColor.text}`}>
+          <p className={`text-xl md:text-2xl font-semibold font-display tracking-tight ${overallColor.text}`}>
             {getScoreLabel(scores.overall)}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -217,7 +218,7 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
       </div>
 
       {/* Dimension cards grid */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         {SCORE_DIMENSIONS.map((dim) => (
           <DimensionCard
             key={dim.key}

@@ -5,6 +5,9 @@
  * and colored bars represent time segments throughout the day.
  * Sorted by total duration (highest at top).
  * Uses hash-based stable coloring per app.
+ *
+ * Design: basalt L2 card (rounded-card bg-secondary p-4 md:p-5),
+ * inner elements use L1 styling.
  */
 
 "use client";
@@ -128,8 +131,8 @@ export function GanttChart({
 
   if (rows.length === 0) {
     return (
-      <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
-        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+      <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
+        <h3 className="text-sm font-normal text-muted-foreground mb-2">
           Timeline
         </h3>
         <p className="text-sm text-muted-foreground">No sessions to display.</p>
@@ -151,8 +154,8 @@ export function GanttChart({
   }
 
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
-      <h3 className="text-sm font-medium text-muted-foreground mb-3">
+    <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
+      <h3 className="text-sm font-normal text-muted-foreground mb-3">
         Timeline
       </h3>
 

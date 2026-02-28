@@ -3,16 +3,19 @@
  *
  * Split layout:
  * - Left: Score cards + Gantt chart timeline
- * - Right: AI analysis (Markdown)
+ * - Right: AI analysis (Markdown) + Model details card
  *
  * Date navigation via arrows + calendar popup (react-day-picker).
  * Today/future dates are forbidden.
+ *
+ * Design: Follows basalt 3-tier surface hierarchy (L0 → L1 → L2).
  */
 
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Markdown from "react-markdown";
 import { AppShell } from "@/components/layout";
 import { GanttChart } from "@/components/daily/gantt-chart";
 import { ScoreCards } from "@/components/daily/score-cards";
@@ -23,6 +26,10 @@ import {
   Sparkles,
   Loader2,
   AlertCircle,
+  Clock,
+  Cpu,
+  Zap,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DayPicker } from "react-day-picker";
@@ -43,12 +50,21 @@ interface DailyResponse {
   } | null;
 }
 
+interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
 interface AnalyzeResponse {
   score: number;
   result: AiAnalysisResult;
   model: string;
+  provider?: string;
   generatedAt: string;
   cached: boolean;
+  usage?: TokenUsage | null;
+  durationMs?: number | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -167,6 +183,76 @@ function DateNavigator({
 }
 
 // ---------------------------------------------------------------------------
+// Model Details card (separate from AI content)
+// ---------------------------------------------------------------------------
+
+function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
+  const items: { icon: typeof Clock; label: string; value: string }[] = [];
+
+  if (ai.provider) {
+    items.push({
+      icon: Cpu,
+      label: "Provider",
+      value: ai.provider,
+    });
+  }
+
+  items.push({
+    icon: Zap,
+    label: "Model",
+    value: ai.model,
+  });
+
+  if (ai.durationMs != null) {
+    items.push({
+      icon: Clock,
+      label: "Duration",
+      value: `${(ai.durationMs / 1000).toFixed(1)}s`,
+    });
+  }
+
+  if (ai.usage) {
+    items.push({
+      icon: Info,
+      label: "Tokens",
+      value: `${ai.usage.promptTokens} in / ${ai.usage.completionTokens} out (${ai.usage.totalTokens} total)`,
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="rounded-card bg-secondary p-4 md:p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+        <h3 className="text-sm font-normal text-muted-foreground">
+          Model Details
+        </h3>
+        {ai.cached && (
+          <span className="ml-auto text-[11px] font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
+            Cached
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            className="flex items-center gap-2 rounded-widget border border-border bg-card px-3 py-2"
+          >
+            <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">{item.label}</p>
+              <p className="text-sm text-foreground truncate">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // AI Analysis panel
 // ---------------------------------------------------------------------------
 
@@ -183,7 +269,7 @@ function AiAnalysisPanel({
 }) {
   if (loading) {
     return (
-      <div className="rounded-2xl bg-secondary p-4 flex flex-col items-center justify-center min-h-[200px]">
+      <div className="rounded-card bg-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
         <Loader2 className="size-6 animate-spin text-muted-foreground mb-2" />
         <p className="text-sm text-muted-foreground">Analyzing with AI...</p>
       </div>
@@ -192,10 +278,10 @@ function AiAnalysisPanel({
 
   if (error) {
     return (
-      <div className="rounded-2xl bg-secondary p-4">
+      <div className="rounded-card bg-secondary p-4 md:p-5">
         <div className="flex items-center gap-2 mb-2">
-          <AlertCircle className="size-4 text-destructive" />
-          <h3 className="text-sm font-medium text-destructive">
+          <AlertCircle className="h-4 w-4 text-destructive" strokeWidth={1.5} />
+          <h3 className="text-sm font-normal text-destructive">
             Analysis failed
           </h3>
         </div>
@@ -214,7 +300,7 @@ function AiAnalysisPanel({
 
   if (!ai) {
     return (
-      <div className="rounded-2xl bg-secondary p-4 flex flex-col items-center justify-center min-h-[200px]">
+      <div className="rounded-card bg-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
         <Sparkles className="size-8 text-muted-foreground mb-3" strokeWidth={1.5} />
         <p className="text-sm text-muted-foreground mb-3">
           Generate an AI-powered analysis of your day.
@@ -228,70 +314,71 @@ function AiAnalysisPanel({
   }
 
   return (
-    <div className="rounded-2xl bg-secondary p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-muted-foreground" strokeWidth={1.5} />
-          <h3 className="text-sm font-medium text-muted-foreground">
+    <div className="space-y-4">
+      {/* Main AI content card */}
+      <div className="rounded-card bg-secondary p-4 md:p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
+          <h3 className="text-sm font-normal text-muted-foreground">
             AI Analysis
           </h3>
         </div>
-        <span className="text-[11px] text-muted-foreground">
-          {ai.model}
-        </span>
+
+        {/* Highlights */}
+        {ai.result.highlights.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-xs text-muted-foreground mb-2">
+              Highlights
+            </h4>
+            <ul className="space-y-1.5">
+              {ai.result.highlights.map((h, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-sm text-foreground"
+                >
+                  <span className="text-emerald-500 mt-0.5 shrink-0">+</span>
+                  <span>{h}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Improvements */}
+        {ai.result.improvements.length > 0 && (
+          <div className="mb-4">
+            <h4 className="text-xs text-muted-foreground mb-2">
+              Improvements
+            </h4>
+            <ul className="space-y-1.5">
+              {ai.result.improvements.map((imp, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 text-sm text-foreground"
+                >
+                  <span className="text-amber-500 mt-0.5 shrink-0">-</span>
+                  <span>{imp}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Summary (Markdown rendered) */}
+        {ai.result.summary && (
+          <div className="pt-3 border-t border-border/50">
+            <h4 className="text-xs text-muted-foreground mb-2">
+              Summary
+            </h4>
+            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-card [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
+              <Markdown>{ai.result.summary}</Markdown>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Highlights */}
-      {ai.result.highlights.length > 0 && (
-        <div className="mb-3">
-          <h4 className="text-xs font-medium text-muted-foreground mb-1.5">
-            Highlights
-          </h4>
-          <ul className="space-y-1">
-            {ai.result.highlights.map((h, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-sm"
-              >
-                <span className="text-emerald-500 mt-0.5 shrink-0">+</span>
-                <span>{h}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Improvements */}
-      {ai.result.improvements.length > 0 && (
-        <div className="mb-3">
-          <h4 className="text-xs font-medium text-muted-foreground mb-1.5">
-            Improvements
-          </h4>
-          <ul className="space-y-1">
-            {ai.result.improvements.map((imp, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-sm"
-              >
-                <span className="text-amber-500 mt-0.5 shrink-0">-</span>
-                <span>{imp}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Summary */}
-      {ai.result.summary && (
-        <div className="mt-3 pt-3 border-t border-border/50">
-          <h4 className="text-xs font-medium text-muted-foreground mb-1.5">
-            Summary
-          </h4>
-          <div className="text-sm leading-relaxed whitespace-pre-wrap">
-            {ai.result.summary}
-          </div>
-        </div>
-      )}
+      {/* Model details card (separate) */}
+      <ModelDetailsCard ai={ai} />
     </div>
   );
 }
@@ -410,7 +497,7 @@ export function DailyReviewClient({ date }: { date: string }) {
         {/* Header: Date navigation */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-semibold">Daily Review</h1>
+            <h1 className="text-lg md:text-xl font-semibold">Daily Review</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {hasData
                 ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
@@ -422,7 +509,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
         {/* Error */}
         {error && (
-          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-widget bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </div>
         )}
@@ -442,7 +529,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
         {/* Empty state */}
         {!loading && data && !hasData && (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-16 px-6 text-center">
+          <div className="flex flex-col items-center justify-center rounded-card bg-secondary py-16 px-6 text-center">
             <Calendar className="size-8 text-muted-foreground mb-4" strokeWidth={1.5} />
             <h2 className="text-lg font-semibold">No Data</h2>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
@@ -486,7 +573,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
 function LoadingSkeleton({ height = "h-[200px]" }: { height?: string }) {
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${height} flex items-center justify-center`}>
+    <div className={`rounded-card bg-secondary p-4 md:p-5 ${height} flex items-center justify-center`}>
       <Loader2 className="size-6 animate-spin text-muted-foreground" />
     </div>
   );
