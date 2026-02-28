@@ -340,19 +340,47 @@ export async function POST(
   const stats = JSON.parse(cached.stats_json) as DailyStats;
   const prompt = buildPrompt(date, stats);
 
+  let text: string;
+  let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
+  let durationMs: number;
+
+  // Step 1: Call AI provider
   try {
     const client = createAiClient(config);
     const startMs = Date.now();
-    const { text, usage } = await generateText({
+    const response = await generateText({
       model: client(config.model),
       prompt,
       maxOutputTokens: 4096,
     });
-    const durationMs = Date.now() - startMs;
+    text = response.text;
+    usage = response.usage;
+    durationMs = Date.now() - startMs;
+    console.log(
+      `[analyze] AI call succeeded: provider=${config.provider} model=${config.model} duration=${durationMs}ms tokens=${usage?.totalTokens ?? "?"}`,
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[analyze] AI provider error: provider=${config.provider} model=${config.model} error=${message}`,
+    );
+    return jsonError(`AI provider error: ${message}`, 502);
+  }
 
-    const result = parseAiResponse(text);
+  // Step 2: Parse AI response
+  let result: AiAnalysisResult;
+  try {
+    result = parseAiResponse(text);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[analyze] Failed to parse AI response: ${message}. Raw text (first 500 chars): ${text.slice(0, 500)}`,
+    );
+    return jsonError(`Failed to parse AI response: ${message}`, 502);
+  }
 
-    // Cache result
+  // Step 3: Cache result
+  try {
     await dailySummaryRepo.upsertAiResult(
       user.userId,
       date,
@@ -360,23 +388,23 @@ export async function POST(
       JSON.stringify(result),
       config.model,
     );
-
-    return jsonOk({
-      score: result.score,
-      result,
-      model: config.model,
-      provider: config.provider,
-      generatedAt: new Date().toISOString(),
-      cached: false,
-      usage: {
-        promptTokens: usage?.promptTokens ?? 0,
-        completionTokens: usage?.completionTokens ?? 0,
-        totalTokens: usage?.totalTokens ?? 0,
-      },
-      durationMs,
-    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "AI analysis failed";
-    return jsonError(message, 502);
+    // Non-fatal: log but still return the result
+    console.error(`[analyze] Failed to cache AI result: ${err instanceof Error ? err.message : err}`);
   }
+
+  return jsonOk({
+    score: result.score,
+    result,
+    model: config.model,
+    provider: config.provider,
+    generatedAt: new Date().toISOString(),
+    cached: false,
+    usage: {
+      promptTokens: usage?.promptTokens ?? 0,
+      completionTokens: usage?.completionTokens ?? 0,
+      totalTokens: usage?.totalTokens ?? 0,
+    },
+    durationMs,
+  });
 }
