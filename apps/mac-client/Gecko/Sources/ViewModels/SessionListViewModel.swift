@@ -1,4 +1,5 @@
 import Foundation
+import os.log
 
 /// ViewModel for the session list, decoupling SessionListView from TrackingEngine.
 ///
@@ -18,6 +19,7 @@ final class SessionListViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let db: any DatabaseService
+    private let logger = Logger(subsystem: "ai.hexly.gecko", category: "SessionListViewModel")
 
     // MARK: - Constants
 
@@ -36,6 +38,7 @@ final class SessionListViewModel: ObservableObject {
     func refresh() {
         let database = db
         let limit = Self.defaultLimit
+        let logger = self.logger
         Task.detached(priority: .userInitiated) {
             do {
                 let sessions = try database.fetchRecent(limit: limit)
@@ -44,7 +47,7 @@ final class SessionListViewModel: ObservableObject {
                     self.shouldScrollToTop = true
                 }
             } catch {
-                print("[SessionListViewModel] Failed to load sessions: \(error)")
+                logger.error("Failed to load sessions: \(error)")
             }
         }
     }

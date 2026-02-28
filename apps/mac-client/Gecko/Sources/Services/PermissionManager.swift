@@ -1,5 +1,6 @@
 import Cocoa
 import Combine
+import os.log
 
 /// Manages checking and requesting macOS permissions required by Gecko.
 ///
@@ -22,6 +23,7 @@ final class PermissionManager: ObservableObject {
 
     private var pollTimer: Timer?
     private var hasLoggedAccessibilityHint: Bool = false
+    private let logger = Logger(subsystem: "ai.hexly.gecko", category: "PermissionManager")
 
     /// Number of poll attempts, used for exponential backoff calculation.
     private var pollAttempts: Int = 0
@@ -76,8 +78,13 @@ final class PermissionManager: ObservableObject {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
         process.arguments = ["reset", "Accessibility", bundleId]
-        try? process.run()
-        process.waitUntilExit()
+        do {
+            try process.run()
+            process.waitUntilExit()
+            logger.info("tccutil reset Accessibility for \(bundleId), exit code: \(process.terminationStatus)")
+        } catch {
+            logger.error("Failed to run tccutil: \(error)")
+        }
 
         // Small delay to let TCC database update, then re-prompt
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -87,15 +94,13 @@ final class PermissionManager: ObservableObject {
 
     /// Open System Settings > Privacy & Security > Accessibility.
     func openAccessibilitySettings() {
-        // swiftlint:disable:next force_unwrapping
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
         NSWorkspace.shared.open(url)
     }
 
     /// Open System Settings > Privacy & Security > Automation.
     func openAutomationSettings() {
-        // swiftlint:disable:next force_unwrapping
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation") else { return }
         NSWorkspace.shared.open(url)
     }
 
@@ -123,12 +128,11 @@ final class PermissionManager: ObservableObject {
             hasLoggedAccessibilityHint = true
             let bundlePath = Bundle.main.bundlePath
             let pid = ProcessInfo.processInfo.processIdentifier
-            print("[PermissionManager] AXIsProcessTrusted() = false")
-            print("[PermissionManager] Bundle path: \(bundlePath)")
-            print("[PermissionManager] PID: \(pid)")
-            print("[PermissionManager] Hint: In System Settings > Accessibility, make sure the entry")
-            print("  matches this exact binary. If running from Xcode, you may need to add Xcode itself")
-            print("  or the DerivedData binary path to the Accessibility list.")
+            logger.warning("""
+                AXIsProcessTrusted() = false. \
+                Bundle: \(bundlePath), PID: \(pid). \
+                Check System Settings > Accessibility matches this binary.
+                """)
         }
         isAccessibilityGranted = trusted
     }

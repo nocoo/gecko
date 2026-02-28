@@ -323,7 +323,10 @@ final class SyncService: ObservableObject {
 
     /// Upload a batch of sessions to the sync endpoint.
     private func uploadBatch(_ sessions: [FocusSession]) async throws -> SyncResponse {
-        let url = URL(string: "\(settings.syncServerUrl)/api/sync")!  // swiftlint:disable:this force_unwrapping
+        guard let url = URL(string: "\(settings.syncServerUrl)/api/sync") else {
+            logger.error("Invalid sync URL: \(self.settings.syncServerUrl)")
+            throw SyncError.badRequest("Invalid server URL: \(settings.syncServerUrl)")
+        }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")

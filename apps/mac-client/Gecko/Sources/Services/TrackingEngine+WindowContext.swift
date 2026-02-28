@@ -25,7 +25,10 @@ extension TrackingEngine {
             return WindowContext(title: app.localizedName ?? "Unknown")
         }
 
-        // swiftlint:disable:next force_cast
+        guard CFGetTypeID(windowRef) == AXUIElementGetTypeID() else {
+            return WindowContext(title: app.localizedName ?? "Unknown")
+        }
+        // Safe: type verified above via CFGetTypeID
         let window = windowRef as! AXUIElement
 
         // Read all attributes from the cached window element

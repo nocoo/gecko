@@ -1,4 +1,5 @@
 import Cocoa
+import os.log
 
 /// Information extracted from a browser via AppleScript.
 struct BrowserInfo: Equatable {
@@ -18,6 +19,8 @@ struct BrowserInfo: Equatable {
 /// - Google Chrome (and Chromium-based: Edge, Brave, Arc, Vivaldi)
 /// - Safari
 enum BrowserURLFetcher {
+
+    private static let logger = Logger(subsystem: "ai.hexly.gecko", category: "BrowserURLFetcher")
 
     /// Known browser bundle identifiers and their AppleScript strategies.
     enum Browser: CaseIterable {
@@ -196,6 +199,12 @@ enum BrowserURLFetcher {
         let appleScript = NSAppleScript(source: source)
         var errorInfo: NSDictionary?
         let result = appleScript?.executeAndReturnError(&errorInfo)
+
+        if let errorInfo {
+            let errorNumber = errorInfo[NSAppleScript.errorNumber] ?? "unknown"
+            let errorMessage = errorInfo[NSAppleScript.errorMessage] ?? "no message"
+            logger.debug("AppleScript failed: \(String(describing: errorNumber)) — \(String(describing: errorMessage))")
+        }
 
         return parseBrowserInfo(from: result?.stringValue)
     }

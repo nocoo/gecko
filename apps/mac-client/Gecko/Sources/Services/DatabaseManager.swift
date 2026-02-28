@@ -1,5 +1,6 @@
 import Foundation
 import GRDB
+import os.log
 
 /// Abstract interface for focus session persistence.
 ///
@@ -28,15 +29,31 @@ final class DatabaseManager: DatabaseService {
     /// The underlying GRDB database queue (thread-safe).
     let dbQueue: DatabaseQueue
 
+    private static let logger = Logger(subsystem: "ai.hexly.gecko", category: "DatabaseManager")
+
     // MARK: - Init
 
     /// Initialize with the production database path.
+    /// If the database cannot be opened or migrated, the app will log the error
+    /// and create a temporary in-memory database as a fallback to avoid crashing.
     init() {
         do {
             let dbQueue = try Self.openDatabase(at: Self.databaseURL)
             self.dbQueue = dbQueue
+            Self.logger.info("Database opened at \(Self.databaseURL.path)")
         } catch {
-            fatalError("Failed to initialize database: \(error)")
+            Self.logger.fault("Failed to open database at \(Self.databaseURL.path): \(error). Falling back to in-memory DB.")
+            // Fallback: in-memory DB so the app can still launch (data won't persist)
+            do {
+                var config = Configuration()
+                config.foreignKeysEnabled = true
+                let fallbackQueue = try DatabaseQueue(configuration: config)
+                try Self.migrate(fallbackQueue)
+                self.dbQueue = fallbackQueue
+            } catch {
+                // If even an in-memory DB fails, we have no choice
+                fatalError("Cannot create even an in-memory database: \(error)")
+            }
         }
     }
 
@@ -49,8 +66,12 @@ final class DatabaseManager: DatabaseService {
 
     /// The production database file URL.
     static var databaseURL: URL {
-        // swiftlint:disable:next force_unwrapping
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            logger.fault("Application Support directory not found — using temporary directory")
+            return FileManager.default.temporaryDirectory
+                .appendingPathComponent("ai.hexly.gecko", isDirectory: true)
+                .appendingPathComponent("gecko.sqlite")
+        }
         let directory = appSupport.appendingPathComponent("ai.hexly.gecko", isDirectory: true)
         return directory.appendingPathComponent("gecko.sqlite")
     }
@@ -60,6 +81,7 @@ final class DatabaseManager: DatabaseService {
         // Ensure the directory exists
         let directory = url.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        logger.debug("Database directory ensured: \(directory.path)")
 
         var config = Configuration()
         config.foreignKeysEnabled = true
@@ -70,6 +92,7 @@ final class DatabaseManager: DatabaseService {
 
         let dbQueue = try DatabaseQueue(path: url.path, configuration: config)
         try migrate(dbQueue)
+        logger.info("Database migrations complete")
         return dbQueue
     }
 
