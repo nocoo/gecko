@@ -1,6 +1,6 @@
 {
   "name": "gecko-web",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Gecko screen time dashboard",
   "type": "module",
   "scripts": {

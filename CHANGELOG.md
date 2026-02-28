@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-02-28
+
+### Mac Client
+
+#### Added
+- State machine architecture: `TrackingState` enum (`.stopped`, `.active`, `.idle`, `.locked`, `.asleep`) replaces ad-hoc boolean flags with explicit transitions and co-located side effects
+- Title change debounce: 2-second delay for title-only changes to reduce DB write churn by 30-50%, while app/URL changes remain instant
+- Network awareness: `NWPathMonitor` gates SyncService to skip futile HTTP requests when offline
+- Adaptive polling timer: 3s (active) → 6s (stable >30s) → 12s (deep focus >5min), with 1.5x multiplier in Low Power Mode
+- Battery awareness via `NSProcessInfoPowerStateDidChange` observer
+- AX window context cache: single Accessibility API lookup replaces 4 separate calls per tick
+- Permission manager exponential backoff (2s → 5s → 10s → 30s)
+- Idle detection (>60s via `CGEventSource`) pauses polling entirely
+- Screen lock/unlock observers via `DistributedNotificationCenter`
+- System sleep/wake observers via `NSWorkspace`
+- Timer tolerance on all repeating timers for macOS wake-up coalescing
+- Native macOS Settings window with Cmd+, shortcut
+
+#### Changed
+- DB write priority lowered from `.userInitiated` to `.utility` for background persistence
+- Non-browser apps skip AppleScript URL fetch entirely
+- Moved SyncService DB fetch off MainActor to background thread
+- API key stored in macOS Keychain instead of UserDefaults
+- Sync server URL validation requires HTTPS
+- Permission polling stops when all permissions are granted
+
+#### Fixed
+- Accessibility labels added to color-only status indicators and MenuBar/Settings buttons
+- URLs in session list now clickable via `Link` instead of plain `Text`
+- Session list only auto-scrolls on explicit refresh
+- Database path TextField made read-only to enforce Browse button usage
+
+### Web Dashboard
+
+No changes in this release.
+
 ## [1.0.0] - 2026-02-28
 
 ### Mac Client
