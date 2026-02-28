@@ -8,6 +8,7 @@ import { Collapsible } from "radix-ui";
 import {
   LayoutDashboard,
   List,
+  CalendarDays,
   SlidersHorizontal,
   Layers,
   Tags,
@@ -56,6 +57,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/sessions", label: "Sessions", icon: List },
+      { href: "/daily", label: "Daily Review", icon: CalendarDays },
     ],
   },
   {
