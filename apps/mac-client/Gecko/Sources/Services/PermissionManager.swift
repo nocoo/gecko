@@ -23,6 +23,9 @@ final class PermissionManager: ObservableObject {
     private var pollTimer: Timer?
     private var hasLoggedAccessibilityHint: Bool = false
 
+    /// Number of poll attempts, used for exponential backoff calculation.
+    private var pollAttempts: Int = 0
+
     // MARK: - Lifecycle
 
     init() {
@@ -167,20 +170,35 @@ final class PermissionManager: ObservableObject {
     private func updatePolling() {
         if allPermissionsGranted {
             stopPolling()
-        } else if pollTimer == nil {
+            pollAttempts = 0
+        } else {
+            // Non-repeating timer: always reschedule for the next tick
             startPolling()
         }
     }
 
-    /// Poll every 2 seconds to pick up changes made in System Settings.
+    /// Poll with exponential backoff: 2s (first 30s) → 5s → 10s → 30s.
+    ///
+    /// Uses a non-repeating timer that reschedules itself, so the interval
+    /// can increase as time passes without the user granting permission.
     private func startPolling() {
-        pollTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        let interval: TimeInterval
+        switch pollAttempts {
+        case 0..<15:   interval = 2.0    // first ~30s: responsive
+        case 15..<30:  interval = 5.0    // ~30s–2.5min: moderate
+        case 30..<60:  interval = 10.0   // ~2.5–7.5min: relaxed
+        default:       interval = 30.0   // 7.5min+: minimal
+        }
+
+        pollTimer?.invalidate()
+        pollTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             Task { @MainActor in
+                self?.pollAttempts += 1
                 self?.refreshAll()
             }
         }
-        // Allow macOS to coalesce timer wake-ups (±0.5s on a 2s interval)
-        pollTimer?.tolerance = 0.5
+        // Allow macOS to coalesce timer wake-ups
+        pollTimer?.tolerance = interval * 0.25
     }
 
     private func stopPolling() {

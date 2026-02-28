@@ -32,6 +32,7 @@
 		9AA0C79ADEA06A3F6B0C1540 /* TrackingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */; };
 		9FCF334CDE514CE172F06158 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 529AD4EBE02C86AFD4E18E21 /* SettingsView.swift */; };
 		AD1BD055F3F5424489BBCE7F /* SyncSessionDelegateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42512D22BF00E4B2BE353665 /* SyncSessionDelegateTests.swift */; };
+		BAF606C425C86D27A049DA9E /* TrackingEngine+WindowContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68A167C87A54CC06849A77EF /* TrackingEngine+WindowContext.swift */; };
 		BF5EBB88FFB66B9AAE92DA0D /* DatabaseTransformationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31C379DA524005EB241754FB /* DatabaseTransformationTests.swift */; };
 		CC1D1642ED5D3C014FD0FF86 /* FocusSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89CCD7476D4B09C2960B3296 /* FocusSession.swift */; };
 		D35425D211829E816CB9BA10 /* SessionListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AEE6FF0BF3AB00EA90E4BD9 /* SessionListViewModel.swift */; };
@@ -72,6 +73,7 @@
 		6050F571491038E2744B1122 /* DatabaseManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManager.swift; sourceTree = "<group>"; };
 		609F64549CBA61964FAABAB0 /* DatabaseManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatabaseManagerTests.swift; sourceTree = "<group>"; };
 		640535CD7F8432D05C2D8D72 /* SyncServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncServiceTests.swift; sourceTree = "<group>"; };
+		68A167C87A54CC06849A77EF /* TrackingEngine+WindowContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TrackingEngine+WindowContext.swift"; sourceTree = "<group>"; };
 		715CCBEB4816AE07FA228B30 /* TabIdentifierTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabIdentifierTests.swift; sourceTree = "<group>"; };
 		73035940B8FD231F1102B96A /* SettingsViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModelTests.swift; sourceTree = "<group>"; };
 		8351A4EEE14ABE66856C8BE8 /* MainWindowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWindowView.swift; sourceTree = "<group>"; };
@@ -227,6 +229,7 @@
 				F3C8B226E462249412DE7B16 /* SettingsManager.swift */,
 				934D41D2ED463A40DA706BED /* SyncService.swift */,
 				C7423400B11AEAE0ACCC84AB /* TrackingEngine.swift */,
+				68A167C87A54CC06849A77EF /* TrackingEngine+WindowContext.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -345,6 +348,7 @@
 				165E19E96BF97F2B093B81F3 /* SettingsViewModel.swift in Sources */,
 				D4B020F413518A5FFC4C5A06 /* SyncService.swift in Sources */,
 				E2E02E8B0C4A2B6A8C651673 /* TabIdentifier.swift in Sources */,
+				BAF606C425C86D27A049DA9E /* TrackingEngine+WindowContext.swift in Sources */,
 				9AA0C79ADEA06A3F6B0C1540 /* TrackingEngine.swift in Sources */,
 				67F36B5C006A23A4AB2B4A78 /* TrackingStatusView.swift in Sources */,
 				25EC6DD2799BFCDC0BED26CB /* TrackingViewModel.swift in Sources */,

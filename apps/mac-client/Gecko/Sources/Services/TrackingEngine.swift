@@ -6,8 +6,9 @@ import Combine
 /// **Architecture:**
 /// 1. **Event-driven**: Listens to `NSWorkspace.didActivateApplicationNotification`
 ///    to detect app switches with zero polling overhead.
-/// 2. **Fallback timer**: A low-frequency timer (every 3 seconds) detects in-app
-///    changes (e.g., switching tabs in Chrome without switching apps).
+/// 2. **Adaptive fallback timer**: A GCD timer detects in-app changes (e.g., switching
+///    tabs in Chrome without switching apps). The interval adapts based on context
+///    stability: 3s (active) → 6s (stable >30s) → 12s (deep focus >5min).
 /// 3. **Session lifecycle**: On each focus change, the previous session is finalized
 ///    (end_time + duration computed) and a new session is inserted.
 /// 4. **Off-main-thread**: AppleScript (browser URL) and DB operations run on
@@ -15,7 +16,8 @@ import Combine
 /// 5. **Rich context**: Captures bundle ID, browser tab info, document path,
 ///    full-screen and minimized state via Accessibility API.
 /// 6. **Energy-aware**: Skips polling when user is idle (>60s), screen is locked,
-///    or the system is asleep. Timer tolerance enables macOS wake-up coalescing.
+///    or the system is asleep. Applies a 1.5x interval multiplier in Low Power Mode.
+///    Timer leeway enables macOS wake-up coalescing.
 @MainActor
 final class TrackingEngine: ObservableObject {
 
@@ -31,7 +33,6 @@ final class TrackingEngine: ObservableObject {
     // MARK: - Private State
 
     private var workspaceObserver: NSObjectProtocol?
-    private var fallbackTimer: Timer?
 
     /// Tracks the last known window title + URL to detect in-app changes.
     private var lastWindowTitle: String = ""
@@ -43,21 +44,61 @@ final class TrackingEngine: ObservableObject {
     private var unlockObserver: NSObjectProtocol?
     private var sleepObserver: NSObjectProtocol?
     private var wakeObserver: NSObjectProtocol?
+    private var powerStateObserver: NSObjectProtocol?
 
     /// Whether the screen is currently locked. When true, polling is skipped.
     private var isScreenLocked: Bool = false
 
-    // MARK: - Constants
+    // MARK: - Energy: Adaptive Polling
 
-    private static let fallbackInterval: TimeInterval = 3.0
+    /// Tracks when the last focus context change occurred, for adaptive interval calculation.
+    private var lastChangeTime: Date = Date()
+
+    /// The current interval tier, used to detect tier transitions and avoid unnecessary rescheduling.
+    private var currentIntervalTier: TimeInterval = 0
+
+    /// GCD timer source that supports dynamic rescheduling without invalidation.
+    private var fallbackSource: DispatchSourceTimer?
+
+    // MARK: - Constants
 
     /// User idle threshold in seconds. Beyond this, polling ticks are skipped.
     private static let idleThreshold: TimeInterval = 60.0
+
+    /// Adaptive interval tier boundaries (seconds since last context change).
+    private static let stableThreshold: TimeInterval = 30.0
+    private static let deepFocusThreshold: TimeInterval = 300.0
+
+    /// Base polling intervals per tier.
+    private static let activeInterval: TimeInterval = 3.0
+    private static let stableInterval: TimeInterval = 6.0
+    private static let deepFocusInterval: TimeInterval = 12.0
 
     // MARK: - Init
 
     init(db: any DatabaseService = DatabaseManager.shared) {
         self.db = db
+    }
+
+    // MARK: - Energy: Adaptive Interval
+
+    /// Battery-aware multiplier: 1.5x when Low Power Mode is enabled.
+    private var batteryMultiplier: Double {
+        ProcessInfo.processInfo.isLowPowerModeEnabled ? 1.5 : 1.0
+    }
+
+    /// Compute the adaptive polling interval based on how long the context has been stable.
+    private var adaptiveInterval: TimeInterval {
+        let elapsed = Date().timeIntervalSince(lastChangeTime)
+        let base: TimeInterval
+        if elapsed < Self.stableThreshold {
+            base = Self.activeInterval
+        } else if elapsed < Self.deepFocusThreshold {
+            base = Self.stableInterval
+        } else {
+            base = Self.deepFocusInterval
+        }
+        return base * batteryMultiplier
     }
 
     // MARK: - Public API
@@ -102,8 +143,8 @@ final class TrackingEngine: ObservableObject {
 
         removeSystemObservers()
 
-        fallbackTimer?.invalidate()
-        fallbackTimer = nil
+        fallbackSource?.cancel()
+        fallbackSource = nil
 
         finalizeCurrentSessionQuietly()
     }
@@ -118,23 +159,20 @@ final class TrackingEngine: ObservableObject {
 
         let appName = app.localizedName ?? "Unknown"
         let bundleId = app.bundleIdentifier
-        let windowTitle = readWindowTitle(for: app)
+        let wCtx = readWindowContext(for: app)
         // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
             : nil
-        let documentPath = readDocumentPath(for: app)
-        let isFullScreen = readFullScreenState(for: app)
-        let isMinimized = readMinimizedState(for: app)
 
         switchFocus(FocusContext(
             appName: appName,
             bundleId: bundleId,
-            windowTitle: windowTitle,
+            windowTitle: wCtx.title,
             browserInfo: browserInfo,
-            documentPath: documentPath,
-            isFullScreen: isFullScreen,
-            isMinimized: isMinimized
+            documentPath: wCtx.documentPath,
+            isFullScreen: wCtx.isFullScreen,
+            isMinimized: wCtx.isMinimized
         ))
     }
 
@@ -153,7 +191,7 @@ final class TrackingEngine: ObservableObject {
 
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
-        let windowTitle = readWindowTitle(for: frontApp)
+        let wCtx = readWindowContext(for: frontApp)
         // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
@@ -161,22 +199,18 @@ final class TrackingEngine: ObservableObject {
         let url = browserInfo?.url
 
         // Only switch if something actually changed
-        let titleChanged = windowTitle != lastWindowTitle
+        let titleChanged = wCtx.title != lastWindowTitle
         let urlChanged = url != lastURL
 
         if titleChanged || urlChanged {
-            let documentPath = readDocumentPath(for: frontApp)
-            let isFullScreen = readFullScreenState(for: frontApp)
-            let isMinimized = readMinimizedState(for: frontApp)
-
             switchFocus(FocusContext(
                 appName: appName,
                 bundleId: bundleId,
-                windowTitle: windowTitle,
+                windowTitle: wCtx.title,
                 browserInfo: browserInfo,
-                documentPath: documentPath,
-                isFullScreen: isFullScreen,
-                isMinimized: isMinimized
+                documentPath: wCtx.documentPath,
+                isFullScreen: wCtx.isFullScreen,
+                isMinimized: wCtx.isMinimized
             ))
         }
     }
@@ -187,23 +221,20 @@ final class TrackingEngine: ObservableObject {
 
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
-        let windowTitle = readWindowTitle(for: frontApp)
+        let wCtx = readWindowContext(for: frontApp)
         // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
             : nil
-        let documentPath = readDocumentPath(for: frontApp)
-        let isFullScreen = readFullScreenState(for: frontApp)
-        let isMinimized = readMinimizedState(for: frontApp)
 
         switchFocus(FocusContext(
             appName: appName,
             bundleId: bundleId,
-            windowTitle: windowTitle,
+            windowTitle: wCtx.title,
             browserInfo: browserInfo,
-            documentPath: documentPath,
-            isFullScreen: isFullScreen,
-            isMinimized: isMinimized
+            documentPath: wCtx.documentPath,
+            isFullScreen: wCtx.isFullScreen,
+            isMinimized: wCtx.isMinimized
         ))
     }
 
@@ -228,6 +259,10 @@ final class TrackingEngine: ObservableObject {
         // Update tracking state
         lastWindowTitle = ctx.windowTitle
         lastURL = ctx.browserInfo?.url
+
+        // Reset adaptive interval to active tier
+        lastChangeTime = Date()
+        rescheduleIfNeeded()
 
         // Create the new session
         let session = FocusSession.start(
@@ -275,24 +310,38 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Energy: Timer Management
 
-    /// Create and start the fallback timer with tolerance for wake-up coalescing.
+    /// Create and start the fallback GCD timer with adaptive interval.
     private func startFallbackTimer() {
-        fallbackTimer?.invalidate()
-        fallbackTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.fallbackInterval,
-            repeats: true
-        ) { [weak self] _ in
+        fallbackSource?.cancel()
+        let interval = adaptiveInterval
+        currentIntervalTier = interval
+        let source = DispatchSource.makeTimerSource(queue: .main)
+        source.schedule(deadline: .now() + interval,
+                        repeating: interval,
+                        leeway: .seconds(1))
+        source.setEventHandler { [weak self] in
             Task { @MainActor in
                 await self?.checkForInAppChanges()
+                self?.rescheduleIfNeeded()
             }
         }
-        // Allow macOS to coalesce timer wake-ups with other system activity
-        fallbackTimer?.tolerance = 1.0
+        source.resume()
+        fallbackSource = source
+    }
+
+    /// Reschedule the GCD timer if the adaptive interval tier has changed.
+    private func rescheduleIfNeeded() {
+        let newInterval = adaptiveInterval
+        guard newInterval != currentIntervalTier else { return }
+        currentIntervalTier = newInterval
+        fallbackSource?.schedule(deadline: .now() + newInterval,
+                                 repeating: newInterval,
+                                 leeway: .seconds(1))
     }
 
     // MARK: - Energy: System Observers (Lock/Unlock, Sleep/Wake)
 
-    /// Register observers for screen lock/unlock and system sleep/wake.
+    /// Register observers for screen lock/unlock, system sleep/wake, and power state changes.
     private func registerSystemObservers() {
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         let distCenter = DistributedNotificationCenter.default()
@@ -325,8 +374,8 @@ final class TrackingEngine: ObservableObject {
             object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
-                self?.fallbackTimer?.invalidate()
-                self?.fallbackTimer = nil
+                self?.fallbackSource?.cancel()
+                self?.fallbackSource = nil
                 self?.finalizeCurrentSessionQuietly()
             }
         }
@@ -341,9 +390,19 @@ final class TrackingEngine: ObservableObject {
                 await self?.captureCurrentFocus()
             }
         }
+
+        // Low Power Mode toggle: reschedule timer with updated battery multiplier
+        powerStateObserver = NotificationCenter.default.addObserver(
+            forName: .NSProcessInfoPowerStateDidChange,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.rescheduleIfNeeded()
+            }
+        }
     }
 
-    /// Remove all system observers (lock/unlock, sleep/wake).
+    /// Remove all system observers (lock/unlock, sleep/wake, power state).
     private func removeSystemObservers() {
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         let distCenter = DistributedNotificationCenter.default()
@@ -352,102 +411,23 @@ final class TrackingEngine: ObservableObject {
         if let obs = unlockObserver { distCenter.removeObserver(obs) }
         if let obs = sleepObserver { workspaceCenter.removeObserver(obs) }
         if let obs = wakeObserver { workspaceCenter.removeObserver(obs) }
+        if let obs = powerStateObserver { NotificationCenter.default.removeObserver(obs) }
 
         lockObserver = nil
         unlockObserver = nil
         sleepObserver = nil
         wakeObserver = nil
+        powerStateObserver = nil
         isScreenLocked = false
     }
 
-    // MARK: - Window Title (AXUIElement)
+    // MARK: - AX Window Context (Cached Lookup)
 
-    /// Read the title of the focused window using the Accessibility API.
-    private func readWindowTitle(for app: NSRunningApplication) -> String {
-        guard let window = focusedWindow(for: app) else {
-            return app.localizedName ?? "Unknown"
-        }
-
-        var titleValue: CFTypeRef?
-        let titleResult = AXUIElementCopyAttributeValue(window, kAXTitleAttribute as CFString, &titleValue)
-
-        guard titleResult == .success, let title = titleValue as? String, !title.isEmpty else {
-            return app.localizedName ?? "Unknown"
-        }
-
-        return title
-    }
-
-    // MARK: - Document Path (AXUIElement)
-
-    /// Read the document path from the focused window via AXDocumentAttribute.
-    /// Returns nil if the app doesn't expose a document path (most don't).
-    private func readDocumentPath(for app: NSRunningApplication) -> String? {
-        guard let window = focusedWindow(for: app) else { return nil }
-
-        var docValue: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(window, kAXDocumentAttribute as CFString, &docValue)
-
-        guard result == .success, let urlString = docValue as? String, !urlString.isEmpty else {
-            return nil
-        }
-
-        // AXDocument typically returns a file URL string like "file:///path/to/file"
-        if let url = URL(string: urlString), url.isFileURL {
-            return url.path
-        }
-        return urlString
-    }
-
-    // MARK: - Full Screen State (AXUIElement)
-
-    /// Read whether the focused window is in full-screen mode.
-    private func readFullScreenState(for app: NSRunningApplication) -> Bool {
-        guard let window = focusedWindow(for: app) else { return false }
-
-        var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(
-            window,
-            "AXFullScreen" as CFString,
-            &value
-        )
-
-        guard result == .success, let boolValue = value as? Bool else {
-            return false
-        }
-        return boolValue
-    }
-
-    // MARK: - Minimized State (AXUIElement)
-
-    /// Read whether the focused window is minimized.
-    private func readMinimizedState(for app: NSRunningApplication) -> Bool {
-        guard let window = focusedWindow(for: app) else { return false }
-
-        var value: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &value)
-
-        guard result == .success, let boolValue = value as? Bool else {
-            return false
-        }
-        return boolValue
-    }
-
-    // MARK: - AX Helpers
-
-    /// Get the focused window AXUIElement for an app.
-    private func focusedWindow(for app: NSRunningApplication) -> AXUIElement? {
-        let pid = app.processIdentifier
-        let axApp = AXUIElementCreateApplication(pid)
-
-        var focusedWindow: CFTypeRef?
-        let result = AXUIElementCopyAttributeValue(axApp, kAXFocusedWindowAttribute as CFString, &focusedWindow)
-
-        guard result == .success, let window = focusedWindow else {
-            return nil
-        }
-
-        // swiftlint:disable:next force_cast
-        return (window as! AXUIElement)
+    /// All Accessibility attributes read from the focused window in a single pass.
+    struct WindowContext {
+        var title: String = ""
+        var documentPath: String?
+        var isFullScreen: Bool = false
+        var isMinimized: Bool = false
     }
 }
