@@ -72,6 +72,12 @@ struct GeckoApp: App {
                 tabSelection: tabSelection
             )
         }
+
+        // Native macOS Settings window (Cmd+,)
+        Settings {
+            SettingsView(viewModel: settingsViewModel)
+                .frame(minWidth: 500, idealWidth: 600, minHeight: 400, idealHeight: 500)
+        }
     }
 
     // MARK: - Auto-Start
