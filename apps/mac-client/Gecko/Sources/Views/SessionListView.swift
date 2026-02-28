@@ -74,10 +74,11 @@ struct SessionListView: View {
                     .id(session.id)
             }
             .listStyle(.inset(alternatesRowBackgrounds: true))
-            .onChange(of: viewModel.recentSessions.first?.id) {
-                if let firstID = viewModel.recentSessions.first?.id {
-                    proxy.scrollTo(firstID, anchor: .top)
-                }
+            .onChange(of: viewModel.shouldScrollToTop) {
+                guard viewModel.shouldScrollToTop,
+                      let firstID = viewModel.recentSessions.first?.id else { return }
+                proxy.scrollTo(firstID, anchor: .top)
+                viewModel.shouldScrollToTop = false
             }
         }
     }

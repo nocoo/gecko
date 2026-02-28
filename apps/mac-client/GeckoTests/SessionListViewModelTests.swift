@@ -69,6 +69,26 @@ final class SessionListViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.sessionCount, 5)
     }
 
+    func testRefreshSetsShouldScrollToTop() async throws {
+        let db = try makeDB()
+        try makeSessions(count: 3, in: db)
+
+        let viewModel = SessionListViewModel(db: db)
+
+        // init() also calls refresh(), wait for it
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertTrue(viewModel.shouldScrollToTop, "shouldScrollToTop should be true after refresh")
+
+        // Simulate the view resetting the flag
+        viewModel.shouldScrollToTop = false
+        XCTAssertFalse(viewModel.shouldScrollToTop)
+
+        // Explicit refresh should set it again
+        viewModel.refresh()
+        try await Task.sleep(nanoseconds: 100_000_000)
+        XCTAssertTrue(viewModel.shouldScrollToTop, "shouldScrollToTop should be true after explicit refresh")
+    }
+
     // MARK: - Ordering
 
     func testSessionsOrderedByStartTimeDescending() async throws {

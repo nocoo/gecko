@@ -11,6 +11,10 @@ final class SessionListViewModel: ObservableObject {
 
     @Published private(set) var recentSessions: [FocusSession] = []
 
+    /// Set to true after an explicit user refresh; the view reads and resets this
+    /// to decide whether to scroll to top.
+    @Published var shouldScrollToTop: Bool = false
+
     // MARK: - Dependencies
 
     private let db: any DatabaseService
@@ -37,6 +41,7 @@ final class SessionListViewModel: ObservableObject {
                 let sessions = try database.fetchRecent(limit: limit)
                 await MainActor.run {
                     self.recentSessions = sessions
+                    self.shouldScrollToTop = true
                 }
             } catch {
                 print("[SessionListViewModel] Failed to load sessions: \(error)")
