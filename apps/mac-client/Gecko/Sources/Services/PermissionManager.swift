@@ -27,7 +27,9 @@ final class PermissionManager: ObservableObject {
 
     init() {
         refreshAll()
-        startPolling()
+        if !allPermissionsGranted {
+            startPolling()
+        }
     }
 
     deinit {
@@ -40,6 +42,7 @@ final class PermissionManager: ObservableObject {
     func refreshAll() {
         checkAccessibility()
         checkAutomation()
+        updatePolling()
     }
 
     /// Prompt the system Accessibility dialog (one-shot) and open System Settings.
@@ -148,11 +151,26 @@ final class PermissionManager: ObservableObject {
 
             await MainActor.run {
                 self.isAutomationGranted = granted
+                self.updatePolling()
             }
         }
     }
 
     // MARK: - Polling
+
+    /// Start or stop the poll timer based on current permission state.
+    ///
+    /// When all permissions are granted the timer is unnecessary — we stop it to
+    /// avoid burning CPU on repeated AppleScript calls.  If a permission is later
+    /// revoked (e.g. user toggles in System Settings), callers such as `refreshAll()`
+    /// or `requestAccessibility()` will re-evaluate and restart polling as needed.
+    private func updatePolling() {
+        if allPermissionsGranted {
+            stopPolling()
+        } else if pollTimer == nil {
+            startPolling()
+        }
+    }
 
     /// Poll every 2 seconds to pick up changes made in System Settings.
     private func startPolling() {
@@ -161,5 +179,10 @@ final class PermissionManager: ObservableObject {
                 self?.refreshAll()
             }
         }
+    }
+
+    private func stopPolling() {
+        pollTimer?.invalidate()
+        pollTimer = nil
     }
 }
