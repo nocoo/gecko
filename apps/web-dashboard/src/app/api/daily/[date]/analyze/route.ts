@@ -277,7 +277,7 @@ function parseAiResponse(text: string): AiAnalysisResult {
 // ---------------------------------------------------------------------------
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ date: string }> },
 ): Promise<Response> {
   const { user, error } = await requireSession();
@@ -289,6 +289,10 @@ export async function POST(
     return jsonError(validationError, 400);
   }
 
+  // Support ?force=true to skip cache and regenerate
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "true";
+
   // Check if we already have cached stats
   const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
   if (!cached?.stats_json || cached.stats_json === "{}") {
@@ -298,8 +302,8 @@ export async function POST(
     );
   }
 
-  // Check if AI result already exists
-  if (cached.ai_result_json) {
+  // Check if AI result already exists (skip if force=true)
+  if (!force && cached.ai_result_json) {
     return jsonOk({
       score: cached.ai_score,
       result: JSON.parse(cached.ai_result_json) as AiAnalysisResult,

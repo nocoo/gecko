@@ -30,6 +30,7 @@ import {
   Cpu,
   Zap,
   Info,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DayPicker } from "react-day-picker";
@@ -265,7 +266,7 @@ function AiAnalysisPanel({
   ai: AnalyzeResponse | null;
   loading: boolean;
   error: string | null;
-  onGenerate: () => void;
+  onGenerate: (force?: boolean) => void;
 }) {
   if (loading) {
     return (
@@ -322,6 +323,16 @@ function AiAnalysisPanel({
           <h3 className="text-sm font-normal text-muted-foreground">
             AI Analysis
           </h3>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => onGenerate(true)}
+            disabled={loading}
+            className="ml-auto"
+            aria-label="Regenerate AI analysis"
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
 
         {/* Highlights */}
@@ -484,12 +495,13 @@ export function DailyReviewClient({ date }: { date: string }) {
   }, [date, fetchData]);
 
   // Generate AI analysis
-  const generateAi = useCallback(async () => {
+  const generateAi = useCallback(async (force?: boolean) => {
     try {
       setAiLoading(true);
       setAiError(null);
 
-      const res = await fetch(`/api/daily/${date}/analyze`, {
+      const qs = force ? "?force=true" : "";
+      const res = await fetch(`/api/daily/${date}/analyze${qs}`, {
         method: "POST",
       });
 
