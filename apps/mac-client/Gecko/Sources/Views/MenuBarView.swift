@@ -42,6 +42,7 @@ struct MenuBarView: View {
             Button(viewModel.toggleButtonTitle) {
                 viewModel.toggleTracking()
             }
+            .accessibilityHint(viewModel.isTracking ? "Pauses focus tracking" : "Resumes focus tracking")
 
             // Open main window
             Button("Open Dashboard") {
@@ -49,6 +50,7 @@ struct MenuBarView: View {
                 NSApplication.shared.activate(ignoringOtherApps: true)
             }
             .keyboardShortcut("d", modifiers: .command)
+            .accessibilityHint("Opens the main Gecko window")
 
             Button("About Gecko") {
                 tabSelection.selectedTab = .about
@@ -62,6 +64,7 @@ struct MenuBarView: View {
                 viewModel.quitApp()
             }
             .keyboardShortcut("q", modifiers: .command)
+            .accessibilityHint("Terminates the Gecko application")
         }
         .padding(4)
     }

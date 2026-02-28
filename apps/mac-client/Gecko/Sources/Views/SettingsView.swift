@@ -82,6 +82,8 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("Browse for database file")
+                .accessibilityHint("Opens a file browser to choose the database location")
             }
 
             if viewModel.showValidationError {
@@ -100,6 +102,7 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
                 .disabled(!viewModel.canSave)
+                .accessibilityLabel("Save database path")
 
                 Button("Reset to Default") {
                     viewModel.resetToDefault()
@@ -107,6 +110,7 @@ struct SettingsView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .disabled(!viewModel.canReset)
+                .accessibilityLabel("Reset database path to default")
 
                 Spacer()
 
@@ -146,6 +150,7 @@ struct SettingsView: View {
                 SecureField("Paste your API key (gk_...)", text: $viewModel.editingApiKey)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
+                    .accessibilityLabel("API key")
             }
 
             // Server URL
@@ -176,6 +181,7 @@ struct SettingsView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
                 .disabled(!viewModel.canSaveSyncSettings)
+                .accessibilityLabel("Save sync settings")
 
                 Button("Sync Now") {
                     Task { await viewModel.syncNow() }
@@ -183,12 +189,14 @@ struct SettingsView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.small)
                 .disabled(!viewModel.canSyncNow)
+                .accessibilityHint("Triggers an immediate sync of pending sessions")
 
                 Button("Reset") {
                     viewModel.resetSyncSettings()
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .accessibilityLabel("Reset sync settings")
             }
         }
         .padding()
