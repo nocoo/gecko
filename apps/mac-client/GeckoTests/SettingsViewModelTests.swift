@@ -252,6 +252,81 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isSyncEditing)
     }
 
+    // MARK: - Sync URL HTTPS Validation
+
+    func testSaveSyncSettingsRejectsHttpUrl() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_test"
+        viewModel.editingSyncServerUrl = "http://insecure.example.com"
+
+        let result = viewModel.saveSyncSettings()
+
+        XCTAssertFalse(result)
+        XCTAssertEqual(viewModel.syncUrlValidationError, "Server URL must use https://.")
+        XCTAssertEqual(manager.syncServerUrl, SettingsManager.defaultSyncServerUrl,
+                       "Settings should not be saved when URL validation fails")
+    }
+
+    func testSaveSyncSettingsRejectsInvalidUrl() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_test"
+        viewModel.editingSyncServerUrl = "not a url at all"
+
+        let result = viewModel.saveSyncSettings()
+
+        XCTAssertFalse(result)
+        XCTAssertNotNil(viewModel.syncUrlValidationError)
+    }
+
+    func testSaveSyncSettingsAcceptsHttpsUrl() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_test"
+        viewModel.editingSyncServerUrl = "https://secure.example.com"
+
+        let result = viewModel.saveSyncSettings()
+
+        XCTAssertTrue(result)
+        XCTAssertNil(viewModel.syncUrlValidationError)
+        XCTAssertEqual(manager.syncServerUrl, "https://secure.example.com")
+    }
+
+    func testSaveSyncSettingsClearsErrorOnSuccess() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        // First: trigger an error with HTTP
+        viewModel.editingApiKey = "gk_test"
+        viewModel.editingSyncServerUrl = "http://bad.com"
+        viewModel.saveSyncSettings()
+        XCTAssertNotNil(viewModel.syncUrlValidationError)
+
+        // Then: fix to HTTPS and save again
+        viewModel.editingSyncServerUrl = "https://good.com"
+        let result = viewModel.saveSyncSettings()
+
+        XCTAssertTrue(result)
+        XCTAssertNil(viewModel.syncUrlValidationError)
+    }
+
+    func testSaveSyncSettingsTrimsWhitespace() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        viewModel.editingApiKey = "gk_test"
+        viewModel.editingSyncServerUrl = "  https://trimmed.example.com  "
+
+        let result = viewModel.saveSyncSettings()
+
+        XCTAssertTrue(result)
+        XCTAssertEqual(manager.syncServerUrl, "https://trimmed.example.com")
+    }
+
     // MARK: - Reset Sync Settings
 
     func testResetSyncSettingsRestoresDefaults() {

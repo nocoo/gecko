@@ -43,6 +43,9 @@ final class SettingsViewModel: ObservableObject {
             || editingSyncServerUrl != settingsManager.syncServerUrl
     }
 
+    /// Validation error for the sync server URL, if any.
+    @Published var syncUrlValidationError: String?
+
     /// Whether to auto-start tracking on launch (bound to toggle).
     @Published var autoStartTracking: Bool = false {
         didSet {
@@ -172,9 +175,21 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Sync Actions
 
     /// Save the sync settings (API key and server URL).
-    func saveSyncSettings() {
+    /// Returns false if the server URL fails validation.
+    @discardableResult
+    func saveSyncSettings() -> Bool {
+        // Validate URL is HTTPS
+        let url = editingSyncServerUrl.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let parsed = URL(string: url),
+              parsed.scheme?.lowercased() == "https" else {
+            syncUrlValidationError = "Server URL must use https://."
+            return false
+        }
+        syncUrlValidationError = nil
+
         settingsManager.apiKey = editingApiKey
-        settingsManager.syncServerUrl = editingSyncServerUrl
+        settingsManager.syncServerUrl = url
+        return true
     }
 
     /// Reset sync settings to defaults.

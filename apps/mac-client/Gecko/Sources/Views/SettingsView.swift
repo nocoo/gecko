@@ -155,6 +155,14 @@ struct SettingsView: View {
                 TextField("https://gecko.dev.hexly.ai", text: $viewModel.editingSyncServerUrl)
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
+                    .onChange(of: viewModel.editingSyncServerUrl) {
+                        viewModel.syncUrlValidationError = nil
+                    }
+                if let error = viewModel.syncUrlValidationError {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
 
             // Sync status
