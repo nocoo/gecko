@@ -120,11 +120,18 @@ struct SessionRowView: View {
 
                 // URL (if browser)
                 if let url = session.url, !url.isEmpty {
-                    Text(url)
-                        .font(.caption2)
-                        .foregroundStyle(.blue)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+                    if let parsedURL = URL(string: url) {
+                        Link(url, destination: parsedURL)
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } else {
+                        Text(url)
+                            .font(.caption2)
+                            .foregroundStyle(.blue)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
                 }
             }
 
