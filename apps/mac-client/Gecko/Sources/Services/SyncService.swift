@@ -166,6 +166,8 @@ final class SyncService: ObservableObject {
                 await self?.syncNow()
             }
         }
+        // Allow macOS to coalesce timer wake-ups (±60s on a 300s interval is fine)
+        timer?.tolerance = 60.0
     }
 
     private func stopTimer() {

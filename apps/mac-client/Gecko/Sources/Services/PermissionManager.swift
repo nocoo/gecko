@@ -179,6 +179,8 @@ final class PermissionManager: ObservableObject {
                 self?.refreshAll()
             }
         }
+        // Allow macOS to coalesce timer wake-ups (±0.5s on a 2s interval)
+        pollTimer?.tolerance = 0.5
     }
 
     private func stopPolling() {

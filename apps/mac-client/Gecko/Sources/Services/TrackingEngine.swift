@@ -14,6 +14,8 @@ import Combine
 ///    background threads to keep the UI responsive.
 /// 5. **Rich context**: Captures bundle ID, browser tab info, document path,
 ///    full-screen and minimized state via Accessibility API.
+/// 6. **Energy-aware**: Skips polling when user is idle (>60s), screen is locked,
+///    or the system is asleep. Timer tolerance enables macOS wake-up coalescing.
 @MainActor
 final class TrackingEngine: ObservableObject {
 
@@ -35,9 +37,22 @@ final class TrackingEngine: ObservableObject {
     private var lastWindowTitle: String = ""
     private var lastURL: String?
 
+    // MARK: - Energy: System Observers
+
+    private var lockObserver: NSObjectProtocol?
+    private var unlockObserver: NSObjectProtocol?
+    private var sleepObserver: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
+
+    /// Whether the screen is currently locked. When true, polling is skipped.
+    private var isScreenLocked: Bool = false
+
     // MARK: - Constants
 
     private static let fallbackInterval: TimeInterval = 3.0
+
+    /// User idle threshold in seconds. Beyond this, polling ticks are skipped.
+    private static let idleThreshold: TimeInterval = 60.0
 
     // MARK: - Init
 
@@ -63,15 +78,11 @@ final class TrackingEngine: ObservableObject {
             }
         }
 
+        // Energy: observe screen lock/unlock to pause/resume polling
+        registerSystemObservers()
+
         // Start the fallback timer for in-app changes
-        fallbackTimer = Timer.scheduledTimer(
-            withTimeInterval: Self.fallbackInterval,
-            repeats: true
-        ) { [weak self] _ in
-            Task { @MainActor in
-                await self?.checkForInAppChanges()
-            }
-        }
+        startFallbackTimer()
 
         // Capture the currently active app immediately
         Task {
@@ -88,6 +99,9 @@ final class TrackingEngine: ObservableObject {
             NSWorkspace.shared.notificationCenter.removeObserver(observer)
             workspaceObserver = nil
         }
+
+        removeSystemObservers()
+
         fallbackTimer?.invalidate()
         fallbackTimer = nil
 
@@ -105,7 +119,10 @@ final class TrackingEngine: ObservableObject {
         let appName = app.localizedName ?? "Unknown"
         let bundleId = app.bundleIdentifier
         let windowTitle = readWindowTitle(for: app)
-        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        // Energy: only run AppleScript for known browsers
+        let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
+            ? await BrowserURLFetcher.fetchInfo(appName: appName)
+            : nil
         let documentPath = readDocumentPath(for: app)
         let isFullScreen = readFullScreenState(for: app)
         let isMinimized = readMinimizedState(for: app)
@@ -123,13 +140,24 @@ final class TrackingEngine: ObservableObject {
 
     /// Fallback: check if window title or URL changed within the same app.
     private func checkForInAppChanges() async {
-        guard isTracking else { return }
+        guard isTracking, !isScreenLocked else { return }
+
+        // Energy: skip if user has been idle for over 60 seconds
+        let idleSeconds = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState,
+            eventType: .null  // checks all input event types (mouse, keyboard, etc.)
+        )
+        guard idleSeconds < Self.idleThreshold else { return }
+
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
         let windowTitle = readWindowTitle(for: frontApp)
-        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        // Energy: only run AppleScript for known browsers
+        let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
+            ? await BrowserURLFetcher.fetchInfo(appName: appName)
+            : nil
         let url = browserInfo?.url
 
         // Only switch if something actually changed
@@ -160,7 +188,10 @@ final class TrackingEngine: ObservableObject {
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
         let windowTitle = readWindowTitle(for: frontApp)
-        let browserInfo = await BrowserURLFetcher.fetchInfo(appName: appName)
+        // Energy: only run AppleScript for known browsers
+        let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
+            ? await BrowserURLFetcher.fetchInfo(appName: appName)
+            : nil
         let documentPath = readDocumentPath(for: frontApp)
         let isFullScreen = readFullScreenState(for: frontApp)
         let isMinimized = readMinimizedState(for: frontApp)
@@ -240,6 +271,93 @@ final class TrackingEngine: ObservableObject {
                 print("[TrackingEngine] Failed to finalize session: \(error)")
             }
         }
+    }
+
+    // MARK: - Energy: Timer Management
+
+    /// Create and start the fallback timer with tolerance for wake-up coalescing.
+    private func startFallbackTimer() {
+        fallbackTimer?.invalidate()
+        fallbackTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.fallbackInterval,
+            repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor in
+                await self?.checkForInAppChanges()
+            }
+        }
+        // Allow macOS to coalesce timer wake-ups with other system activity
+        fallbackTimer?.tolerance = 1.0
+    }
+
+    // MARK: - Energy: System Observers (Lock/Unlock, Sleep/Wake)
+
+    /// Register observers for screen lock/unlock and system sleep/wake.
+    private func registerSystemObservers() {
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        let distCenter = DistributedNotificationCenter.default()
+
+        // Screen lock: pause polling, finalize session
+        lockObserver = distCenter.addObserver(
+            forName: NSNotification.Name("com.apple.screenIsLocked"),
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.isScreenLocked = true
+                self?.finalizeCurrentSessionQuietly()
+            }
+        }
+
+        // Screen unlock: resume polling, recapture focus
+        unlockObserver = distCenter.addObserver(
+            forName: NSNotification.Name("com.apple.screenIsUnlocked"),
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.isScreenLocked = false
+                await self?.captureCurrentFocus()
+            }
+        }
+
+        // System sleep: stop timer, finalize session
+        sleepObserver = workspaceCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.fallbackTimer?.invalidate()
+                self?.fallbackTimer = nil
+                self?.finalizeCurrentSessionQuietly()
+            }
+        }
+
+        // System wake: restart timer, recapture focus
+        wakeObserver = workspaceCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.startFallbackTimer()
+                await self?.captureCurrentFocus()
+            }
+        }
+    }
+
+    /// Remove all system observers (lock/unlock, sleep/wake).
+    private func removeSystemObservers() {
+        let workspaceCenter = NSWorkspace.shared.notificationCenter
+        let distCenter = DistributedNotificationCenter.default()
+
+        if let obs = lockObserver { distCenter.removeObserver(obs) }
+        if let obs = unlockObserver { distCenter.removeObserver(obs) }
+        if let obs = sleepObserver { workspaceCenter.removeObserver(obs) }
+        if let obs = wakeObserver { workspaceCenter.removeObserver(obs) }
+
+        lockObserver = nil
+        unlockObserver = nil
+        sleepObserver = nil
+        wakeObserver = nil
+        isScreenLocked = false
     }
 
     // MARK: - Window Title (AXUIElement)
