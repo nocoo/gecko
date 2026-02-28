@@ -4,26 +4,50 @@ import Combine
 /// The core focus tracking engine.
 ///
 /// **Architecture:**
-/// 1. **Event-driven**: Listens to `NSWorkspace.didActivateApplicationNotification`
+/// 1. **State machine**: A single `TrackingState` enum replaces ad-hoc boolean flags.
+///    Transitions are explicit and side effects (timer start/stop, session lifecycle)
+///    are co-located in `transition(to:)`.
+/// 2. **Event-driven**: Listens to `NSWorkspace.didActivateApplicationNotification`
 ///    to detect app switches with zero polling overhead.
-/// 2. **Adaptive fallback timer**: A GCD timer detects in-app changes (e.g., switching
+/// 3. **Adaptive fallback timer**: A GCD timer detects in-app changes (e.g., switching
 ///    tabs in Chrome without switching apps). The interval adapts based on context
 ///    stability: 3s (active) → 6s (stable >30s) → 12s (deep focus >5min).
-/// 3. **Session lifecycle**: On each focus change, the previous session is finalized
+/// 4. **Session lifecycle**: On each focus change, the previous session is finalized
 ///    (end_time + duration computed) and a new session is inserted.
-/// 4. **Off-main-thread**: AppleScript (browser URL) and DB operations run on
+/// 5. **Off-main-thread**: AppleScript (browser URL) and DB operations run on
 ///    background threads to keep the UI responsive.
-/// 5. **Rich context**: Captures bundle ID, browser tab info, document path,
-///    full-screen and minimized state via Accessibility API.
-/// 6. **Energy-aware**: Skips polling when user is idle (>60s), screen is locked,
+/// 6. **Rich context**: Captures bundle ID, browser tab info, document path,
+///    full-screen and minimized state via Accessibility API (single AX lookup).
+/// 7. **Energy-aware**: Skips polling when user is idle (>60s), screen is locked,
 ///    or the system is asleep. Applies a 1.5x interval multiplier in Low Power Mode.
 ///    Timer leeway enables macOS wake-up coalescing.
 @MainActor
 final class TrackingEngine: ObservableObject {
 
+    // MARK: - State Machine
+
+    /// All possible engine states. Replaces ad-hoc `isTracking` + `isScreenLocked` booleans.
+    enum TrackingState: Equatable {
+        /// Engine is stopped. No timers, no observers (except lifecycle).
+        case stopped
+        /// User is actively using the Mac. Full polling at adaptive intervals.
+        case active
+        /// User has been idle for >60s. Timer runs but skips expensive work.
+        case idle
+        /// Screen is locked. Timer suspended. Session finalized.
+        case locked
+        /// System is asleep. Timer cancelled. Session finalized.
+        case asleep
+    }
+
     // MARK: - Published State
 
+    /// Current engine state, observable by UI.
+    @Published private(set) var state: TrackingState = .stopped
+
+    /// Convenience for views: true when the engine is running (any state except `.stopped`).
     @Published private(set) var isTracking: Bool = false
+
     @Published private(set) var currentSession: FocusSession?
 
     // MARK: - Dependencies
@@ -46,9 +70,6 @@ final class TrackingEngine: ObservableObject {
     private var wakeObserver: NSObjectProtocol?
     private var powerStateObserver: NSObjectProtocol?
 
-    /// Whether the screen is currently locked. When true, polling is skipped.
-    private var isScreenLocked: Bool = false
-
     // MARK: - Energy: Adaptive Polling
 
     /// Tracks when the last focus context change occurred, for adaptive interval calculation.
@@ -62,7 +83,7 @@ final class TrackingEngine: ObservableObject {
 
     // MARK: - Constants
 
-    /// User idle threshold in seconds. Beyond this, polling ticks are skipped.
+    /// User idle threshold in seconds. Beyond this, transition to `.idle`.
     private static let idleThreshold: TimeInterval = 60.0
 
     /// Adaptive interval tier boundaries (seconds since last context change).
@@ -105,136 +126,157 @@ final class TrackingEngine: ObservableObject {
 
     /// Start tracking focus sessions.
     func start() {
-        guard !isTracking else { return }
-        isTracking = true
-
-        // Subscribe to app activation events
-        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
-            forName: NSWorkspace.didActivateApplicationNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            Task { @MainActor in
-                await self?.handleAppActivation(notification)
-            }
-        }
-
-        // Energy: observe screen lock/unlock to pause/resume polling
-        registerSystemObservers()
-
-        // Start the fallback timer for in-app changes
-        startFallbackTimer()
-
-        // Capture the currently active app immediately
-        Task {
-            await captureCurrentFocus()
-        }
+        guard state == .stopped else { return }
+        transition(to: .active)
     }
 
     /// Stop tracking and finalize the current session.
     func stop() {
-        guard isTracking else { return }
-        isTracking = false
+        guard state != .stopped else { return }
+        transition(to: .stopped)
+    }
 
-        if let observer = workspaceObserver {
-            NSWorkspace.shared.notificationCenter.removeObserver(observer)
-            workspaceObserver = nil
+    // MARK: - State Machine Core
+
+    /// Perform a state transition with co-located side effects.
+    ///
+    /// **Design rules:**
+    /// 1. One state at a time — no boolean combinations.
+    /// 2. Each notification maps to exactly one transition.
+    /// 3. Side effects (timer, session, observers) are handled here, not scattered.
+    private func transition(to newState: TrackingState) {
+        guard state != newState else { return }
+        let oldState = state
+        state = newState
+        isTracking = (newState != .stopped)
+
+        switch newState {
+        case .stopped:
+            cancelFallbackTimer()
+            removeWorkspaceObserver()
+            removeSystemObservers()
+            finalizeCurrentSessionQuietly()
+
+        case .active:
+            if oldState == .stopped {
+                registerWorkspaceObserver()
+                registerSystemObservers()
+                startFallbackTimer()
+                Task { await captureCurrentFocus() }
+            } else if oldState == .asleep {
+                // Timer was cancelled on sleep — recreate it
+                startFallbackTimer()
+                Task { await captureCurrentFocus() }
+            } else if oldState == .locked {
+                // Timer was suspended on lock — resume it
+                fallbackSource?.resume()
+                Task { await captureCurrentFocus() }
+            } else if oldState == .idle {
+                // Returning from idle — recapture focus
+                Task { await captureCurrentFocus() }
+            }
+
+        case .idle:
+            finalizeCurrentSessionQuietly()
+            // Timer keeps running so we can detect return-to-active
+
+        case .locked:
+            fallbackSource?.suspend()
+            finalizeCurrentSessionQuietly()
+
+        case .asleep:
+            cancelFallbackTimer()
+            finalizeCurrentSessionQuietly()
         }
-
-        removeSystemObservers()
-
-        fallbackSource?.cancel()
-        fallbackSource = nil
-
-        finalizeCurrentSessionQuietly()
     }
 
     // MARK: - Event Handlers
 
     /// Called when a new app is activated (event-driven, zero polling).
     private func handleAppActivation(_ notification: Notification) async {
-        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication else {
-            return
-        }
+        guard let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey]
+                as? NSRunningApplication else { return }
 
         let appName = app.localizedName ?? "Unknown"
         let bundleId = app.bundleIdentifier
         let wCtx = readWindowContext(for: app)
-        // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
             : nil
 
         switchFocus(FocusContext(
-            appName: appName,
-            bundleId: bundleId,
-            windowTitle: wCtx.title,
-            browserInfo: browserInfo,
+            appName: appName, bundleId: bundleId,
+            windowTitle: wCtx.title, browserInfo: browserInfo,
             documentPath: wCtx.documentPath,
-            isFullScreen: wCtx.isFullScreen,
-            isMinimized: wCtx.isMinimized
+            isFullScreen: wCtx.isFullScreen, isMinimized: wCtx.isMinimized
         ))
     }
 
     /// Fallback: check if window title or URL changed within the same app.
     private func checkForInAppChanges() async {
-        guard isTracking, !isScreenLocked else { return }
+        // State-based guard: only poll in .active (idle/locked/asleep skip)
+        guard state == .active else { return }
 
-        // Energy: skip if user has been idle for over 60 seconds
+        // Idle detection: transition to .idle if user has been inactive
         let idleSeconds = CGEventSource.secondsSinceLastEventType(
-            .combinedSessionState,
-            eventType: .null  // checks all input event types (mouse, keyboard, etc.)
+            .combinedSessionState, eventType: .null
         )
-        guard idleSeconds < Self.idleThreshold else { return }
+        if idleSeconds >= Self.idleThreshold {
+            transition(to: .idle)
+            return
+        }
 
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
         let wCtx = readWindowContext(for: frontApp)
-        // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
             : nil
         let url = browserInfo?.url
 
-        // Only switch if something actually changed
         let titleChanged = wCtx.title != lastWindowTitle
         let urlChanged = url != lastURL
 
         if titleChanged || urlChanged {
             switchFocus(FocusContext(
-                appName: appName,
-                bundleId: bundleId,
-                windowTitle: wCtx.title,
-                browserInfo: browserInfo,
+                appName: appName, bundleId: bundleId,
+                windowTitle: wCtx.title, browserInfo: browserInfo,
                 documentPath: wCtx.documentPath,
-                isFullScreen: wCtx.isFullScreen,
-                isMinimized: wCtx.isMinimized
+                isFullScreen: wCtx.isFullScreen, isMinimized: wCtx.isMinimized
             ))
         }
     }
 
-    /// Capture whatever app is currently focused (used on engine start).
+    /// Timer tick handler for the `.idle` state — check if user has returned.
+    private func checkIdleReturn() {
+        guard state == .idle else { return }
+
+        let idleSeconds = CGEventSource.secondsSinceLastEventType(
+            .combinedSessionState, eventType: .null
+        )
+        if idleSeconds < Self.idleThreshold {
+            transition(to: .active)
+        }
+    }
+
+    /// Capture whatever app is currently focused (used on engine start / wake / unlock).
     private func captureCurrentFocus() async {
         guard let frontApp = NSWorkspace.shared.frontmostApplication else { return }
 
         let appName = frontApp.localizedName ?? "Unknown"
         let bundleId = frontApp.bundleIdentifier
         let wCtx = readWindowContext(for: frontApp)
-        // Energy: only run AppleScript for known browsers
         let browserInfo: BrowserInfo? = BrowserURLFetcher.isBrowser(appName: appName)
             ? await BrowserURLFetcher.fetchInfo(appName: appName)
             : nil
 
         switchFocus(FocusContext(
-            appName: appName,
-            bundleId: bundleId,
-            windowTitle: wCtx.title,
-            browserInfo: browserInfo,
+            appName: appName, bundleId: bundleId,
+            windowTitle: wCtx.title, browserInfo: browserInfo,
             documentPath: wCtx.documentPath,
-            isFullScreen: wCtx.isFullScreen,
-            isMinimized: wCtx.isMinimized
+            isFullScreen: wCtx.isFullScreen, isMinimized: wCtx.isMinimized
         ))
     }
 
@@ -253,10 +295,8 @@ final class TrackingEngine: ObservableObject {
 
     /// Handle a focus switch: finalize previous session, start new one.
     private func switchFocus(_ ctx: FocusContext) {
-        // Finalize the previous session
         finalizeCurrentSessionQuietly()
 
-        // Update tracking state
         lastWindowTitle = ctx.windowTitle
         lastURL = ctx.browserInfo?.url
 
@@ -264,7 +304,6 @@ final class TrackingEngine: ObservableObject {
         lastChangeTime = Date()
         rescheduleIfNeeded()
 
-        // Create the new session
         let session = FocusSession.start(
             appName: ctx.appName,
             windowTitle: ctx.windowTitle,
@@ -277,10 +316,10 @@ final class TrackingEngine: ObservableObject {
             isMinimized: ctx.isMinimized
         )
 
-        // Optimistic UI update, then persist on a background thread
+        // Optimistic UI update, then persist at .utility priority
         currentSession = session
         let database = db
-        Task.detached(priority: .userInitiated) {
+        Task.detached(priority: .utility) {
             do {
                 try database.insert(session)
             } catch {
@@ -296,10 +335,9 @@ final class TrackingEngine: ObservableObject {
 
         session.finish()
 
-        // Clear UI state immediately, persist on background thread
         currentSession = nil
         let database = db
-        Task.detached(priority: .userInitiated) {
+        Task.detached(priority: .utility) {
             do {
                 try database.update(session)
             } catch {
@@ -308,11 +346,11 @@ final class TrackingEngine: ObservableObject {
         }
     }
 
-    // MARK: - Energy: Timer Management
+    // MARK: - Timer Management
 
     /// Create and start the fallback GCD timer with adaptive interval.
     private func startFallbackTimer() {
-        fallbackSource?.cancel()
+        cancelFallbackTimer()
         let interval = adaptiveInterval
         currentIntervalTier = interval
         let source = DispatchSource.makeTimerSource(queue: .main)
@@ -321,8 +359,13 @@ final class TrackingEngine: ObservableObject {
                         leeway: .seconds(1))
         source.setEventHandler { [weak self] in
             Task { @MainActor in
-                await self?.checkForInAppChanges()
-                self?.rescheduleIfNeeded()
+                guard let self else { return }
+                if self.state == .idle {
+                    self.checkIdleReturn()
+                } else {
+                    await self.checkForInAppChanges()
+                }
+                self.rescheduleIfNeeded()
             }
         }
         source.resume()
@@ -339,66 +382,72 @@ final class TrackingEngine: ObservableObject {
                                  leeway: .seconds(1))
     }
 
-    // MARK: - Energy: System Observers (Lock/Unlock, Sleep/Wake)
+    /// Cancel and nil out the fallback timer.
+    private func cancelFallbackTimer() {
+        fallbackSource?.cancel()
+        fallbackSource = nil
+    }
 
-    /// Register observers for screen lock/unlock, system sleep/wake, and power state changes.
+    // MARK: - Observer Management
+
+    /// Register the workspace app-activation observer.
+    private func registerWorkspaceObserver() {
+        workspaceObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil, queue: .main
+        ) { [weak self] notification in
+            Task { @MainActor in
+                await self?.handleAppActivation(notification)
+            }
+        }
+    }
+
+    /// Remove the workspace app-activation observer.
+    private func removeWorkspaceObserver() {
+        if let obs = workspaceObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(obs)
+            workspaceObserver = nil
+        }
+    }
+
+    /// Register observers for screen lock/unlock, system sleep/wake, and power state.
     private func registerSystemObservers() {
         let workspaceCenter = NSWorkspace.shared.notificationCenter
         let distCenter = DistributedNotificationCenter.default()
 
-        // Screen lock: pause polling, finalize session
         lockObserver = distCenter.addObserver(
             forName: NSNotification.Name("com.apple.screenIsLocked"),
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.isScreenLocked = true
-                self?.finalizeCurrentSessionQuietly()
-            }
+            Task { @MainActor in self?.transition(to: .locked) }
         }
 
-        // Screen unlock: resume polling, recapture focus
         unlockObserver = distCenter.addObserver(
             forName: NSNotification.Name("com.apple.screenIsUnlocked"),
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.isScreenLocked = false
-                await self?.captureCurrentFocus()
-            }
+            Task { @MainActor in self?.transition(to: .active) }
         }
 
-        // System sleep: stop timer, finalize session
         sleepObserver = workspaceCenter.addObserver(
             forName: NSWorkspace.willSleepNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.fallbackSource?.cancel()
-                self?.fallbackSource = nil
-                self?.finalizeCurrentSessionQuietly()
-            }
+            Task { @MainActor in self?.transition(to: .asleep) }
         }
 
-        // System wake: restart timer, recapture focus
         wakeObserver = workspaceCenter.addObserver(
             forName: NSWorkspace.didWakeNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.startFallbackTimer()
-                await self?.captureCurrentFocus()
-            }
+            Task { @MainActor in self?.transition(to: .active) }
         }
 
-        // Low Power Mode toggle: reschedule timer with updated battery multiplier
         powerStateObserver = NotificationCenter.default.addObserver(
             forName: .NSProcessInfoPowerStateDidChange,
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in
-                self?.rescheduleIfNeeded()
-            }
+            Task { @MainActor in self?.rescheduleIfNeeded() }
         }
     }
 
@@ -418,7 +467,6 @@ final class TrackingEngine: ObservableObject {
         sleepObserver = nil
         wakeObserver = nil
         powerStateObserver = nil
-        isScreenLocked = false
     }
 
     // MARK: - AX Window Context (Cached Lookup)
