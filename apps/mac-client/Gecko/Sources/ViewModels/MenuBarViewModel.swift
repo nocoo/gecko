@@ -58,15 +58,14 @@ final class MenuBarViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .assign(to: &$isTracking)
 
+        // Single subscription for both appName and windowTitle
         trackingEngine.$currentSession
             .receive(on: RunLoop.main)
-            .map(\.?.appName)
-            .assign(to: &$currentAppName)
-
-        trackingEngine.$currentSession
-            .receive(on: RunLoop.main)
-            .map(\.?.windowTitle)
-            .assign(to: &$currentWindowTitle)
+            .sink { [weak self] (session: FocusSession?) in
+                self?.currentAppName = session?.appName
+                self?.currentWindowTitle = session?.windowTitle
+            }
+            .store(in: &cancellables)
 
         permissionManager.$isAccessibilityGranted
             .combineLatest(permissionManager.$isAutomationGranted)
