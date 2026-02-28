@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-02-28
+
+### Web Dashboard
+
+#### Added
+- **Daily Review page** (`/daily/:date`): Full-page daily productivity analysis with left-right split layout
+  - Score cards with SVG ring visualizations (focus, deep work, switch rate, concentration, overall)
+  - Gantt chart horizontal timeline showing app usage throughout the day
+  - Date navigation with arrow buttons and calendar popup (react-day-picker)
+- **AI-powered daily analysis**: POST `/api/daily/:date/analyze` generates structured insights via LLM
+  - Highlights, improvements, time segment breakdown (3-6 per day), and Markdown summary
+  - Session timeline with browser URLs/titles, idle detection (loginwindow/ScreenSaver), and content analysis
+  - Configurable AI provider (OpenAI, Anthropic, custom) with model selection and test connection
+  - Results cached in D1; regenerate button with `?force=true` cache bypass
+  - Model details card showing provider, model, duration, and token usage
+- **AI Settings page**: Configure AI provider, API key, model, and base URL with test connection
+- **Daily stats service**: `computeScores()` and `computeDailyStats()` with 26 unit tests
+- **Daily summary repository**: D1-backed cache for stats and AI results
+- DMG packaging script for Mac client distribution
+
+### Mac Client
+
+No changes in this release.
+
 ## [1.0.1] - 2026-02-28
 
 ### Mac Client
