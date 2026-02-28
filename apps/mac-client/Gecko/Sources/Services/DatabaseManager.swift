@@ -18,7 +18,7 @@ protocol DatabaseService: Sendable {
 
 /// Manages the SQLite database lifecycle and provides CRUD operations for FocusSession.
 ///
-/// Database path: `~/Library/Application Support/com.gecko.app/gecko.sqlite`
+/// Database path: `~/Library/Application Support/ai.hexly.gecko/gecko.sqlite`
 /// This path is accessible without sandbox, and will also be readable by the future web dashboard.
 final class DatabaseManager: DatabaseService {
 
@@ -51,7 +51,7 @@ final class DatabaseManager: DatabaseService {
     static var databaseURL: URL {
         // swiftlint:disable:next force_unwrapping
         let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let directory = appSupport.appendingPathComponent("com.gecko.app", isDirectory: true)
+        let directory = appSupport.appendingPathComponent("ai.hexly.gecko", isDirectory: true)
         return directory.appendingPathComponent("gecko.sqlite")
     }
 

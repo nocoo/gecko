@@ -91,7 +91,7 @@ final class SettingsManager: ObservableObject {
 
     // MARK: - Default Path
 
-    /// The default database path: ~/Library/Application Support/com.gecko.app/gecko.sqlite
+    /// The default database path: ~/Library/Application Support/ai.hexly.gecko/gecko.sqlite
     static var defaultDatabasePath: String {
         DatabaseManager.databaseURL.path
     }

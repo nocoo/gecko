@@ -66,7 +66,7 @@ final class PermissionManager: ObservableObject {
     /// This is the nuclear option: it removes all Accessibility entries for our bundle ID,
     /// then re-triggers the prompt. Useful when Xcode rebuilds change the binary signature.
     func resetAndRequestAccessibility() {
-        let bundleId = Bundle.main.bundleIdentifier ?? "com.gecko.app"
+        let bundleId = Bundle.main.bundleIdentifier ?? "ai.hexly.gecko"
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/tccutil")
         process.arguments = ["reset", "Accessibility", bundleId]

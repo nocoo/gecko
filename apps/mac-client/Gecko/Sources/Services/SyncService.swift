@@ -80,7 +80,7 @@ final class SyncService: ObservableObject {
 
     private var timer: Timer?
     private var settingsCancellable: AnyCancellable?
-    private let logger = Logger(subsystem: "com.gecko.app", category: "SyncService")
+    private let logger = Logger(subsystem: "ai.hexly.gecko", category: "SyncService")
 
     // MARK: - Init
 

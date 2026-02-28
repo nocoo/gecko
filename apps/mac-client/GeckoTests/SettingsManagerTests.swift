@@ -32,7 +32,7 @@ final class SettingsManagerTests: XCTestCase {
     func testDefaultPathContainsGeckoSqlite() {
         let path = SettingsManager.defaultDatabasePath
         XCTAssertTrue(path.contains("gecko.sqlite"), "Default path should contain gecko.sqlite")
-        XCTAssertTrue(path.contains("com.gecko.app"), "Default path should contain bundle ID directory")
+        XCTAssertTrue(path.contains("ai.hexly.gecko"), "Default path should contain bundle ID directory")
     }
 
     // MARK: - Custom Path
