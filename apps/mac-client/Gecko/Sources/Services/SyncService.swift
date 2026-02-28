@@ -227,13 +227,17 @@ final class SyncService: ObservableObject {
     private func drainBatches() async throws -> (Int, Int) {
         var totalSynced = 0
         var batchNumber = 0
+        let database = db
 
         while true {
             batchNumber += 1
-            let sessions = try db.fetchUnsynced(
-                since: settings.lastSyncedStartTime,
-                limit: 1000
-            )
+
+            // Fetch unsynced sessions on a background thread to avoid
+            // blocking MainActor with synchronous SQLite reads.
+            let watermark = settings.lastSyncedStartTime
+            let sessions: [FocusSession] = try await Task.detached(priority: .userInitiated) {
+                try database.fetchUnsynced(since: watermark, limit: 1000)
+            }.value
 
             if sessions.isEmpty {
                 if batchNumber == 1 {
