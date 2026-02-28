@@ -301,3 +301,62 @@ describe("AI Settings page", () => {
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// AI integration (real LLM)
+// ---------------------------------------------------------------------------
+
+const AI_AUTH_TOKEN = process.env.AI_E2E_AUTH_TOKEN ?? "";
+const AI_BASE_URL = process.env.AI_E2E_BASE_URL ?? "";
+const AI_MODEL = process.env.AI_E2E_MODEL ?? "";
+const HAS_AI_CREDS = !!(AI_AUTH_TOKEN && AI_BASE_URL && AI_MODEL);
+
+describe("AI integration (real LLM)", () => {
+  test.skipIf(!SHOULD_RUN || !HAS_AI_CREDS)(
+    "configure custom provider with real credentials",
+    async () => {
+      const res = await fetch(`${BASE_URL}/api/settings/ai`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          provider: "custom",
+          apiKey: AI_AUTH_TOKEN,
+          model: AI_MODEL,
+          baseURL: AI_BASE_URL,
+          sdkType: "anthropic",
+        }),
+      });
+      expect(res.status).toBe(200);
+
+      const body = (await res.json()) as AiSettings;
+      expect(body.provider).toBe("custom");
+      expect(body.hasApiKey).toBe(true);
+      expect(body.model).toBe(AI_MODEL);
+      expect(body.baseURL).toBe(AI_BASE_URL);
+      expect(body.sdkType).toBe("anthropic");
+    },
+  );
+
+  test.skipIf(!SHOULD_RUN || !HAS_AI_CREDS)(
+    "POST /api/settings/ai/test succeeds with real LLM",
+    async () => {
+      const res = await fetch(`${BASE_URL}/api/settings/ai/test`, {
+        method: "POST",
+      });
+      expect(res.status).toBe(200);
+
+      const body = (await res.json()) as {
+        success: boolean;
+        response: string;
+        model: string;
+        provider: string;
+      };
+      expect(body.success).toBe(true);
+      expect(body.response.length).toBeGreaterThan(0);
+      expect(body.model).toBe(AI_MODEL);
+      expect(body.provider).toBe("custom");
+
+      console.log(`[E2E] Real LLM response: "${body.response}"`);
+    },
+  );
+});

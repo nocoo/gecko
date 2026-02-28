@@ -10,6 +10,7 @@ out/
 .env
 .env.local
 .env.*.local
+.env.e2e
 
 # IDE
 .idea/
