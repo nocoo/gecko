@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.1] - 2026-02-28
+
+### Mac Client
+
+#### Changed
+- Replaced menu bar icon from SF Symbol (`eye.circle`) to custom gecko logo (template image, auto-adapts to light/dark mode)
+
+### Web Dashboard
+
+No changes in this release.
+
 ## [1.1.0] - 2026-02-28
 
 ### Web Dashboard

@@ -406,7 +406,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko;
 				PRODUCT_NAME = Gecko;
 				SDKROOT = macosx;
@@ -513,7 +513,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.1.0;
+				MARKETING_VERSION = 1.1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko;
 				PRODUCT_NAME = Gecko;
 				SDKROOT = macosx;
