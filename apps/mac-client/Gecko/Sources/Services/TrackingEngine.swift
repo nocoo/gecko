@@ -1,5 +1,6 @@
 import Cocoa
 import Combine
+import os.log
 
 /// The core focus tracking engine.
 ///
@@ -91,6 +92,13 @@ final class TrackingEngine: ObservableObject {
     /// GCD timer source that supports dynamic rescheduling without invalidation.
     private var fallbackSource: DispatchSourceTimer?
 
+    /// Tracks whether the fallback timer is suspended.
+    /// GCD requires a suspended dispatch source to be resumed before it can be cancelled.
+    private var isTimerSuspended: Bool = false
+
+    /// Structured logger for production diagnostics.
+    private let logger = Logger(subsystem: "ai.hexly.gecko", category: "TrackingEngine")
+
     // MARK: - Constants
 
     /// User idle threshold in seconds. Beyond this, transition to `.idle`.
@@ -159,6 +167,7 @@ final class TrackingEngine: ObservableObject {
         let oldState = state
         state = newState
         isTracking = (newState != .stopped)
+        logger.info("Transition: \(String(describing: oldState)) → \(String(describing: newState))")
 
         switch newState {
         case .stopped:
@@ -181,6 +190,7 @@ final class TrackingEngine: ObservableObject {
             } else if oldState == .locked {
                 // Timer was suspended on lock — resume it
                 fallbackSource?.resume()
+                isTimerSuspended = false
                 Task { await captureCurrentFocus() }
             } else if oldState == .idle {
                 // Returning from idle — recapture focus
@@ -195,6 +205,7 @@ final class TrackingEngine: ObservableObject {
         case .locked:
             cancelTitleDebounce()
             fallbackSource?.suspend()
+            isTimerSuspended = true
             finalizeCurrentSessionQuietly()
 
         case .asleep:
@@ -360,11 +371,12 @@ final class TrackingEngine: ObservableObject {
         // Optimistic UI update, then persist at .utility priority
         currentSession = session
         let database = db
+        let logger = self.logger
         Task.detached(priority: .utility) {
             do {
                 try database.insert(session)
             } catch {
-                print("[TrackingEngine] Failed to insert session: \(error)")
+                logger.error("Failed to insert session: \(error)")
             }
         }
     }
@@ -378,11 +390,12 @@ final class TrackingEngine: ObservableObject {
 
         currentSession = nil
         let database = db
+        let logger = self.logger
         Task.detached(priority: .utility) {
             do {
                 try database.update(session)
             } catch {
-                print("[TrackingEngine] Failed to finalize session: \(error)")
+                logger.error("Failed to finalize session: \(error)")
             }
         }
     }
@@ -424,7 +437,13 @@ final class TrackingEngine: ObservableObject {
     }
 
     /// Cancel and nil out the fallback timer.
+    /// GCD requires a suspended dispatch source to be resumed before cancellation,
+    /// otherwise cancelling a suspended source triggers EXC_BAD_INSTRUCTION.
     private func cancelFallbackTimer() {
+        if isTimerSuspended {
+            fallbackSource?.resume()
+            isTimerSuspended = false
+        }
         fallbackSource?.cancel()
         fallbackSource = nil
     }
