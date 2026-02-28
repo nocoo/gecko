@@ -70,12 +70,12 @@ struct SettingsView: View {
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 8) {
-                TextField("Database path", text: $viewModel.editingPath)
+                TextField("Database path", text: .constant(viewModel.editingPath))
                     .textFieldStyle(.roundedBorder)
                     .font(.system(.body, design: .monospaced))
-                    .onChange(of: viewModel.editingPath) {
-                        viewModel.onPathChanged()
-                    }
+                    .disabled(true)
+                    .accessibilityLabel("Database file path")
+                    .help("Use the Browse button to change the database location")
 
                 Button("Browse...") {
                     browseForPath()
