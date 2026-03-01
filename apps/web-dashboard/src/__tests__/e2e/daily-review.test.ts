@@ -91,14 +91,13 @@ describe("GET /api/daily/:date — validation", () => {
   );
 
   test.skipIf(!SHOULD_RUN)(
-    "rejects today's date",
+    "allows today's date",
     async () => {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       const res = await fetch(`${BASE_URL}/api/daily/${todayStr}`);
-      expect(res.status).toBe(400);
-      const body = (await res.json()) as { error: string };
-      expect(body.error).toContain("Cannot view today");
+      // Should succeed (200) — today is now allowed
+      expect(res.status).toBe(200);
     },
   );
 
@@ -170,16 +169,19 @@ describe("POST /api/daily/:date/analyze — validation", () => {
   );
 
   test.skipIf(!SHOULD_RUN)(
-    "rejects today's date",
+    "allows today's date for analysis",
     async () => {
       const today = new Date();
       const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
       const res = await fetch(`${BASE_URL}/api/daily/${todayStr}/analyze`, {
         method: "POST",
       });
-      expect(res.status).toBe(400);
-      const body = (await res.json()) as { error: string };
-      expect(body.error).toContain("Cannot analyze today");
+      // Should not be 400 for "future dates" — it's allowed now.
+      // May be 400 for "no sessions" or "AI not configured", but not for date validation.
+      if (res.status === 400) {
+        const body = (await res.json()) as { error: string };
+        expect(body.error).not.toContain("Cannot analyze future dates");
+      }
     },
   );
 

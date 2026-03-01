@@ -6,7 +6,7 @@
  * - Right: AI analysis (Markdown) + Model details card
  *
  * Date navigation via arrows + calendar popup (react-day-picker).
- * Today/future dates are forbidden.
+ * Future dates are forbidden; today shows partial data.
  *
  * Design: Follows basalt 3-tier surface hierarchy (L0 → L1 → L2).
  */
@@ -87,14 +87,6 @@ function todayStr(tz: string): string {
   }).format(new Date());
 }
 
-/**
- * "Yesterday" in the user's configured timezone.
- */
-function yesterdayStr(tz: string): string {
-  const today = todayStr(tz);
-  return addDays(today, -1);
-}
-
 function addDays(dateStr: string, days: number): string {
   const parts = dateStr.split("-").map(Number);
   const utc = new Date(Date.UTC(parts[0]!, parts[1]! - 1, parts[2]! + days));
@@ -138,7 +130,7 @@ function DateNavigator({
 }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
   const today = todayStr(timezone);
-  const canGoForward = addDays(date, 1) < today;
+  const canGoForward = addDays(date, 1) <= today;
 
   return (
     <div className="flex items-center gap-2">
@@ -179,7 +171,7 @@ function DateNavigator({
                   }
                 }}
                 disabled={[
-                  { from: dateToObj(today), to: new Date(2099, 11, 31) },
+                  { from: dateToObj(addDays(today, 1)), to: new Date(2099, 11, 31) },
                 ]}
                 defaultMonth={dateToObj(date)}
               />
@@ -551,7 +543,7 @@ export function DailyReviewClient({ date }: { date: string }) {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Daily Review", href: `/daily/${yesterdayStr(timezone)}` },
+        { label: "Daily Review", href: "/daily" },
         { label: formatDateDisplay(date) },
       ]}
     >

@@ -87,8 +87,8 @@ function validateDate(dateStr: string, tz: string): string | null {
     return "Invalid date.";
   }
   const today = todayInTz(tz);
-  if (dateStr >= today) {
-    return "Cannot analyze today or future dates.";
+  if (dateStr > today) {
+    return "Cannot analyze future dates.";
   }
   return null;
 }

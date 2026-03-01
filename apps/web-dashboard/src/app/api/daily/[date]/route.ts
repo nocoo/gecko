@@ -3,7 +3,7 @@
  *
  * Returns rule-based stats (always computed fresh) and cached AI analysis.
  * Stats are recomputed on every request using timezone-aware day boundaries.
- * Date must be YYYY-MM-DD and strictly before today.
+ * Date must be YYYY-MM-DD and not in the future.
  */
 
 import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Validate date format and ensure it's before today in user's timezone. */
+/** Validate date format and ensure it's not in the future (user's timezone). */
 function validateDate(dateStr: string, tz: string): string | null {
   if (!DATE_RE.test(dateStr)) {
     return "Invalid date format. Use YYYY-MM-DD.";
@@ -31,10 +31,10 @@ function validateDate(dateStr: string, tz: string): string | null {
   if (isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
     return "Invalid date.";
   }
-  // Must be before today in user's timezone
+  // Must not be in the future
   const today = todayInTz(tz);
-  if (dateStr >= today) {
-    return "Cannot view today or future dates. Data is still being collected.";
+  if (dateStr > today) {
+    return "Cannot view future dates.";
   }
   return null;
 }

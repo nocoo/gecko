@@ -151,21 +151,17 @@ describe("POST /api/daily/[date]/analyze", () => {
     expect(data.error).toContain("Invalid date format");
   });
 
-  test("returns 400 for today's date", async () => {
-    // todayInTz("Asia/Shanghai") returns today's date string
-    const now = new Date();
-    const todayStr = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Shanghai" }).format(now);
-
+  test("returns 400 for future date", async () => {
     mockD1([
       // 1. getUserTimezone
       [tzRow],
     ]);
 
-    const res = await callPOST(makeAnalyzeRequest(todayStr), todayStr);
+    const res = await callPOST(makeAnalyzeRequest("2099-12-31"), "2099-12-31");
     expect(res.status).toBe(400);
 
     const data = await res.json();
-    expect(data.error).toContain("Cannot analyze today or future dates");
+    expect(data.error).toContain("Cannot analyze future dates");
   });
 
   test("returns 400 when no sessions found for date", async () => {
