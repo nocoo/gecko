@@ -12,11 +12,11 @@ import {
   Search,
   ArrowUpDown,
   AlertTriangle,
-  Check,
   Pencil,
   Plus,
   X,
   Save,
+  Tag as TagIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -97,6 +97,7 @@ export default function AppsPage() {
   // Expanded rows
   const [expandedTagApp, setExpandedTagApp] = useState<string | null>(null);
   const [expandedNoteApp, setExpandedNoteApp] = useState<string | null>(null);
+  const [expandedCatApp, setExpandedCatApp] = useState<string | null>(null);
 
   // ---------------------------------------------------------------------------
   // Fetch all data
@@ -241,6 +242,27 @@ export default function AppsPage() {
   }
 
   // ---------------------------------------------------------------------------
+  // Create new tag inline
+  // ---------------------------------------------------------------------------
+
+  async function createTag(name: string): Promise<Tag | null> {
+    try {
+      const res = await fetch("/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      const newTag: Tag = { id: data.id, name: data.name };
+      setTags((prev) => [...prev, newTag]);
+      return newTag;
+    } catch {
+      return null;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Total pending count
   // ---------------------------------------------------------------------------
 
@@ -334,6 +356,7 @@ export default function AppsPage() {
       setPendingNotes(new Map());
       setExpandedTagApp(null);
       setExpandedNoteApp(null);
+      setExpandedCatApp(null);
       fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -352,6 +375,7 @@ export default function AppsPage() {
     setPendingNotes(new Map());
     setExpandedTagApp(null);
     setExpandedNoteApp(null);
+    setExpandedCatApp(null);
   }
 
   // ---------------------------------------------------------------------------
@@ -494,6 +518,7 @@ export default function AppsPage() {
                   effectiveTagIds={getEffectiveTags(app.bundleId)}
                   effectiveNote={getEffectiveNote(app.bundleId)}
                   hasChange={hasAppChange(app.bundleId)}
+                  isCatExpanded={expandedCatApp === app.bundleId}
                   isTagExpanded={expandedTagApp === app.bundleId}
                   isNoteExpanded={expandedNoteApp === app.bundleId}
                   onCategoryChange={(catId) =>
@@ -502,6 +527,12 @@ export default function AppsPage() {
                   onToggleTag={(tagId) => toggleTag(app.bundleId, tagId)}
                   onNoteChange={(note) =>
                     handleNoteChange(app.bundleId, note)
+                  }
+                  onCreateTag={createTag}
+                  onToggleCatExpand={() =>
+                    setExpandedCatApp(
+                      expandedCatApp === app.bundleId ? null : app.bundleId,
+                    )
                   }
                   onToggleTagExpand={() =>
                     setExpandedTagApp(
@@ -529,7 +560,7 @@ export default function AppsPage() {
 }
 
 // =============================================================================
-// App Row
+// App Row — multi-row card layout
 // =============================================================================
 
 function AppRow({
@@ -540,11 +571,14 @@ function AppRow({
   effectiveTagIds,
   effectiveNote,
   hasChange,
+  isCatExpanded,
   isTagExpanded,
   isNoteExpanded,
   onCategoryChange,
   onToggleTag,
   onNoteChange,
+  onCreateTag,
+  onToggleCatExpand,
   onToggleTagExpand,
   onToggleNoteExpand,
 }: {
@@ -555,25 +589,47 @@ function AppRow({
   effectiveTagIds: Set<string>;
   effectiveNote: string;
   hasChange: boolean;
+  isCatExpanded: boolean;
   isTagExpanded: boolean;
   isNoteExpanded: boolean;
   onCategoryChange: (categoryId: string) => void;
   onToggleTag: (tagId: string) => void;
   onNoteChange: (note: string) => void;
+  onCreateTag: (name: string) => Promise<Tag | null>;
+  onToggleCatExpand: () => void;
   onToggleTagExpand: () => void;
   onToggleNoteExpand: () => void;
 }) {
   const assignedTags = tags.filter((t) => effectiveTagIds.has(t.id));
+  const selectedCategory = categories.find((c) => c.id === effectiveCategoryId);
+
+  const catPanelRef = useRef<HTMLDivElement>(null);
   const tagPanelRef = useRef<HTMLDivElement>(null);
+  const [newTagName, setNewTagName] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
+
+  // Close category panel on outside click
+  useEffect(() => {
+    if (!isCatExpanded) return;
+    function handleClick(e: MouseEvent) {
+      if (catPanelRef.current && !catPanelRef.current.contains(e.target as Node)) {
+        onToggleCatExpand();
+      }
+    }
+    const timer = setTimeout(() => {
+      document.addEventListener("mousedown", handleClick);
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClick);
+    };
+  }, [isCatExpanded, onToggleCatExpand]);
 
   // Close tag panel on outside click
   useEffect(() => {
     if (!isTagExpanded) return;
     function handleClick(e: MouseEvent) {
-      if (
-        tagPanelRef.current &&
-        !tagPanelRef.current.contains(e.target as Node)
-      ) {
+      if (tagPanelRef.current && !tagPanelRef.current.contains(e.target as Node)) {
         onToggleTagExpand();
       }
     }
@@ -586,20 +642,29 @@ function AppRow({
     };
   }, [isTagExpanded, onToggleTagExpand]);
 
-  const selectedCategory = categories.find((c) => c.id === effectiveCategoryId);
+  async function handleCreateTag() {
+    const trimmed = newTagName.trim();
+    if (!trimmed || creatingTag) return;
+    setCreatingTag(true);
+    const newTag = await onCreateTag(trimmed);
+    setCreatingTag(false);
+    if (newTag) {
+      setNewTagName("");
+      onToggleTag(newTag.id);
+    }
+  }
 
   return (
     <div
       className={cn(
-        "rounded-xl transition-colors",
+        "rounded-xl p-3 space-y-2 transition-colors",
         hasChange
           ? "bg-primary/5 ring-1 ring-primary/20"
           : "hover:bg-secondary",
       )}
     >
-      {/* Main row */}
-      <div className="flex items-center gap-3 p-3">
-        {/* App info */}
+      {/* Row 1: App info */}
+      <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium truncate">{app.appName}</p>
           <p className="text-xs text-muted-foreground truncate">
@@ -610,125 +675,204 @@ function AppRow({
             </span>
           </p>
         </div>
-
-        {/* Category dropdown */}
-        <div className="shrink-0">
-          <Select
-            value={effectiveCategoryId}
-            onChange={(e) => onCategoryChange(e.target.value)}
-            className="h-8 min-w-[150px] rounded-lg text-xs"
-          >
-            <option value="">Uncategorized</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.title}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        {/* Tags toggle button */}
-        <div className="shrink-0" ref={tagPanelRef}>
-          <button
-            type="button"
-            onClick={onToggleTagExpand}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
-              isTagExpanded
-                ? "bg-primary/10 text-primary"
-                : "bg-secondary text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {assignedTags.length > 0 ? (
-              <span className="flex items-center gap-1">
-                {assignedTags.length} tag{assignedTags.length === 1 ? "" : "s"}
-              </span>
-            ) : (
-              "Tags"
-            )}
-          </button>
-
-          {/* Tag selection dropdown */}
-          {isTagExpanded && tags.length > 0 && (
-            <div className="absolute z-10 mt-1 min-w-[200px] rounded-lg border bg-popover p-2 shadow-md">
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => {
-                  const isSelected = effectiveTagIds.has(tag.id);
-                  return (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => onToggleTag(tag.id)}
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-all",
-                        isSelected
-                          ? "ring-2 ring-primary/40"
-                          : "opacity-50 hover:opacity-80",
-                      )}
-                    >
-                      {isSelected && <Check className="size-3" />}
-                      <TagBadge name={tag.name} size="sm" />
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Note: inline text with edit icon, or "Add note" button */}
-        {effectiveNote && !isNoteExpanded ? (
-          <button
-            type="button"
-            onClick={onToggleNoteExpand}
-            className="shrink-0 inline-flex items-center gap-1.5 max-w-[200px] text-left group"
-          >
-            <span className="text-xs text-muted-foreground truncate">
-              {effectiveNote}
-            </span>
-            <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
-          </button>
-        ) : !isNoteExpanded ? (
-          <button
-            type="button"
-            onClick={onToggleNoteExpand}
-            className="shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground"
-          >
-            <Plus className="size-3.5" strokeWidth={1.5} />
-            Note
-          </button>
-        ) : null}
       </div>
 
-      {/* Assigned tags display (always visible when tags exist) */}
-      {assignedTags.length > 0 && !isTagExpanded && (
-        <div className="flex flex-wrap gap-1 px-3 pb-2">
-          {assignedTags.map((tag) => (
-            <TagBadge key={tag.id} name={tag.name} size="sm" />
-          ))}
-          {selectedCategory && (
+      {/* Row 2: Category */}
+      <div className="flex items-center gap-1.5 min-h-[28px]">
+        {selectedCategory ? (
+          <span className="inline-flex items-center gap-0.5">
             <CategoryPill
               title={selectedCategory.title}
               icon={selectedCategory.icon}
               colorKey={selectedCategory.slug}
               size="sm"
             />
+            <button
+              type="button"
+              onClick={() => onCategoryChange("")}
+              className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Remove category"
+            >
+              <X className="size-3" strokeWidth={2} />
+            </button>
+          </span>
+        ) : null}
+
+        {/* Add / change category */}
+        <div className="relative" ref={catPanelRef}>
+          <button
+            type="button"
+            onClick={onToggleCatExpand}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
+              isCatExpanded
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+            )}
+          >
+            <Plus className="size-3" strokeWidth={2} />
+            {selectedCategory ? "Change" : "Category"}
+          </button>
+
+          {isCatExpanded && (
+            <div className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => {
+                    onCategoryChange(cat.id);
+                    onToggleCatExpand();
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-secondary",
+                    effectiveCategoryId === cat.id && "bg-primary/10",
+                  )}
+                >
+                  <CategoryPill
+                    title={cat.title}
+                    icon={cat.icon}
+                    colorKey={cat.slug}
+                    size="sm"
+                  />
+                </button>
+              ))}
+            </div>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Note editor */}
-      {isNoteExpanded && (
-        <div className="px-3 pb-3">
-          <textarea
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring resize-none"
-            rows={2}
-            placeholder="Add a note about this app (e.g. 'Work email client', 'Personal project')..."
-            value={effectiveNote}
-            onChange={(e) => onNoteChange(e.target.value)}
-          />
+      {/* Row 3: Tags */}
+      <div className="flex items-center gap-1.5 flex-wrap min-h-[28px]">
+        {assignedTags.map((tag) => (
+          <span key={tag.id} className="inline-flex items-center gap-0.5">
+            <TagBadge name={tag.name} size="sm" />
+            <button
+              type="button"
+              onClick={() => onToggleTag(tag.id)}
+              className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title={`Remove tag "${tag.name}"`}
+            >
+              <X className="size-3" strokeWidth={2} />
+            </button>
+          </span>
+        ))}
+
+        {/* Add tag button + dropdown */}
+        <div className="relative" ref={tagPanelRef}>
+          <button
+            type="button"
+            onClick={onToggleTagExpand}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
+              isTagExpanded
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary",
+            )}
+          >
+            <Plus className="size-3" strokeWidth={2} />
+            Tag
+          </button>
+
+          {isTagExpanded && (
+            <div className="absolute left-0 z-10 mt-1 min-w-[220px] rounded-lg border bg-popover p-2 shadow-md">
+              {/* Existing tags */}
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {tags.map((tag) => {
+                    const isSelected = effectiveTagIds.has(tag.id);
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => onToggleTag(tag.id)}
+                        className={cn(
+                          "rounded-full transition-all",
+                          isSelected
+                            ? "ring-2 ring-primary/40"
+                            : "opacity-50 hover:opacity-80",
+                        )}
+                      >
+                        <TagBadge name={tag.name} size="sm" />
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Create new tag */}
+              <div className="flex items-center gap-1.5 border-t pt-2">
+                <TagIcon className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                <input
+                  type="text"
+                  value={newTagName}
+                  onChange={(e) => setNewTagName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateTag();
+                    }
+                  }}
+                  placeholder="New tag..."
+                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                  type="button"
+                  onClick={handleCreateTag}
+                  disabled={!newTagName.trim() || creatingTag}
+                  className="text-xs font-medium text-primary disabled:opacity-40 hover:underline"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* Row 4: Note */}
+      <div className="min-h-[24px]">
+        {isNoteExpanded ? (
+          <div className="flex items-start gap-2">
+            <textarea
+              className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              rows={2}
+              placeholder="Add a note about this app (e.g. 'Work email client', 'Personal project')..."
+              value={effectiveNote}
+              onChange={(e) => onNoteChange(e.target.value)}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={onToggleNoteExpand}
+              className="mt-1.5 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              title="Close"
+            >
+              <X className="size-4" strokeWidth={1.5} />
+            </button>
+          </div>
+        ) : effectiveNote ? (
+          <button
+            type="button"
+            onClick={onToggleNoteExpand}
+            className="inline-flex items-center gap-1.5 group text-left"
+          >
+            <span className="text-xs text-muted-foreground line-clamp-1">
+              {effectiveNote}
+            </span>
+            <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onToggleNoteExpand}
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <Plus className="size-3" strokeWidth={2} />
+            Note
+          </button>
+        )}
+      </div>
     </div>
   );
 }
