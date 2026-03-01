@@ -19,8 +19,13 @@ import {
 } from "@/services/ai";
 import { query } from "@/lib/d1";
 import { generateText } from "ai";
-import type { DailyStats, SessionForChart } from "@/services/daily-stats";
-import { todayInTz, epochToLocalHHMM } from "@/lib/timezone";
+import {
+  computeDailyStats,
+  type SessionRow,
+  type DailyStats,
+  type SessionForChart,
+} from "@/services/daily-stats";
+import { todayInTz, getDateBoundsEpoch, epochToLocalHHMM } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -194,6 +199,23 @@ ${lines.join("\n")}
 // ---------------------------------------------------------------------------
 // Session timeline builder
 // ---------------------------------------------------------------------------
+
+/** Fetch sessions for a specific date from D1, using user's timezone for day boundaries. */
+async function fetchSessionsForDate(
+  userId: string,
+  date: string,
+  tz: string,
+): Promise<SessionRow[]> {
+  const { start: dayStart, end: dayEnd } = getDateBoundsEpoch(date, tz);
+
+  return query<SessionRow>(
+    `SELECT id, app_name, bundle_id, window_title, url, start_time, duration
+     FROM focus_sessions
+     WHERE user_id = ? AND start_time >= ? AND start_time < ?
+     ORDER BY start_time ASC`,
+    [userId, dayStart, dayEnd],
+  );
+}
 
 /** Format seconds to human-readable duration. */
 function fmtDuration(sec: number): string {
@@ -395,27 +417,21 @@ export async function POST(
   const url = new URL(req.url);
   const force = url.searchParams.get("force") === "true";
 
-  // Check if we already have cached stats
-  const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
-  if (!cached?.stats_json || cached.stats_json === "{}") {
-    return jsonError(
-      "No stats available for this date. Fetch GET /api/daily/:date first.",
-      400,
-    );
-  }
-
   // Check if AI result already exists (skip if force=true)
-  if (!force && cached.ai_result_json) {
-    return jsonOk({
-      score: cached.ai_score,
-      result: JSON.parse(cached.ai_result_json) as AiAnalysisResult,
-      model: cached.ai_model,
-      generatedAt: cached.ai_generated_at,
-      cached: true,
-      // No usage/timing for cached results
-      usage: null,
-      durationMs: null,
-    });
+  if (!force) {
+    const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
+    if (cached?.ai_result_json) {
+      return jsonOk({
+        score: cached.ai_score,
+        result: JSON.parse(cached.ai_result_json) as AiAnalysisResult,
+        model: cached.ai_model,
+        generatedAt: cached.ai_generated_at,
+        cached: true,
+        // No usage/timing for cached results
+        usage: null,
+        durationMs: null,
+      });
+    }
   }
 
   // Load AI config
@@ -438,10 +454,15 @@ export async function POST(
     return jsonError(msg, 400);
   }
 
-  // Generate AI analysis
-  const stats = JSON.parse(cached.stats_json) as DailyStats;
+  // Compute stats fresh from D1 — same pattern as GET /api/daily/:date.
+  // We never read stats_json from cache because it may contain stale UTC data.
+  const rows = await fetchSessionsForDate(user.userId, date, tz);
+  if (rows.length === 0) {
+    return jsonError("No sessions found for this date.", 400);
+  }
+  const stats = computeDailyStats(date, rows);
   const appContext = await loadAppContext(user.userId);
-    const prompt = buildPrompt(date, stats, appContext, tz);
+  const prompt = buildPrompt(date, stats, appContext, tz);
 
   let text: string;
   let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
