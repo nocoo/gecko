@@ -13,7 +13,8 @@ import {
   ArrowUpDown,
   AlertTriangle,
   Check,
-  StickyNote,
+  Pencil,
+  Plus,
   X,
   Save,
 } from "lucide-react";
@@ -675,22 +676,28 @@ function AppRow({
           )}
         </div>
 
-        {/* Note toggle button */}
-        <button
-          type="button"
-          onClick={onToggleNoteExpand}
-          className={cn(
-            "shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors",
-            effectiveNote
-              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-              : isNoteExpanded
-                ? "bg-primary/10 text-primary"
-                : "bg-secondary text-muted-foreground hover:text-foreground",
-          )}
-        >
-          <StickyNote className="size-3.5" strokeWidth={1.5} />
-          {effectiveNote ? "Note" : "Add note"}
-        </button>
+        {/* Note: inline text with edit icon, or "Add note" button */}
+        {effectiveNote && !isNoteExpanded ? (
+          <button
+            type="button"
+            onClick={onToggleNoteExpand}
+            className="shrink-0 inline-flex items-center gap-1.5 max-w-[200px] text-left group"
+          >
+            <span className="text-xs text-muted-foreground truncate">
+              {effectiveNote}
+            </span>
+            <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+          </button>
+        ) : !isNoteExpanded ? (
+          <button
+            type="button"
+            onClick={onToggleNoteExpand}
+            className="shrink-0 inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors bg-secondary text-muted-foreground hover:text-foreground"
+          >
+            <Plus className="size-3.5" strokeWidth={1.5} />
+            Note
+          </button>
+        ) : null}
       </div>
 
       {/* Assigned tags display (always visible when tags exist) */}
