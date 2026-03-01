@@ -615,7 +615,7 @@ function AppRow({
           <Select
             value={effectiveCategoryId}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="h-8 w-[150px] rounded-lg text-xs"
+            className="h-8 min-w-[150px] rounded-lg text-xs"
           >
             <option value="">Uncategorized</option>
             {categories.map((cat) => (
