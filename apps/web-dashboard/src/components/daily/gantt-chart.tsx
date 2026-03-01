@@ -179,16 +179,14 @@ export function GanttChart({
     );
   }
 
-  // Pad range by 15 minutes on each side
-  const xMin = Math.max(0, dayStartMin - 15);
-  const xMax = Math.min(1440, dayEndMin + 15);
+  // Always show the full 24-hour day (00:00 – 24:00)
+  const xMin = 0;
+  const xMax = 1440;
   const range = xMax - xMin;
 
-  // Generate time axis ticks
-  const tickInterval = range > 480 ? 120 : range > 240 ? 60 : 30;
-  const firstTick = Math.ceil(xMin / tickInterval) * tickInterval;
+  // 2-hour tick interval for a full-day view
   const ticks: number[] = [];
-  for (let t = firstTick; t <= xMax; t += tickInterval) {
+  for (let t = 0; t <= 1440; t += 120) {
     ticks.push(t);
   }
 
