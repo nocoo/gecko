@@ -344,7 +344,7 @@ export async function POST(
   let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
   let durationMs: number;
 
-  // Step 1: Call AI provider
+  // Step 1: Call AI provider (with 55s timeout to stay under Railway's 60s limit)
   try {
     const client = createAiClient(config);
     const startMs = Date.now();
@@ -352,6 +352,7 @@ export async function POST(
       model: client(config.model),
       prompt,
       maxOutputTokens: 4096,
+      abortSignal: AbortSignal.timeout(55_000),
     });
     text = response.text;
     usage = response.usage;
@@ -361,9 +362,13 @@ export async function POST(
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const isTimeout = err instanceof DOMException && err.name === "TimeoutError";
     console.error(
-      `[analyze] AI provider error: provider=${config.provider} model=${config.model} error=${message}`,
+      `[analyze] AI provider error: provider=${config.provider} model=${config.model} timeout=${isTimeout} error=${message}`,
     );
+    if (isTimeout) {
+      return jsonError("AI provider timed out. Try again or use a faster model.", 504);
+    }
     return jsonError(`AI provider error: ${message}`, 502);
   }
 
