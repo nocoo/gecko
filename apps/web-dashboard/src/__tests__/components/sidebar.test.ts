@@ -11,23 +11,23 @@ describe("sidebar navigation", () => {
       expect(navGroups).toHaveLength(2);
     });
 
-    it("group 0 is Overview with Dashboard, Sessions, Daily Review, Apps", () => {
+    it("group 0 is Overview with Dashboard, Sessions, Daily Review", () => {
       expect(navGroups[0]!.label).toBe("Overview");
       expect(navGroups[0]!.items.map((i) => i.label)).toEqual([
         "Dashboard",
         "Sessions",
         "Daily Review",
-        "Apps",
       ]);
     });
 
-    it("group 1 is Settings with General, AI Settings, Categories, Tags", () => {
+    it("group 1 is Settings with General, AI Settings, Categories, Tags, Apps", () => {
       expect(navGroups[1]!.label).toBe("Settings");
       expect(navGroups[1]!.items.map((i) => i.label)).toEqual([
         "General",
         "AI Settings",
         "Categories",
         "Tags",
+        "Apps",
       ]);
     });
 

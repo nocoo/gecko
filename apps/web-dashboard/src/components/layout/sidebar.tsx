@@ -59,7 +59,6 @@ const navGroups: NavGroup[] = [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/sessions", label: "Sessions", icon: List },
       { href: "/daily", label: "Daily Review", icon: CalendarDays },
-      { href: "/apps", label: "Apps", icon: AppWindow },
     ],
   },
   {
@@ -70,6 +69,7 @@ const navGroups: NavGroup[] = [
       { href: "/settings/ai", label: "AI Settings", icon: Bot },
       { href: "/settings/categories", label: "Categories", icon: Layers },
       { href: "/settings/tags", label: "Tags", icon: Tags },
+      { href: "/apps", label: "Apps", icon: AppWindow },
     ],
   },
 ];
