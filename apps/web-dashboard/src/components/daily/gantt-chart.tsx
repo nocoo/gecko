@@ -15,6 +15,7 @@
 import { formatDurationCompact } from "@/lib/chart-config";
 import { withAlpha } from "@/lib/palette";
 import { getHashColor } from "@/lib/hash-color";
+import { localDateToUTCEpoch, epochToDateStr } from "@/lib/timezone";
 import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 
 // ---------------------------------------------------------------------------
@@ -75,42 +76,11 @@ export function buildGanttData(
   const dayStartEpoch = Math.min(...allStarts);
   const dayEndEpoch = Math.max(...allEnds);
 
-  // Compute midnight in the user's timezone using Intl.
-  // We format the first session's date in the target tz, then compute
-  // what UTC epoch that local midnight corresponds to.
-  const firstDate = new Date(dayStartEpoch * 1000);
-  const dateParts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(firstDate); // "YYYY-MM-DD"
-  const parts = dateParts.split("-").map(Number);
-  const y = parts[0]!, m = parts[1]!, d = parts[2]!;
-
-  // Get UTC offset for this date in the target timezone
-  // by comparing UTC noon vs local noon
-  const utcNoon = Date.UTC(y, m - 1, d, 12, 0, 0);
-  const localParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(utcNoon));
-  const get = (type: string) =>
-    parseInt(localParts.find((p) => p.type === type)!.value, 10);
-  const lY = get("year"), lM = get("month"), lD = get("day");
-  let lH = get("hour");
-  if (lH === 24) lH = 0;
-  const lMin = get("minute");
-  const localAsUtc = Date.UTC(lY, lM - 1, lD, lH, lMin, 0);
-  const offsetMs = localAsUtc - utcNoon;
-
-  // Midnight local = midnight UTC for that date minus offset
-  const midnightEpoch = (Date.UTC(y, m - 1, d) - offsetMs) / 1000;
+  // Compute midnight in the user's timezone by reusing the core timezone lib.
+  // Format the first session's epoch as a date string in the target tz,
+  // then convert that date's midnight back to a UTC epoch.
+  const dateStr = epochToDateStr(dayStartEpoch, tz);
+  const midnightEpoch = localDateToUTCEpoch(dateStr, tz);
 
   const dayStartMin = Math.floor((dayStartEpoch - midnightEpoch) / 60);
   const dayEndMin = Math.ceil((dayEndEpoch - midnightEpoch) / 60);
