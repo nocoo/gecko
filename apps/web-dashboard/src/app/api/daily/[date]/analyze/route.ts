@@ -455,7 +455,7 @@ export async function POST(
   }
 
   // Compute stats fresh from D1 — same pattern as GET /api/daily/:date.
-  // We never read stats_json from cache because it may contain stale UTC data.
+  // Stats are never cached; only AI results are cached in daily_summaries.
   const rows = await fetchSessionsForDate(user.userId, date, tz);
   if (rows.length === 0) {
     return jsonError("No sessions found for this date.", 400);

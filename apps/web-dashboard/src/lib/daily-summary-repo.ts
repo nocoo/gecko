@@ -3,6 +3,7 @@
  *
  * CRUD for the daily_summaries table via D1 REST API.
  * Composite unique index: (user_id, date).
+ * Only AI analysis results are stored here — stats are always computed fresh.
  */
 
 import { query, execute } from "@/lib/d1";
@@ -15,7 +16,6 @@ export interface DailySummaryRow {
   id: string;
   user_id: string;
   date: string;
-  stats_json: string;
   ai_score: number | null;
   ai_result_json: string | null;
   ai_model: string | null;
@@ -35,7 +35,7 @@ export const dailySummaryRepo = {
     date: string,
   ): Promise<DailySummaryRow | null> {
     const rows = await query<DailySummaryRow>(
-      `SELECT id, user_id, date, stats_json, ai_score, ai_result_json,
+      `SELECT id, user_id, date, ai_score, ai_result_json,
               ai_model, ai_generated_at, created_at, updated_at
        FROM daily_summaries
        WHERE user_id = ? AND date = ?`,
@@ -54,8 +54,8 @@ export const dailySummaryRepo = {
   ): Promise<void> {
     const id = crypto.randomUUID();
     await execute(
-      `INSERT INTO daily_summaries (id, user_id, date, stats_json, ai_score, ai_result_json, ai_model, ai_generated_at, updated_at)
-       VALUES (?, ?, ?, '{}', ?, ?, ?, datetime('now'), datetime('now'))
+      `INSERT INTO daily_summaries (id, user_id, date, ai_score, ai_result_json, ai_model, ai_generated_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
        ON CONFLICT (user_id, date) DO UPDATE SET
          ai_score = excluded.ai_score,
          ai_result_json = excluded.ai_result_json,

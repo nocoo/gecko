@@ -1,10 +1,10 @@
 /**
  * Route-level tests for POST /api/daily/[date]/analyze.
  *
- * Tests the refactored flow where stats are computed fresh from D1
- * (no more stats_json cache dependency). AI generation is not tested
- * here (requires mocking generateText); those paths are covered by
- * the pure-function tests in daily-analyze.test.ts.
+ * Stats are always computed fresh from D1 (the daily_summaries table
+ * only caches AI results). AI generation itself is not tested here
+ * (requires mocking generateText); pure-function coverage is in
+ * daily-analyze.test.ts.
  */
 
 import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
@@ -82,7 +82,6 @@ const cachedAiRow = {
   id: "sum-1",
   user_id: "e2e-test-user",
   date: "2026-02-27",
-  stats_json: "{}",
   ai_score: 75,
   ai_result_json: JSON.stringify({
     score: 75,
@@ -270,12 +269,11 @@ describe("POST /api/daily/[date]/analyze", () => {
     expect(dayEndEpoch).toBe(1772208000); // 2026-02-27T16:00:00Z
   });
 
-  test("does not depend on stats_json from daily_summaries", async () => {
-    // Even when cached row exists with empty/stale stats_json,
-    // route should compute stats fresh from D1 (not error out)
-    const cachedRowNoStats = {
+  test("computes stats fresh from D1 even when cached row has no AI result", async () => {
+    // Cached row exists but has no AI result — route should compute stats
+    // fresh from D1 and proceed to AI generation (not error out).
+    const cachedRowNoAi = {
       ...cachedAiRow,
-      stats_json: "{}",
       ai_result_json: null,
       ai_score: null,
       ai_model: null,
@@ -286,7 +284,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       // 1. getUserTimezone
       [tzRow],
       // 2. dailySummaryRepo.findByUserAndDate — cached row but no AI result
-      [cachedRowNoStats],
+      [cachedRowNoAi],
       // 3. settingsRepo.findByUserId — AI settings
       aiSettingsRows,
       // 4. fetchSessionsForDate — has sessions
@@ -299,9 +297,8 @@ describe("POST /api/daily/[date]/analyze", () => {
       [],
     ]);
 
-    // Will fail at AI call, but should NOT fail at stats_json guard
+    // Will fail at AI call, but should NOT return 400
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
-    // Should get 502 (AI error) not 400 (no stats available)
     expect(res.status).not.toBe(400);
 
     // Verify it queried focus_sessions (proving it computes stats fresh)
