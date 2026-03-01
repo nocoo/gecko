@@ -17,6 +17,7 @@ import {
   type AiProvider,
   type SdkType,
 } from "@/services/ai";
+import { query } from "@/lib/d1";
 import { generateText } from "ai";
 import type { DailyStats, SessionForChart } from "@/services/daily-stats";
 
@@ -99,6 +100,97 @@ async function loadAiSettings(userId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// App context (categories, tags, notes) for enriching the AI prompt
+// ---------------------------------------------------------------------------
+
+/** Per-app context: category, tags, and user note. */
+export interface AppContext {
+  bundleId: string;
+  categoryTitle?: string;
+  tags: string[];
+  note?: string;
+}
+
+/** Load categories, tags, and notes for all apps the user has annotated. */
+async function loadAppContext(userId: string): Promise<Map<string, AppContext>> {
+  // Run all three queries in parallel
+  const [categoryRows, tagRows, noteRows] = await Promise.all([
+    query<{ bundle_id: string; title: string }>(
+      `SELECT m.bundle_id, c.title
+       FROM app_category_mappings m
+       JOIN categories c ON c.id = m.category_id
+       WHERE m.user_id = ?`,
+      [userId],
+    ),
+    query<{ bundle_id: string; tag_name: string }>(
+      `SELECT m.bundle_id, t.name as tag_name
+       FROM app_tag_mappings m
+       JOIN tags t ON t.id = m.tag_id
+       WHERE m.user_id = ?`,
+      [userId],
+    ),
+    query<{ bundle_id: string; note: string }>(
+      `SELECT bundle_id, note FROM app_notes WHERE user_id = ?`,
+      [userId],
+    ),
+  ]);
+
+  const map = new Map<string, AppContext>();
+
+  const getOrCreate = (bundleId: string): AppContext => {
+    let ctx = map.get(bundleId);
+    if (!ctx) {
+      ctx = { bundleId, tags: [] };
+      map.set(bundleId, ctx);
+    }
+    return ctx;
+  };
+
+  for (const row of categoryRows) {
+    getOrCreate(row.bundle_id).categoryTitle = row.title;
+  }
+  for (const row of tagRows) {
+    getOrCreate(row.bundle_id).tags.push(row.tag_name);
+  }
+  for (const row of noteRows) {
+    getOrCreate(row.bundle_id).note = row.note;
+  }
+
+  return map;
+}
+
+/** Format the app context map into a prompt-friendly string. */
+function buildAppContextSection(
+  appContext: Map<string, AppContext>,
+  bundleIdsInDay: Set<string>,
+): string {
+  // Only include apps that actually appeared in the day's sessions
+  const relevant: AppContext[] = [];
+  for (const bundleId of bundleIdsInDay) {
+    const ctx = appContext.get(bundleId);
+    if (ctx && (ctx.categoryTitle || ctx.tags.length > 0 || ctx.note)) {
+      relevant.push(ctx);
+    }
+  }
+
+  if (relevant.length === 0) return "";
+
+  const lines = relevant.map((ctx) => {
+    const parts: string[] = [`- **${ctx.bundleId}**`];
+    if (ctx.categoryTitle) parts.push(`分类: ${ctx.categoryTitle}`);
+    if (ctx.tags.length > 0) parts.push(`标签: ${ctx.tags.join(", ")}`);
+    if (ctx.note) parts.push(`备注: ${ctx.note}`);
+    return parts.join(" | ");
+  });
+
+  return `\n## 应用上下文（用户标注）
+以下是用户对部分应用的分类、标签和备注说明，请结合这些信息来理解每个应用的用途和性质：
+
+${lines.join("\n")}
+`;
+}
+
+// ---------------------------------------------------------------------------
 // Session timeline builder
 // ---------------------------------------------------------------------------
 
@@ -155,8 +247,12 @@ function buildSessionTimeline(sessions: SessionForChart[]): string {
 // Prompt builder
 // ---------------------------------------------------------------------------
 
-/** Build the analysis prompt from stats data. */
-function buildPrompt(date: string, stats: DailyStats): string {
+/** Build the analysis prompt from stats data and app context. */
+function buildPrompt(
+  date: string,
+  stats: DailyStats,
+  appContext: Map<string, AppContext>,
+): string {
   const topAppsStr = stats.topApps
     .slice(0, 10)
     .map(
@@ -167,6 +263,13 @@ function buildPrompt(date: string, stats: DailyStats): string {
 
   const scores = stats.scores;
   const timeline = buildSessionTimeline(stats.sessions);
+
+  // Collect bundle IDs that appeared today
+  const bundleIdsInDay = new Set<string>();
+  for (const s of stats.sessions) {
+    if (s.bundleId) bundleIdsInDay.add(s.bundleId);
+  }
+  const appContextSection = buildAppContextSection(appContext, bundleIdsInDay);
 
   // Count idle time for context
   const idleSessions = stats.sessions.filter(
@@ -194,7 +297,7 @@ function buildPrompt(date: string, stats: DailyStats): string {
 
 ## Top 应用
 ${topAppsStr}
-
+${appContextSection}
 ## 详细会话时间线
 以下为按时间排列的所有会话，包含应用名、时长、窗口标题、浏览器URL等。
 标记 [IDLE/锁屏] 的条目为系统闲置（如 loginwindow），不应计入有效工作时间。
@@ -208,6 +311,7 @@ ${timeline}
 1. **loginwindow / ScreenSaver 等闲置进程**：这些代表电脑在锁屏或无人操作状态，评价生产力时应排除，不作为前台积极工作。
 2. **浏览器内容分析**：重点分析浏览器的 URL 和标题，判断用户是在工作（查文档、写代码、看技术文章）还是在休闲（社交媒体、视频、新闻）。
 3. **时段划分**：将一天划分为 3-6 个时段，每个时段给出 focus 方向标签和描述。时段的划分应基于实际工作内容的切换，而非固定间隔。
+4. **应用上下文**：如果提供了"应用上下文"部分，请结合用户对应用的分类、标签和备注来理解每个应用的实际用途。用户的备注是最可靠的上下文来源，比单纯从应用名推测更准确。
 
 ### 输出格式
 请以 JSON 格式返回分析结果，包含以下字段：
@@ -338,7 +442,8 @@ export async function POST(
 
   // Generate AI analysis
   const stats = JSON.parse(cached.stats_json) as DailyStats;
-  const prompt = buildPrompt(date, stats);
+  const appContext = await loadAppContext(user.userId);
+  const prompt = buildPrompt(date, stats, appContext);
 
   let text: string;
   let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
