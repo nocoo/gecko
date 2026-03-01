@@ -265,3 +265,143 @@ describe("isValidTimezone", () => {
     expect(isValidTimezone("Not_A_Zone")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// DST edge case tests
+// ---------------------------------------------------------------------------
+// US DST 2026: spring forward March 8 (02:00→03:00), fall back November 1 (02:00→01:00)
+
+describe("DST: spring forward (America/New_York, 2026-03-08)", () => {
+  const NY = "America/New_York";
+
+  test("getTimezoneOffsetMinutes at noon: EDT (-240)", () => {
+    // By noon on March 8, clocks have already sprung forward
+    expect(getTimezoneOffsetMinutes(2026, 3, 8, NY, 12)).toBe(-240);
+  });
+
+  test("localDateToUTCEpoch gives correct midnight", () => {
+    // 2026-03-08T00:00:00-05:00 = 2026-03-08T05:00:00Z
+    // At midnight on March 8, we're still in EST (spring forward at 02:00)
+    const epoch = localDateToUTCEpoch("2026-03-08", NY);
+    const expected = Date.UTC(2026, 2, 8, 5, 0, 0) / 1000;
+    expect(epoch).toBe(expected);
+  });
+
+  test("getDateBoundsEpoch: spring forward day is 23 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-03-08", NY);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(23);
+  });
+
+  test("getDateBoundsEpoch: start and end are correct midnights", () => {
+    const { start, end } = getDateBoundsEpoch("2026-03-08", NY);
+    // start: 2026-03-08T00:00:00-05:00 = 2026-03-08T05:00:00Z
+    expect(start).toBe(Date.UTC(2026, 2, 8, 5, 0, 0) / 1000);
+    // end: 2026-03-09T00:00:00-04:00 = 2026-03-09T04:00:00Z
+    expect(end).toBe(Date.UTC(2026, 2, 9, 4, 0, 0) / 1000);
+  });
+});
+
+describe("DST: fall back (America/New_York, 2026-11-01)", () => {
+  const NY = "America/New_York";
+
+  test("getTimezoneOffsetMinutes at noon: EST (-300)", () => {
+    // By noon on Nov 1, clocks have already fallen back
+    expect(getTimezoneOffsetMinutes(2026, 11, 1, NY, 12)).toBe(-300);
+  });
+
+  test("localDateToUTCEpoch gives correct midnight", () => {
+    // 2026-11-01T00:00:00-04:00 = 2026-11-01T04:00:00Z
+    // At midnight on Nov 1, we're still in EDT (fall back at 02:00)
+    const epoch = localDateToUTCEpoch("2026-11-01", NY);
+    const expected = Date.UTC(2026, 10, 1, 4, 0, 0) / 1000;
+    expect(epoch).toBe(expected);
+  });
+
+  test("getDateBoundsEpoch: fall back day is 25 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-11-01", NY);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(25);
+  });
+
+  test("getDateBoundsEpoch: start and end are correct midnights", () => {
+    const { start, end } = getDateBoundsEpoch("2026-11-01", NY);
+    // start: 2026-11-01T00:00:00-04:00 = 2026-11-01T04:00:00Z
+    expect(start).toBe(Date.UTC(2026, 10, 1, 4, 0, 0) / 1000);
+    // end: 2026-11-02T00:00:00-05:00 = 2026-11-02T05:00:00Z
+    expect(end).toBe(Date.UTC(2026, 10, 2, 5, 0, 0) / 1000);
+  });
+});
+
+describe("DST: Europe/London (2026-03-29 spring forward, 2026-10-25 fall back)", () => {
+  const LON = "Europe/London";
+
+  test("spring forward day is 23 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-03-29", LON);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(23);
+  });
+
+  test("fall back day is 25 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-10-25", LON);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(25);
+  });
+
+  test("normal day is 24 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-06-15", LON);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(24);
+  });
+});
+
+describe("DST: Australia/Sydney (2026-04-05 fall back, 2026-10-04 spring forward)", () => {
+  const SYD = "Australia/Sydney";
+
+  test("fall back day is 25 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-04-05", SYD);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(25);
+  });
+
+  test("spring forward day is 23 hours", () => {
+    const { start, end } = getDateBoundsEpoch("2026-10-04", SYD);
+    const hours = (end - start) / 3600;
+    expect(hours).toBe(23);
+  });
+});
+
+describe("DST: non-DST timezones are always 24h", () => {
+  test("Asia/Shanghai is always 24h", () => {
+    // Test across the entire year
+    for (const dateStr of ["2026-01-01", "2026-03-08", "2026-06-15", "2026-11-01", "2026-12-31"]) {
+      const { start, end } = getDateBoundsEpoch(dateStr, "Asia/Shanghai");
+      expect(end - start).toBe(86400);
+    }
+  });
+
+  test("Asia/Tokyo is always 24h", () => {
+    const { start, end } = getDateBoundsEpoch("2026-03-08", "Asia/Tokyo");
+    expect(end - start).toBe(86400);
+  });
+});
+
+describe("sqlDateExpr with reference date", () => {
+  test("uses reference date offset instead of current time", () => {
+    // Winter: America/New_York is EST (-5h = -18000s)
+    const { offsetSec } = sqlDateExpr("America/New_York", "2026-01-15");
+    expect(offsetSec).toBe(-18000);
+  });
+
+  test("summer reference date gives EDT offset", () => {
+    const { offsetSec } = sqlDateExpr("America/New_York", "2026-07-15");
+    expect(offsetSec).toBe(-14400); // -4h
+  });
+
+  test("non-DST timezone is same regardless of reference date", () => {
+    const winter = sqlDateExpr("Asia/Shanghai", "2026-01-15");
+    const summer = sqlDateExpr("Asia/Shanghai", "2026-07-15");
+    expect(winter.offsetSec).toBe(summer.offsetSec);
+    expect(winter.offsetSec).toBe(28800);
+  });
+});
