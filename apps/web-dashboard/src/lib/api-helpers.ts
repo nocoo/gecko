@@ -4,6 +4,8 @@
 import { auth } from "@/auth";
 import { query } from "@/lib/d1";
 import { hashApiKey } from "@/lib/api-key";
+import { settingsRepo } from "@/lib/settings-repo";
+import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/timezone";
 
 // Read lazily — env may be set after module import (e.g. in tests)
 function isSkipAuth(): boolean {
@@ -118,4 +120,24 @@ export function jsonOk(data: unknown, status = 200): Response {
 /** Return a JSON error response. */
 export function jsonError(message: string, status: number): Response {
   return Response.json({ error: message }, { status });
+}
+
+// ---------------------------------------------------------------------------
+// User timezone
+// ---------------------------------------------------------------------------
+
+/**
+ * Retrieve the user's IANA timezone from settings.
+ * Falls back to DEFAULT_TIMEZONE ("Asia/Shanghai") if not set or invalid.
+ */
+export async function getUserTimezone(userId: string): Promise<string> {
+  try {
+    const row = await settingsRepo.findByKey(userId, "timezone");
+    if (row && isValidTimezone(row.value)) {
+      return row.value;
+    }
+  } catch {
+    // DB error — use default
+  }
+  return DEFAULT_TIMEZONE;
 }
