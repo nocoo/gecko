@@ -102,20 +102,24 @@ function addDays(dateStr: string, days: number): string {
 }
 
 function formatDateDisplay(dateStr: string): string {
-  const d = new Date(`${dateStr}T00:00:00`);
+  // Use UTC noon to avoid date-shift from browser-local midnight parsing
+  const d = new Date(`${dateStr}T12:00:00Z`);
   return d.toLocaleDateString("en-US", {
     weekday: "short",
     year: "numeric",
     month: "short",
     day: "numeric",
+    timeZone: "UTC",
   });
 }
 
 function dateToObj(dateStr: string): Date {
-  return new Date(`${dateStr}T00:00:00`);
+  // Construct at UTC noon so local-tz interpretation stays on the same calendar day
+  return new Date(`${dateStr}T12:00:00Z`);
 }
 
 function objToDateStr(d: Date): string {
+  // DayPicker returns dates in browser-local tz; extract local parts
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
