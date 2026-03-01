@@ -201,6 +201,8 @@ describe("GET /api/sessions", () => {
 describe("GET /api/stats", () => {
   test("returns aggregated stats", async () => {
     mockD1([
+      // Timezone lookup
+      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
       // Total stats query
       [{ total_sessions: 100, total_duration: 50000.0, total_apps: 15 }],
       // Longest session query
@@ -228,6 +230,8 @@ describe("GET /api/stats", () => {
 
   test("handles no data gracefully", async () => {
     mockD1([
+      // Timezone lookup
+      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
       [{ max_duration: 0 }],
       [],
@@ -246,6 +250,8 @@ describe("GET /api/stats", () => {
 
   test("defaults to 'today' period", async () => {
     const { calls } = mockD1([
+      // Timezone lookup
+      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
       [{ max_duration: 0 }],
       [],
@@ -257,8 +263,9 @@ describe("GET /api/stats", () => {
     const data = await res.json();
 
     expect(data.period).toBe("today");
-    // Should have start_time filter in queries
-    expect(calls[0].params.length).toBe(2); // user_id + start_time
+    // calls[0] = timezone lookup, calls[1] = total stats query
+    // Data query should have start_time filter
+    expect(calls[1].params.length).toBe(2); // user_id + start_time
   });
 });
 

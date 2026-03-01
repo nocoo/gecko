@@ -8,7 +8,7 @@
  * Caches the result in daily_summaries.
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import { settingsRepo } from "@/lib/settings-repo";
 import {
@@ -20,6 +20,7 @@ import {
 import { query } from "@/lib/d1";
 import { generateText } from "ai";
 import type { DailyStats, SessionForChart } from "@/services/daily-stats";
+import { todayInTz, epochToLocalHHMM } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -70,17 +71,17 @@ const BROWSER_BUNDLE_IDS = new Set([
   "org.chromium.Chromium",
 ]);
 
-function validateDate(dateStr: string): string | null {
+function validateDate(dateStr: string, tz: string): string | null {
   if (!DATE_RE.test(dateStr)) {
     return "Invalid date format. Use YYYY-MM-DD.";
   }
-  const parsed = new Date(`${dateStr}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const test = new Date(Date.UTC(y, m - 1, d));
+  if (Number.isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
     return "Invalid date.";
   }
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  if (dateStr >= todayStr) {
+  const today = todayInTz(tz);
+  if (dateStr >= today) {
     return "Cannot analyze today or future dates.";
   }
   return null;
@@ -194,12 +195,6 @@ ${lines.join("\n")}
 // Session timeline builder
 // ---------------------------------------------------------------------------
 
-/** Format epoch seconds to HH:MM string. */
-function epochToHHMM(epoch: number): string {
-  const d = new Date(epoch * 1000);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
 /** Format seconds to human-readable duration. */
 function fmtDuration(sec: number): string {
   if (sec < 60) return `${sec}s`;
@@ -215,14 +210,14 @@ function fmtDuration(sec: number): string {
  * Groups sessions chronologically, marks idle sessions,
  * and includes browser URLs/titles.
  */
-function buildSessionTimeline(sessions: SessionForChart[]): string {
+function buildSessionTimeline(sessions: SessionForChart[], tz: string): string {
   if (sessions.length === 0) return "(no sessions)";
 
   const sorted = [...sessions].sort((a, b) => a.startTime - b.startTime);
   const lines: string[] = [];
 
   for (const s of sorted) {
-    const time = epochToHHMM(s.startTime);
+    const time = epochToLocalHHMM(s.startTime, tz);
     const dur = fmtDuration(s.duration);
     const isIdle = s.bundleId ? IDLE_BUNDLE_IDS.has(s.bundleId) : false;
     const isBrowser = s.bundleId ? BROWSER_BUNDLE_IDS.has(s.bundleId) : false;
@@ -252,6 +247,7 @@ function buildPrompt(
   date: string,
   stats: DailyStats,
   appContext: Map<string, AppContext>,
+  tz: string,
 ): string {
   const topAppsStr = stats.topApps
     .slice(0, 10)
@@ -262,7 +258,7 @@ function buildPrompt(
     .join("\n");
 
   const scores = stats.scores;
-  const timeline = buildSessionTimeline(stats.sessions);
+  const timeline = buildSessionTimeline(stats.sessions, tz);
 
   // Collect bundle IDs that appeared today
   const bundleIdsInDay = new Set<string>();
@@ -387,8 +383,10 @@ export async function POST(
   const { user, error } = await requireSession();
   if (error) return error;
 
+  const tz = await getUserTimezone(user.userId);
+
   const { date } = await params;
-  const validationError = validateDate(date);
+  const validationError = validateDate(date, tz);
   if (validationError) {
     return jsonError(validationError, 400);
   }
@@ -443,7 +441,7 @@ export async function POST(
   // Generate AI analysis
   const stats = JSON.parse(cached.stats_json) as DailyStats;
   const appContext = await loadAppContext(user.userId);
-  const prompt = buildPrompt(date, stats, appContext);
+    const prompt = buildPrompt(date, stats, appContext, tz);
 
   let text: string;
   let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;

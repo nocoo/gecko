@@ -6,7 +6,7 @@
  * Date must be YYYY-MM-DD and strictly before today.
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import {
@@ -14,6 +14,7 @@ import {
   type SessionRow,
   type DailyStats,
 } from "@/services/daily-stats";
+import { todayInTz, getDateBoundsEpoch } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -23,32 +24,32 @@ export const dynamic = "force-dynamic";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Validate date format and ensure it's before today. */
-function validateDate(dateStr: string): string | null {
+/** Validate date format and ensure it's before today in user's timezone. */
+function validateDate(dateStr: string, tz: string): string | null {
   if (!DATE_RE.test(dateStr)) {
     return "Invalid date format. Use YYYY-MM-DD.";
   }
-  const parsed = new Date(dateStr + "T00:00:00");
-  if (isNaN(parsed.getTime())) {
+  // Basic validity check — parse as UTC to avoid server-tz dependency
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const test = new Date(Date.UTC(y, m - 1, d));
+  if (isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
     return "Invalid date.";
   }
-  // Must be before today (local time)
-  const today = new Date();
-  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  if (dateStr >= todayStr) {
+  // Must be before today in user's timezone
+  const today = todayInTz(tz);
+  if (dateStr >= today) {
     return "Cannot view today or future dates. Data is still being collected.";
   }
   return null;
 }
 
-/** Fetch sessions for a specific date from D1. */
+/** Fetch sessions for a specific date from D1, using user's timezone for day boundaries. */
 async function fetchSessionsForDate(
   userId: string,
   date: string,
+  tz: string,
 ): Promise<SessionRow[]> {
-  // Compute Unix timestamp range for the date (local time assumption)
-  const dayStart = new Date(date + "T00:00:00").getTime() / 1000;
-  const dayEnd = dayStart + 86400; // +24h
+  const { start: dayStart, end: dayEnd } = getDateBoundsEpoch(date, tz);
 
   return query<SessionRow>(
     `SELECT id, app_name, bundle_id, window_title, url, start_time, duration
@@ -70,8 +71,10 @@ export async function GET(
   const { user, error } = await requireSession();
   if (error) return error;
 
+  const tz = await getUserTimezone(user.userId);
+
   const { date } = await params;
-  const validationError = validateDate(date);
+  const validationError = validateDate(date, tz);
   if (validationError) {
     return jsonError(validationError, 400);
   }
@@ -85,7 +88,7 @@ export async function GET(
     stats = JSON.parse(cached.stats_json) as DailyStats;
   } else {
     // Compute fresh stats
-    const rows = await fetchSessionsForDate(user.userId, date);
+    const rows = await fetchSessionsForDate(user.userId, date, tz);
     stats = computeDailyStats(date, rows);
 
     // Cache stats (fire-and-forget)
@@ -106,5 +109,5 @@ export async function GET(
       }
     : null;
 
-  return jsonOk({ stats, ai });
+  return jsonOk({ stats, ai, timezone: tz });
 }

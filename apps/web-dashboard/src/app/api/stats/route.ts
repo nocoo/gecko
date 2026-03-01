@@ -1,8 +1,9 @@
 // GET /api/stats — Aggregated usage stats for the current user.
 // Supports ?period=today|week|month|all (default: today)
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { requireSession, jsonOk, getUserTimezone } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
+import { localDateToUTCEpoch, todayInTz } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -10,25 +11,27 @@ type Period = "today" | "week" | "month" | "all";
 
 const VALID_PERIODS = new Set<Period>(["today", "week", "month", "all"]);
 
-/** Return a Unix timestamp (seconds) for the start of the given period. */
-function periodStartTime(period: Period): number | null {
+/** Return a Unix timestamp (seconds) for the start of the given period in user's timezone. */
+function periodStartTime(period: Period, tz: string): number | null {
   if (period === "all") return null;
 
-  const now = new Date();
+  const today = todayInTz(tz);
+  const [y, m, d] = today.split("-").map(Number);
 
   if (period === "today") {
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    return start.getTime() / 1000;
+    return localDateToUTCEpoch(today, tz);
   }
 
   if (period === "week") {
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
-    return start.getTime() / 1000;
+    const startDate = new Date(Date.UTC(y, m - 1, d - 7));
+    const startStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, "0")}-${String(startDate.getUTCDate()).padStart(2, "0")}`;
+    return localDateToUTCEpoch(startStr, tz);
   }
 
   // month
-  const start = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
-  return start.getTime() / 1000;
+  const startDate = new Date(Date.UTC(y, m - 2, d));
+  const startStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, "0")}-${String(startDate.getUTCDate()).padStart(2, "0")}`;
+  return localDateToUTCEpoch(startStr, tz);
 }
 
 /** GET /api/stats?period=today */
@@ -36,13 +39,15 @@ export async function GET(req: Request): Promise<Response> {
   const { user, error } = await requireSession();
   if (error) return error;
 
+  const tz = await getUserTimezone(user.userId);
+
   const url = new URL(req.url);
   const periodParam = url.searchParams.get("period") ?? "today";
   const period: Period = VALID_PERIODS.has(periodParam as Period)
     ? (periodParam as Period)
     : "today";
 
-  const startTime = periodStartTime(period);
+  const startTime = periodStartTime(period, tz);
 
   // Build WHERE clause
   const conditions = ["user_id = ?"];

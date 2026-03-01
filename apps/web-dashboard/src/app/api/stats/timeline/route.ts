@@ -2,8 +2,9 @@
 // Supports ?period=week|month|all (default: week)
 // Returns an array of { date, totalDuration, sessionCount } per day.
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { requireSession, jsonOk, getUserTimezone } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
+import { localDateToUTCEpoch, todayInTz, sqlDateExpr } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +23,8 @@ export async function GET(req: Request): Promise<Response> {
   const { user, error } = await requireSession();
   if (error) return error;
 
+  const tz = await getUserTimezone(user.userId);
+
   const url = new URL(req.url);
   const periodParam = url.searchParams.get("period") ?? "week";
   const period: Period = VALID_PERIODS.has(periodParam as Period)
@@ -35,18 +38,22 @@ export async function GET(req: Request): Promise<Response> {
   const params: unknown[] = [user.userId];
 
   if (days !== null) {
-    // Calculate start-of-day N days ago (UTC)
-    const start = new Date();
-    start.setUTCDate(start.getUTCDate() - days);
-    start.setUTCHours(0, 0, 0, 0);
-    const startTime = Math.floor(start.getTime() / 1000);
+    // Calculate start-of-day N days ago in user's timezone
+    const today = todayInTz(tz);
+    const [y, m, d] = today.split("-").map(Number);
+    const startDate = new Date(Date.UTC(y, m - 1, d - days));
+    const startDateStr = `${startDate.getUTCFullYear()}-${String(startDate.getUTCMonth() + 1).padStart(2, "0")}-${String(startDate.getUTCDate()).padStart(2, "0")}`;
+    const startTime = localDateToUTCEpoch(startDateStr, tz);
     conditions.push("start_time >= ?");
     params.push(startTime);
   }
 
   const where = conditions.join(" AND ");
 
-  // Aggregate by date (UTC) — D1 uses SQLite date functions
+  // Aggregate by date in user's timezone
+  // SQLite date() with unixepoch returns UTC; we add timezone offset to group by local date.
+  const { expr: dateExpr } = sqlDateExpr(tz);
+
   const rows = await query<{
     date: string;
     total_duration: number;
@@ -54,19 +61,20 @@ export async function GET(req: Request): Promise<Response> {
     app_count: number;
   }>(
     `SELECT
-       date(start_time, 'unixepoch') as date,
+       ${dateExpr} as date,
        COALESCE(SUM(duration), 0) as total_duration,
        COUNT(*) as session_count,
        COUNT(DISTINCT app_name) as app_count
      FROM focus_sessions
      WHERE ${where}
-     GROUP BY date(start_time, 'unixepoch')
+     GROUP BY ${dateExpr}
      ORDER BY date ASC`,
     params
   );
 
   return jsonOk({
     period,
+    timezone: tz,
     timeline: rows.map((r) => ({
       date: r.date,
       totalDuration: r.total_duration,
