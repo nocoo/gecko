@@ -136,7 +136,7 @@ export function GanttChart({
   timezone,
   className = "",
 }: GanttChartProps) {
-  const { rows, dayStartMin, dayEndMin } = buildGanttData(sessions, topApps, timezone);
+  const { rows } = buildGanttData(sessions, topApps, timezone);
 
   if (rows.length === 0) {
     return (

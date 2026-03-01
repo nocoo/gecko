@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.1.2] - 2026-03-01
+
+### Web Dashboard
+
+#### Added
+- **Timezone-aware day boundaries**: All daily stats, timeline, and AI analysis now use the user's configured IANA timezone (default `Asia/Shanghai`) instead of UTC or server-local time
+- **Timezone settings**: GET/PUT `/api/settings/timezone` endpoint with timezone selector and auto-detect on the Settings page
+- **Cross-midnight session support**: Sessions spanning midnight (e.g., loginwindow 21:24→05:26) now appear on both days, clipped to each day's boundaries
+- **Today's daily review**: `/daily` now defaults to today instead of yesterday; partial data is shown as it's collected
+- **Apps page**: Redesigned with card layout, inline tag creation, expanded category icon options (22 icons), and app notes with AI prompt enrichment
+- **App notes**: New `app_notes` table; user annotations are included in AI analysis prompts for better context
+
+#### Fixed
+- DST-safe day bounds: `getDateBoundsEpoch` uses next-day midnight instead of `+ 86400` (wrong on 23h/25h DST days)
+- `localDateToUTCEpoch` uses two-pass approach for midnight-accurate offset on DST transition days
+- `sqlDateExpr` accepts reference date instead of using current time (prevents drift across DST boundaries)
+- Gantt chart reuses `timezone.ts` for midnight calculation; bars clamped to visible range; full 00:00–24:00 axis
+- Date picker uses UTC noon to prevent browser-local timezone drift
+- AI analysis: structured logging, 55s timeout (under Railway's 60s limit), HTTPS redirect in production
+- Dropped unused `stats_json` column from `daily_summaries` (stats always computed fresh)
+
+### Mac Client
+
+#### Fixed
+- Resume suspended GCD dispatch source before cancel to prevent EXC_BAD_INSTRUCTION crash on sleep-while-locked
+- Eliminate force unwraps and `fatalError`; add structured logging across all services
+- Replace force cast with `unsafeBitCast` for AXUIElement to satisfy SwiftLint
+
 ## [1.1.1] - 2026-02-28
 
 ### Mac Client

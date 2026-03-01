@@ -157,7 +157,7 @@ describe("GET /api/stats/timeline", () => {
 
   test("uses default timezone when no setting stored", async () => {
     // First call (timezone lookup) returns empty result
-    const { calls } = mockD1([[], []]);
+    const { calls: _calls } = mockD1([[], []]);
     const { GET } = await import("../../app/api/stats/timeline/route");
 
     const req = new Request("http://localhost/api/stats/timeline?period=week");

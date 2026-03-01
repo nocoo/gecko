@@ -22,7 +22,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.hexly.gecko
         PRODUCT_NAME: Gecko
-        MARKETING_VERSION: "1.1.1"
+        MARKETING_VERSION: "1.1.2"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.10"
         MACOSX_DEPLOYMENT_TARGET: "14.0"

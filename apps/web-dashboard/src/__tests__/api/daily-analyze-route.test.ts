@@ -220,7 +220,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       // generateText will fail but we're testing the skip behavior
     ]);
 
-    const res = await callPOST(makeAnalyzeRequest("2026-02-27", true), "2026-02-27");
+    const _res = await callPOST(makeAnalyzeRequest("2026-02-27", true), "2026-02-27");
     // Will get 502 because generateText isn't mocked, but that's fine —
     // we're verifying that it reached the AI call (skipped cache).
     // The key assertion: no SQL query for daily_summaries was made.

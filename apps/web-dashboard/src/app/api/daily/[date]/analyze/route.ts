@@ -20,7 +20,6 @@ import {
 import { generateText } from "ai";
 import {
   computeDailyStats,
-  type SessionRow,
   type DailyStats,
   type SessionForChart,
 } from "@/services/daily-stats";
