@@ -1,8 +1,8 @@
 /**
  * GET /api/daily/[date] — Daily review data.
  *
- * Returns rule-based stats (with scores) and cached AI analysis.
- * Computes and caches stats on first request for a date.
+ * Returns rule-based stats (always computed fresh) and cached AI analysis.
+ * Stats are recomputed on every request using timezone-aware day boundaries.
  * Date must be YYYY-MM-DD and strictly before today.
  */
 
@@ -12,7 +12,6 @@ import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import {
   computeDailyStats,
   type SessionRow,
-  type DailyStats,
 } from "@/services/daily-stats";
 import { todayInTz, getDateBoundsEpoch } from "@/lib/timezone";
 
@@ -79,27 +78,14 @@ export async function GET(
     return jsonError(validationError, 400);
   }
 
-  // Check cache
+  // Always compute stats fresh — the session query uses timezone-aware
+  // day boundaries, and the computation is fast (pure CPU, no I/O).
+  // This avoids stale cache issues from before the timezone fix.
+  const rows = await fetchSessionsForDate(user.userId, date, tz);
+  const stats = computeDailyStats(date, rows);
+
+  // AI result: check cached analysis (AI is expensive, so we do cache it)
   const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
-
-  let stats: DailyStats;
-
-  if (cached) {
-    stats = JSON.parse(cached.stats_json) as DailyStats;
-  } else {
-    // Compute fresh stats
-    const rows = await fetchSessionsForDate(user.userId, date, tz);
-    stats = computeDailyStats(date, rows);
-
-    // Cache stats (fire-and-forget)
-    dailySummaryRepo
-      .upsertStats(user.userId, date, JSON.stringify(stats))
-      .catch(() => {
-        /* ignore cache write errors */
-      });
-  }
-
-  // AI result (may be null)
   const ai = cached?.ai_result_json
     ? {
         score: cached.ai_score,
