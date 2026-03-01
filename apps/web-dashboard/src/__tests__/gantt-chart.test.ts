@@ -10,8 +10,11 @@ import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 // Fixtures
 // ---------------------------------------------------------------------------
 
-// 2026-02-27 09:00:00 UTC → epoch
-const BASE_EPOCH = new Date("2026-02-27T09:00:00").getTime() / 1000;
+// 2026-02-27 09:00:00 in Asia/Shanghai (UTC+8) = 2026-02-27T01:00:00Z
+const BASE_EPOCH = Date.UTC(2026, 1, 27, 1, 0, 0) / 1000;
+
+// Use Asia/Shanghai consistently for all tests
+const TZ = "Asia/Shanghai";
 
 const sessions: SessionForChart[] = [
   {
@@ -86,54 +89,54 @@ describe("formatTime", () => {
 
 describe("buildGanttData", () => {
   test("returns empty for no sessions", () => {
-    const result = buildGanttData([], []);
+    const result = buildGanttData([], [], TZ);
     expect(result.rows).toEqual([]);
     expect(result.dayStartMin).toBe(0);
     expect(result.dayEndMin).toBe(0);
   });
 
   test("produces correct number of rows", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     expect(rows).toHaveLength(3);
   });
 
   test("rows follow topApps order (by total duration)", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     expect(rows[0]!.appName).toBe("VS Code");
     expect(rows[1]!.appName).toBe("Chrome");
     expect(rows[2]!.appName).toBe("Slack");
   });
 
   test("VS Code row has 2 segments", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     const vscode = rows[0]!;
     expect(vscode.segments).toHaveLength(2);
     expect(vscode.totalDuration).toBe(6000);
   });
 
   test("Chrome row has 1 segment", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     const chrome = rows[1]!;
     expect(chrome.segments).toHaveLength(1);
     expect(chrome.segments[0]!.durationSec).toBe(1800);
   });
 
   test("segment startMin is relative to midnight", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     const firstSegment = rows[0]!.segments[0]!;
-    // startTime = BASE_EPOCH which is 09:00 local
+    // startTime = BASE_EPOCH which is 09:00 in Asia/Shanghai
     expect(firstSegment.startMin).toBeCloseTo(540, 0); // 9h * 60
   });
 
   test("dayStartMin and dayEndMin bracket the sessions", () => {
-    const { dayStartMin, dayEndMin } = buildGanttData(sessions, topApps);
+    const { dayStartMin, dayEndMin } = buildGanttData(sessions, topApps, TZ);
     // First session at 09:00, last ends at ~11:20
     expect(dayStartMin).toBeLessThanOrEqual(540);
     expect(dayEndMin).toBeGreaterThanOrEqual(680);
   });
 
   test("each segment has a color", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     for (const row of rows) {
       for (const seg of row.segments) {
         expect(seg.color).toMatch(/^hsl\(/);
@@ -142,14 +145,14 @@ describe("buildGanttData", () => {
   });
 
   test("segments within same app have same color", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     const vscode = rows[0]!;
     const colors = new Set(vscode.segments.map((s) => s.color));
     expect(colors.size).toBe(1);
   });
 
   test("different apps have different colors (usually)", () => {
-    const { rows } = buildGanttData(sessions, topApps);
+    const { rows } = buildGanttData(sessions, topApps, TZ);
     const colors = rows.map((r) => r.segments[0]!.color);
     // Very unlikely all 3 different app names hash to the same color
     expect(new Set(colors).size).toBeGreaterThan(1);
@@ -170,7 +173,7 @@ describe("buildGanttData", () => {
     const singleApp: AppSummary[] = [
       { appName: "Terminal", bundleId: null, totalDuration: 300, sessionCount: 1 },
     ];
-    const { rows, dayStartMin, dayEndMin } = buildGanttData(single, singleApp);
+    const { rows, dayStartMin, dayEndMin } = buildGanttData(single, singleApp, TZ);
     expect(rows).toHaveLength(1);
     expect(rows[0]!.segments).toHaveLength(1);
     expect(dayEndMin).toBeGreaterThan(dayStartMin);

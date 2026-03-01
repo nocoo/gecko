@@ -49,6 +49,8 @@ interface DailyResponse {
     model: string;
     generatedAt: string;
   } | null;
+  /** User's IANA timezone from settings (e.g. "Asia/Shanghai") */
+  timezone: string;
 }
 
 interface TokenUsage {
@@ -72,21 +74,31 @@ interface AnalyzeResponse {
 // Date helpers
 // ---------------------------------------------------------------------------
 
-function todayStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * "Today" in the user's configured timezone.
+ * Uses Intl to format the current instant, avoiding browser-local assumptions.
+ */
+function todayStr(tz: string): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
-function yesterdayStr(): string {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/**
+ * "Yesterday" in the user's configured timezone.
+ */
+function yesterdayStr(tz: string): string {
+  const today = todayStr(tz);
+  return addDays(today, -1);
 }
 
 function addDays(dateStr: string, days: number): string {
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setDate(d.getDate() + days);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const parts = dateStr.split("-").map(Number);
+  const utc = new Date(Date.UTC(parts[0]!, parts[1]! - 1, parts[2]! + days));
+  return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, "0")}-${String(utc.getUTCDate()).padStart(2, "0")}`;
 }
 
 function formatDateDisplay(dateStr: string): string {
@@ -113,13 +125,15 @@ function objToDateStr(d: Date): string {
 
 function DateNavigator({
   date,
+  timezone,
   onChange,
 }: {
   date: string;
+  timezone: string;
   onChange: (d: string) => void;
 }) {
   const [calendarOpen, setCalendarOpen] = useState(false);
-  const today = todayStr();
+  const today = todayStr(timezone);
   const canGoForward = addDays(date, 1) < today;
 
   return (
@@ -447,6 +461,7 @@ export function DailyReviewClient({ date }: { date: string }) {
   const router = useRouter();
 
   const [data, setData] = useState<DailyResponse | null>(null);
+  const [timezone, setTimezone] = useState("Asia/Shanghai");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -472,6 +487,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
       const body = (await res.json()) as DailyResponse;
       setData(body);
+      if (body.timezone) setTimezone(body.timezone);
 
       // If AI result was cached, populate it
       if (body.ai) {
@@ -531,7 +547,7 @@ export function DailyReviewClient({ date }: { date: string }) {
   return (
     <AppShell
       breadcrumbs={[
-        { label: "Daily Review", href: `/daily/${yesterdayStr()}` },
+        { label: "Daily Review", href: `/daily/${yesterdayStr(timezone)}` },
         { label: formatDateDisplay(date) },
       ]}
     >
@@ -546,7 +562,7 @@ export function DailyReviewClient({ date }: { date: string }) {
                 : "View your productivity analysis for this day."}
             </p>
           </div>
-          <DateNavigator date={date} onChange={handleDateChange} />
+          <DateNavigator date={date} timezone={timezone} onChange={handleDateChange} />
         </div>
 
         {/* Error */}
@@ -590,6 +606,7 @@ export function DailyReviewClient({ date }: { date: string }) {
               <GanttChart
                 sessions={data.stats.sessions}
                 topApps={data.stats.topApps}
+                timezone={timezone}
               />
             </div>
 

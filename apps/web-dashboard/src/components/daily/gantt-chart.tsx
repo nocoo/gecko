@@ -24,6 +24,8 @@ import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 interface GanttChartProps {
   sessions: SessionForChart[];
   topApps: AppSummary[];
+  /** User's IANA timezone (e.g. "Asia/Shanghai") for midnight calculation */
+  timezone: string;
   className?: string;
 }
 
@@ -54,10 +56,14 @@ interface GanttRow {
 /**
  * Transform sessions + topApps into Gantt rows.
  * One row per app, sorted by total duration descending.
+ *
+ * @param tz - User's IANA timezone. Used to compute the local midnight
+ *   reference point so the X-axis shows times in the user's timezone.
  */
 export function buildGanttData(
   sessions: SessionForChart[],
   topApps: AppSummary[],
+  tz: string,
 ): { rows: GanttRow[]; dayStartMin: number; dayEndMin: number } {
   if (sessions.length === 0) {
     return { rows: [], dayStartMin: 0, dayEndMin: 0 };
@@ -69,10 +75,42 @@ export function buildGanttData(
   const dayStartEpoch = Math.min(...allStarts);
   const dayEndEpoch = Math.max(...allEnds);
 
-  // Midnight reference from the first session
-  const midnight = new Date(dayStartEpoch * 1000);
-  midnight.setHours(0, 0, 0, 0);
-  const midnightEpoch = midnight.getTime() / 1000;
+  // Compute midnight in the user's timezone using Intl.
+  // We format the first session's date in the target tz, then compute
+  // what UTC epoch that local midnight corresponds to.
+  const firstDate = new Date(dayStartEpoch * 1000);
+  const dateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(firstDate); // "YYYY-MM-DD"
+  const parts = dateParts.split("-").map(Number);
+  const y = parts[0]!, m = parts[1]!, d = parts[2]!;
+
+  // Get UTC offset for this date in the target timezone
+  // by comparing UTC noon vs local noon
+  const utcNoon = Date.UTC(y, m - 1, d, 12, 0, 0);
+  const localParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date(utcNoon));
+  const get = (type: string) =>
+    parseInt(localParts.find((p) => p.type === type)!.value, 10);
+  const lY = get("year"), lM = get("month"), lD = get("day");
+  let lH = get("hour");
+  if (lH === 24) lH = 0;
+  const lMin = get("minute");
+  const localAsUtc = Date.UTC(lY, lM - 1, lD, lH, lMin, 0);
+  const offsetMs = localAsUtc - utcNoon;
+
+  // Midnight local = midnight UTC for that date minus offset
+  const midnightEpoch = (Date.UTC(y, m - 1, d) - offsetMs) / 1000;
 
   const dayStartMin = Math.floor((dayStartEpoch - midnightEpoch) / 60);
   const dayEndMin = Math.ceil((dayEndEpoch - midnightEpoch) / 60);
@@ -125,9 +163,10 @@ export function formatTime(minutesSinceMidnight: number): string {
 export function GanttChart({
   sessions,
   topApps,
+  timezone,
   className = "",
 }: GanttChartProps) {
-  const { rows, dayStartMin, dayEndMin } = buildGanttData(sessions, topApps);
+  const { rows, dayStartMin, dayEndMin } = buildGanttData(sessions, topApps, timezone);
 
   if (rows.length === 0) {
     return (
