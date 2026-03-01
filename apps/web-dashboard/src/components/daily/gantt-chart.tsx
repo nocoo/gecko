@@ -259,21 +259,27 @@ export function GanttChart({
                   </div>
                   {/* Segment track */}
                   <div
-                    className="relative flex-1 rounded-sm"
+                    className="relative flex-1 rounded-sm overflow-hidden"
                     style={{
                       height: 24,
                       backgroundColor: withAlpha("chart-muted", 0.1),
                     }}
                   >
                     {row.segments.map((seg, i) => {
-                      const left = ((seg.startMin - xMin) / range) * 100;
-                      const width = (seg.durationMin / range) * 100;
+                      // Clamp segment to visible [xMin, xMax] range
+                      const segEnd = seg.startMin + seg.durationMin;
+                      const clampedStart = Math.max(xMin, seg.startMin);
+                      const clampedEnd = Math.min(xMax, segEnd);
+                      // Skip segments entirely outside the visible range
+                      if (clampedStart >= clampedEnd) return null;
+                      const left = ((clampedStart - xMin) / range) * 100;
+                      const width = ((clampedEnd - clampedStart) / range) * 100;
                       return (
                         <div
                           key={i}
                           className="absolute top-0.5 bottom-0.5 rounded-sm transition-opacity hover:opacity-80"
                           style={{
-                            left: `${Math.max(0, left)}%`,
+                            left: `${left}%`,
                             width: `${Math.max(0.3, width)}%`,
                             backgroundColor: color,
                             opacity: 0.85,

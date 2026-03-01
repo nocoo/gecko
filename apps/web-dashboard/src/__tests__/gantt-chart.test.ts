@@ -178,4 +178,86 @@ describe("buildGanttData", () => {
     expect(rows[0]!.segments).toHaveLength(1);
     expect(dayEndMin).toBeGreaterThan(dayStartMin);
   });
+
+  test("overnight session: dayEndMin can exceed 1440", () => {
+    // loginwindow session starting at 20:37 CST, duration 8.8 hours (31680s)
+    // ends at ~05:25 next day CST = 1765 min since midnight
+    const eveningEpoch = BASE_EPOCH + 11 * 3600 + 37 * 60; // 20:37 CST
+    const overnightSessions: SessionForChart[] = [
+      {
+        id: "overnight",
+        appName: "loginwindow",
+        bundleId: null,
+        windowTitle: "loginwindow",
+        url: null,
+        startTime: eveningEpoch,
+        duration: 31680, // 8h 48min
+      },
+    ];
+    const overnightApps: AppSummary[] = [
+      { appName: "loginwindow", bundleId: null, totalDuration: 31680, sessionCount: 1 },
+    ];
+    const { dayStartMin, dayEndMin } = buildGanttData(overnightSessions, overnightApps, TZ);
+    // Session starts at 20:37 (1237 min) and ends at ~05:25 next day (1765 min)
+    expect(dayStartMin).toBeCloseTo(1237, -1);
+    expect(dayEndMin).toBeGreaterThan(1440); // Exceeds midnight
+  });
+
+  test("bar clamping: segment extending past xMax is truncated", () => {
+    // Simulate the clamping logic used in the component render
+    // xMin=0, xMax=1440, range=1440
+    const xMin = 0;
+    const xMax = 1440;
+    const range = xMax - xMin;
+
+    // A segment starting at 20:37 (1237 min) with duration 528 min (end=1765)
+    const segStartMin = 1237;
+    const segDurationMin = 528;
+    const segEnd = segStartMin + segDurationMin; // 1765
+
+    const clampedStart = Math.max(xMin, segStartMin);
+    const clampedEnd = Math.min(xMax, segEnd);
+
+    const left = ((clampedStart - xMin) / range) * 100;
+    const width = ((clampedEnd - clampedStart) / range) * 100;
+
+    // Bar should start at ~85.9% and have width ~14.1% (truncated at 1440)
+    expect(left).toBeCloseTo(85.9, 0);
+    expect(width).toBeCloseTo(14.1, 0);
+    expect(left + width).toBeLessThanOrEqual(100); // Never exceeds 100%
+  });
+
+  test("bar clamping: segment entirely before xMin is skipped", () => {
+    const xMin = 300; // 05:00
+    const xMax = 1440;
+
+    const segStartMin = 0;
+    const segDurationMin = 200; // ends at 200, before xMin
+
+    const clampedStart = Math.max(xMin, segStartMin);
+    const clampedEnd = Math.min(xMax, segStartMin + segDurationMin);
+
+    // clampedStart (300) >= clampedEnd (200) → segment should be skipped
+    expect(clampedStart >= clampedEnd).toBe(true);
+  });
+
+  test("bar clamping: segment starting before xMin is left-truncated", () => {
+    const xMin = 300;
+    const xMax = 1440;
+    const range = xMax - xMin;
+
+    // Session from 04:00 (240 min) to 06:00 (360 min)
+    const segStartMin = 240;
+    const segDurationMin = 120;
+
+    const clampedStart = Math.max(xMin, segStartMin); // 300
+    const clampedEnd = Math.min(xMax, segStartMin + segDurationMin); // 360
+
+    const left = ((clampedStart - xMin) / range) * 100; // 0%
+    const width = ((clampedEnd - clampedStart) / range) * 100; // ~5.26%
+
+    expect(left).toBe(0);
+    expect(width).toBeCloseTo(5.26, 1);
+    expect(left + width).toBeLessThanOrEqual(100);
+  });
 });
