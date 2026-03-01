@@ -17,7 +17,6 @@ import {
   type AiProvider,
   type SdkType,
 } from "@/services/ai";
-import { query } from "@/lib/d1";
 import { generateText } from "ai";
 import {
   computeDailyStats,
@@ -25,7 +24,9 @@ import {
   type DailyStats,
   type SessionForChart,
 } from "@/services/daily-stats";
-import { todayInTz, getDateBoundsEpoch, epochToLocalHHMM } from "@/lib/timezone";
+import { query } from "@/lib/d1";
+import { todayInTz, epochToLocalHHMM } from "@/lib/timezone";
+import { fetchSessionsForDate } from "@/lib/session-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -199,24 +200,6 @@ ${lines.join("\n")}
 // ---------------------------------------------------------------------------
 // Session timeline builder
 // ---------------------------------------------------------------------------
-
-/** Fetch sessions for a specific date from D1, using user's timezone for day boundaries. */
-async function fetchSessionsForDate(
-  userId: string,
-  date: string,
-  tz: string,
-): Promise<SessionRow[]> {
-  const { start: dayStart, end: dayEnd } = getDateBoundsEpoch(date, tz);
-
-  return query<SessionRow>(
-    `SELECT id, app_name, bundle_id, window_title, url, start_time, duration
-     FROM focus_sessions
-     WHERE user_id = ? AND start_time >= ? AND start_time < ?
-     ORDER BY start_time ASC`,
-    [userId, dayStart, dayEnd],
-  );
-}
-
 /** Format seconds to human-readable duration. */
 function fmtDuration(sec: number): string {
   if (sec < 60) return `${sec}s`;

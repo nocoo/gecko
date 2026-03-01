@@ -258,6 +258,8 @@ describe("POST /api/daily/[date]/analyze", () => {
     expect(sessionQuery).toBeDefined();
     expect(sessionQuery!.sql).toContain("start_time >= ?");
     expect(sessionQuery!.sql).toContain("start_time < ?");
+    // Cross-midnight clause
+    expect(sessionQuery!.sql).toContain("start_time + duration > ?");
 
     // For 2026-02-27 in Asia/Shanghai (UTC+8):
     // Day start = 2026-02-27 00:00 CST = 2026-02-26 16:00 UTC = epoch 1772121600

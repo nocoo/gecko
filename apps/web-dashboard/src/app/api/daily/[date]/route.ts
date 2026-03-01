@@ -7,13 +7,10 @@
  */
 
 import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
-import { query } from "@/lib/d1";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
-import {
-  computeDailyStats,
-  type SessionRow,
-} from "@/services/daily-stats";
-import { todayInTz, getDateBoundsEpoch } from "@/lib/timezone";
+import { computeDailyStats } from "@/services/daily-stats";
+import { todayInTz } from "@/lib/timezone";
+import { fetchSessionsForDate } from "@/lib/session-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -40,23 +37,6 @@ function validateDate(dateStr: string, tz: string): string | null {
     return "Cannot view today or future dates. Data is still being collected.";
   }
   return null;
-}
-
-/** Fetch sessions for a specific date from D1, using user's timezone for day boundaries. */
-async function fetchSessionsForDate(
-  userId: string,
-  date: string,
-  tz: string,
-): Promise<SessionRow[]> {
-  const { start: dayStart, end: dayEnd } = getDateBoundsEpoch(date, tz);
-
-  return query<SessionRow>(
-    `SELECT id, app_name, bundle_id, window_title, url, start_time, duration
-     FROM focus_sessions
-     WHERE user_id = ? AND start_time >= ? AND start_time < ?
-     ORDER BY start_time ASC`,
-    [userId, dayStart, dayEnd],
-  );
 }
 
 // ---------------------------------------------------------------------------
