@@ -21,54 +21,121 @@ export const DEFAULT_TIMEZONE = "Asia/Shanghai";
  * Example: getDateBoundsEpoch("2026-03-01", "Asia/Shanghai")
  *   → start = 2026-03-01T00:00:00+08:00 as epoch seconds
  *   → end   = 2026-03-02T00:00:00+08:00 as epoch seconds
+ *
+ * On DST transition days the interval may be 23h or 25h — this is correct.
  */
 export function getDateBoundsEpoch(
   dateStr: string,
   tz: string,
 ): { start: number; end: number } {
-  const midnightLocal = localDateToUTCEpoch(dateStr, tz);
-  return { start: midnightLocal, end: midnightLocal + 86400 };
+  const start = localDateToUTCEpoch(dateStr, tz);
+
+  // Compute next day's date string, then get its midnight epoch
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
+  const nextDateStr = formatDateParts(
+    nextDay.getUTCFullYear(),
+    nextDay.getUTCMonth() + 1,
+    nextDay.getUTCDate(),
+  );
+  const end = localDateToUTCEpoch(nextDateStr, tz);
+
+  return { start, end };
 }
 
 /**
  * Convert a local date string (YYYY-MM-DD) to a UTC epoch (seconds)
  * representing midnight in the given timezone.
  *
- * Uses Intl.DateTimeFormat to resolve the UTC offset for that date+tz,
- * avoiding any dependency on the server's local timezone.
+ * Uses a two-pass approach to handle DST correctly:
+ *  1. Get the offset at the target date's midnight-hour (hour=0) using
+ *     a nearby UTC reference point.
+ *  2. Compute midnight epoch from that offset.
+ *  3. Verify by re-probing the offset at the resulting epoch. If DST
+ *     causes a different offset, correct with the second value.
+ *
+ * This handles spring-forward (midnight may not exist → use the new offset)
+ * and fall-back (midnight is ambiguous → use the *first* occurrence, i.e.
+ * the offset *before* clocks change).
  */
 export function localDateToUTCEpoch(dateStr: string, tz: string): number {
   // Parse date parts
   const [year, month, day] = dateStr.split("-").map(Number);
 
-  // Get the UTC offset (in minutes) for this date in the target timezone.
-  // We construct a UTC date at midnight and ask Intl what local time that is,
-  // then work backwards.
-  const offset = getTimezoneOffsetMinutes(year, month, day, tz);
+  // First estimate: probe offset using noon on the same date (safe from DST gaps)
+  const noonOffset = getTimezoneOffsetMinutes(year, month, day, tz, 12);
 
-  // Midnight local = midnight UTC minus offset
-  // e.g. Asia/Shanghai is UTC+8, offset = +480 min
-  // Midnight local (00:00+08) = UTC 16:00 previous day
-  // In epoch: Date.UTC(y,m-1,d) gives midnight UTC. We subtract offset.
+  // Compute approximate midnight UTC using noon's offset
   const midnightUTC = Date.UTC(year, month - 1, day) / 1000;
-  return midnightUTC - offset * 60;
+  const approxMidnight = midnightUTC - noonOffset * 60;
+
+  // Second pass: probe offset at the approximate midnight instant.
+  // Format the approxMidnight instant in the target tz and extract real offset.
+  const realOffset = offsetAtEpoch(approxMidnight, tz);
+
+  // If the offset changed (DST transition between noon and midnight),
+  // recompute with the real midnight offset.
+  return midnightUTC - realOffset * 60;
 }
 
 /**
- * Get the UTC offset in minutes for a specific date in a timezone.
+ * Get the UTC offset (in minutes, positive = east) at a specific UTC epoch.
+ * Uses Intl.DateTimeFormat to discover the local time, then computes offset.
+ */
+function offsetAtEpoch(epochSec: number, tz: string): number {
+  const ms = epochSec * 1000;
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(new Date(ms));
+  const get = (type: string) =>
+    parseInt(parts.find((p) => p.type === type)!.value, 10);
+
+  const lY = get("year"), lM = get("month"), lD = get("day");
+  let lH = get("hour");
+  if (lH === 24) lH = 0;
+  const lMin = get("minute");
+  const lS = get("second");
+
+  const localAsUTC = Date.UTC(lY, lM - 1, lD, lH, lMin, lS);
+  return (localAsUTC - ms) / 60_000;
+}
+
+/**
+ * Get the UTC offset in minutes for a specific date+hour in a timezone.
  * Positive = east of UTC (e.g. +480 for Asia/Shanghai).
  *
- * This uses Intl.DateTimeFormat to extract the actual offset,
- * correctly handling DST transitions.
+ * @param hour - The local hour to probe (default 12 = noon). Use 0 to get
+ *   the offset at midnight, which may differ from noon on DST transition days.
+ *
+ * Implementation: we construct a UTC timestamp at the given hour on this date,
+ * then use Intl.DateTimeFormat to discover what local time that UTC instant
+ * maps to, and compute the offset from the difference.
+ *
+ * NOTE: When hour=0, the UTC instant we probe is `Date.UTC(y, m-1, d, 0)`.
+ * For timezones east of UTC (e.g. Asia/Shanghai +8), that UTC instant is
+ * already 08:00 local — well past any DST gap. For timezones west of UTC
+ * (e.g. America/New_York -5), that UTC instant is 19:00 *previous* local day.
+ * In both cases the Intl formatter returns the correct local time, and the
+ * offset formula `(localAsUTC - utcRef) / 60_000` gives the right answer
+ * because it's purely arithmetic: it doesn't care *which* local date/time
+ * Intl returns, only the difference.
  */
 export function getTimezoneOffsetMinutes(
   year: number,
   month: number,
   day: number,
   tz: string,
+  hour = 12,
 ): number {
-  // Create a UTC timestamp for noon on this date (noon avoids DST edge cases)
-  const utcNoon = Date.UTC(year, month - 1, day, 12, 0, 0);
+  const utcRef = Date.UTC(year, month - 1, day, hour, 0, 0);
 
   // Format in the target timezone to get local date/time parts
   const fmt = new Intl.DateTimeFormat("en-US", {
@@ -82,7 +149,7 @@ export function getTimezoneOffsetMinutes(
     hour12: false,
   });
 
-  const parts = fmt.formatToParts(new Date(utcNoon));
+  const parts = fmt.formatToParts(new Date(utcRef));
   const get = (type: string) =>
     parseInt(parts.find((p) => p.type === type)!.value, 10);
 
@@ -99,7 +166,7 @@ export function getTimezoneOffsetMinutes(
     Date.UTC(localYear, localMonth - 1, localDay, localHour, localMinute, 0);
 
   // Offset = local - UTC (in minutes)
-  return (localAsUTC - utcNoon) / 60_000;
+  return (localAsUTC - utcRef) / 60_000;
 }
 
 // ---------------------------------------------------------------------------
