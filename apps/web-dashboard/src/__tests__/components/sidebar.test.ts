@@ -11,12 +11,13 @@ describe("sidebar navigation", () => {
       expect(navGroups).toHaveLength(2);
     });
 
-    it("group 0 is Overview with Dashboard, Sessions, Daily Review", () => {
+    it("group 0 is Overview with Dashboard, Sessions, Daily Review, Apps", () => {
       expect(navGroups[0]!.label).toBe("Overview");
       expect(navGroups[0]!.items.map((i) => i.label)).toEqual([
         "Dashboard",
         "Sessions",
         "Daily Review",
+        "Apps",
       ]);
     });
 
@@ -64,8 +65,8 @@ describe("sidebar navigation", () => {
       expect(allNavItems).toEqual(expected);
     });
 
-    it("has 7 total items", () => {
-      expect(allNavItems).toHaveLength(7);
+    it("has 8 total items", () => {
+      expect(allNavItems).toHaveLength(8);
     });
   });
 

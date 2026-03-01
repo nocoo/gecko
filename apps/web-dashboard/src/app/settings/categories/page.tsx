@@ -6,8 +6,6 @@ import { CategoryPill, AVAILABLE_ICONS } from "@/components/category-pill";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -28,8 +26,6 @@ import {
   Globe,
   AppWindow,
   Folder,
-  ArrowRightLeft,
-  Search,
   type LucideProps,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,13 +42,6 @@ interface Category {
   isDefault: boolean;
   slug: string;
   createdAt: string;
-}
-
-interface TrackedApp {
-  bundleId: string;
-  appName: string;
-  totalDuration: number;
-  sessionCount: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -118,10 +107,6 @@ export default function CategoriesPage() {
           setError={setError}
           onRefresh={fetchCategories}
         />
-
-        <Separator />
-
-        <AppMappingsSection categories={categories} />
       </div>
     </AppShell>
   );
@@ -498,289 +483,6 @@ function CategoriesSection({
         </DialogContent>
       </Dialog>
     </section>
-  );
-}
-
-// =============================================================================
-// App Mappings Section
-// =============================================================================
-
-function AppMappingsSection({ categories }: { categories: Category[] }) {
-  const [apps, setApps] = useState<TrackedApp[]>([]);
-  const [mappings, setMappings] = useState<Map<string, string>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [filter, setFilter] = useState("");
-
-  // Track pending changes (bundleId -> categoryId)
-  const [pendingChanges, setPendingChanges] = useState<
-    Map<string, string>
-  >(new Map());
-
-  // ---------------------------------------------------------------------------
-  // Fetch apps + existing mappings
-  // ---------------------------------------------------------------------------
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [appsRes, mappingsRes] = await Promise.all([
-        fetch("/api/apps"),
-        fetch("/api/categories/mappings"),
-      ]);
-
-      if (!appsRes.ok) throw new Error("Failed to load apps");
-      if (!mappingsRes.ok) throw new Error("Failed to load mappings");
-
-      const appsData = await appsRes.json();
-      const mappingsData = await mappingsRes.json();
-
-      setApps(appsData.apps);
-
-      const map = new Map<string, string>();
-      for (const m of mappingsData.mappings) {
-        map.set(m.bundleId, m.categoryId);
-      }
-      setMappings(map);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  // ---------------------------------------------------------------------------
-  // Handle category change for an app
-  // ---------------------------------------------------------------------------
-
-  function handleCategoryChange(bundleId: string, categoryId: string) {
-    setPendingChanges((prev) => {
-      const next = new Map(prev);
-      // If the new value matches the original mapping, remove from pending
-      if (mappings.get(bundleId) === categoryId) {
-        next.delete(bundleId);
-      } else {
-        next.set(bundleId, categoryId);
-      }
-      return next;
-    });
-  }
-
-  // Get effective category for an app (pending change or existing mapping)
-  function getEffectiveCategory(bundleId: string): string {
-    return pendingChanges.get(bundleId) ?? mappings.get(bundleId) ?? "";
-  }
-
-  // ---------------------------------------------------------------------------
-  // Save changes
-  // ---------------------------------------------------------------------------
-
-  async function handleSave() {
-    if (pendingChanges.size === 0) return;
-    setSaving(true);
-    try {
-      const mappingsToSave = Array.from(pendingChanges.entries()).map(
-        ([bundleId, categoryId]) => ({ bundleId, categoryId }),
-      );
-
-      const res = await fetch("/api/categories/mappings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mappings: mappingsToSave }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "Failed to save mappings");
-      }
-
-      // Apply pending changes to the mappings map
-      setPendingChanges(new Map());
-      fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Filter apps
-  // ---------------------------------------------------------------------------
-
-  const filteredApps = apps.filter((app) => {
-    const query = filter.toLowerCase();
-    if (!query) return true;
-    return (
-      app.appName.toLowerCase().includes(query) ||
-      app.bundleId.toLowerCase().includes(query)
-    );
-  });
-
-  // ---------------------------------------------------------------------------
-  // Helpers
-  // ---------------------------------------------------------------------------
-
-  function formatDuration(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) return `${hours}h ${minutes}m`;
-    return `${minutes}m`;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
-
-  return (
-    <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ArrowRightLeft
-            className="size-5 text-muted-foreground"
-            strokeWidth={1.5}
-          />
-          <h2 className="text-lg font-semibold">App Mappings</h2>
-        </div>
-        {pendingChanges.size > 0 && (
-          <Button size="sm" onClick={handleSave} disabled={saving}>
-            {saving
-              ? "Saving..."
-              : `Save ${pendingChanges.size} change${pendingChanges.size === 1 ? "" : "s"}`}
-          </Button>
-        )}
-      </div>
-
-      <p className="text-sm text-muted-foreground">
-        Assign each tracked app to a category. Changes are batched and saved
-        together.
-      </p>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          <AlertTriangle className="size-4 shrink-0" />
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="rounded-2xl bg-secondary p-8 text-center text-sm text-muted-foreground">
-          Loading apps...
-        </div>
-      ) : apps.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-            <ArrowRightLeft
-              className="size-4 text-muted-foreground"
-              strokeWidth={1.5}
-            />
-          </div>
-          <p className="text-sm font-medium">No tracked apps yet</p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-            Start using the Gecko macOS app and your tracked apps will appear
-            here for categorization.
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Search filter */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-            <Input
-              placeholder="Filter apps..."
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* App list */}
-          <div className="space-y-1">
-            {filteredApps.map((app) => (
-              <AppMappingRow
-                key={app.bundleId}
-                app={app}
-                categories={categories}
-                selectedCategoryId={getEffectiveCategory(app.bundleId)}
-                hasChange={pendingChanges.has(app.bundleId)}
-                onCategoryChange={(catId) =>
-                  handleCategoryChange(app.bundleId, catId)
-                }
-                formatDuration={formatDuration}
-              />
-            ))}
-            {filteredApps.length === 0 && (
-              <p className="text-sm text-muted-foreground py-4 text-center">
-                No apps match your filter.
-              </p>
-            )}
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
-
-// =============================================================================
-// App Mapping Row
-// =============================================================================
-
-function AppMappingRow({
-  app,
-  categories,
-  selectedCategoryId,
-  hasChange,
-  onCategoryChange,
-  formatDuration,
-}: {
-  app: TrackedApp;
-  categories: Category[];
-  selectedCategoryId: string;
-  hasChange: boolean;
-  onCategoryChange: (categoryId: string) => void;
-  formatDuration: (seconds: number) => string;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex items-center justify-between rounded-xl p-3 transition-colors",
-        hasChange ? "bg-primary/5 ring-1 ring-primary/20" : "hover:bg-secondary",
-      )}
-    >
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{app.appName}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {app.bundleId}
-          <span className="ml-2">
-            {formatDuration(app.totalDuration)} &middot;{" "}
-            {app.sessionCount} session{app.sessionCount === 1 ? "" : "s"}
-          </span>
-        </p>
-      </div>
-      <div className="shrink-0 ml-3">
-        <Select
-          value={selectedCategoryId}
-          onChange={(e) => onCategoryChange(e.target.value)}
-          className={cn(
-            "h-8 rounded-lg",
-            hasChange && "border-primary/40",
-          )}
-        >
-          <option value="">Uncategorized</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.id}>
-              {cat.title}
-            </option>
-          ))}
-        </Select>
-      </div>
-    </div>
   );
 }
 

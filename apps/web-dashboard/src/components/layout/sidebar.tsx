@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   List,
   CalendarDays,
+  AppWindow,
   SlidersHorizontal,
   Layers,
   Tags,
@@ -58,6 +59,7 @@ const navGroups: NavGroup[] = [
       { href: "/", label: "Dashboard", icon: LayoutDashboard },
       { href: "/sessions", label: "Sessions", icon: List },
       { href: "/daily", label: "Daily Review", icon: CalendarDays },
+      { href: "/apps", label: "Apps", icon: AppWindow },
     ],
   },
   {
