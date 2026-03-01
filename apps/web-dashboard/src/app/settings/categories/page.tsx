@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -763,12 +764,11 @@ function AppMappingRow({
         </p>
       </div>
       <div className="shrink-0 ml-3">
-        <select
+        <Select
           value={selectedCategoryId}
           onChange={(e) => onCategoryChange(e.target.value)}
           className={cn(
-            "h-8 rounded-lg border bg-background pl-2 pr-7 text-sm outline-none transition-colors",
-            "focus:ring-2 focus:ring-ring focus:ring-offset-1",
+            "h-8 rounded-lg",
             hasChange && "border-primary/40",
           )}
         >
@@ -778,7 +778,7 @@ function AppMappingRow({
               {cat.title}
             </option>
           ))}
-        </select>
+        </Select>
       </div>
     </div>
   );

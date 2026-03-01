@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Select } from "@/components/ui/select";
 import {
   AI_PROVIDERS,
   ALL_PROVIDER_IDS,
@@ -215,10 +216,10 @@ export function AiSettingsSection() {
         {/* Provider */}
         <div>
           <Label className="text-sm">Provider</Label>
-          <select
+          <Select
             value={settings.provider}
             onChange={(e) => handleProviderChange(e.target.value)}
-            className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm"
+            className="mt-1 h-9"
           >
             <option value="">Select a provider...</option>
             {ALL_PROVIDER_IDS.map((id) => {
@@ -232,7 +233,7 @@ export function AiSettingsSection() {
                 </option>
               );
             })}
-          </select>
+          </Select>
         </div>
 
         {/* Model — dropdown with presets + custom option (built-in providers) */}
@@ -240,14 +241,14 @@ export function AiSettingsSection() {
           <div>
             <Label className="text-sm">Model</Label>
             {presetModels.length > 0 && !isCustomModel ? (
-              <select
+              <Select
                 value={
                   presetModels.includes(settings.model)
                     ? settings.model
                     : CUSTOM_MODEL_VALUE
                 }
                 onChange={(e) => handleModelSelect(e.target.value)}
-                className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm"
+                className="mt-1 h-9"
               >
                 {presetModels.map((m) => (
                   <option key={m} value={m}>
@@ -255,7 +256,7 @@ export function AiSettingsSection() {
                   </option>
                 ))}
                 <option value={CUSTOM_MODEL_VALUE}>Custom model...</option>
-              </select>
+              </Select>
             ) : presetModels.length > 0 && isCustomModel ? (
               <div className="mt-1 flex gap-1">
                 <Input
@@ -332,7 +333,7 @@ export function AiSettingsSection() {
         {isCustomProvider && (
           <div>
             <Label className="text-sm">SDK Protocol</Label>
-            <select
+            <Select
               value={settings.sdkType}
               onChange={(e) =>
                 setSettings((s) => ({
@@ -340,11 +341,11 @@ export function AiSettingsSection() {
                   sdkType: e.target.value as SdkType | "",
                 }))
               }
-              className="mt-1 h-9 w-full rounded-md border border-input bg-background px-3 pr-8 text-sm"
+              className="mt-1 h-9"
             >
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
-            </select>
+            </Select>
           </div>
         )}
 
