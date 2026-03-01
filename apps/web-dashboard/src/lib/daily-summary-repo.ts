@@ -44,23 +44,6 @@ export const dailySummaryRepo = {
     return rows[0] ?? null;
   },
 
-  /** Insert or update the stats snapshot for a date. Preserves existing AI fields. */
-  async upsertStats(
-    userId: string,
-    date: string,
-    statsJson: string,
-  ): Promise<void> {
-    const id = crypto.randomUUID();
-    await execute(
-      `INSERT INTO daily_summaries (id, user_id, date, stats_json, updated_at)
-       VALUES (?, ?, ?, ?, datetime('now'))
-       ON CONFLICT (user_id, date) DO UPDATE SET
-         stats_json = excluded.stats_json,
-         updated_at = datetime('now')`,
-      [id, userId, date, statsJson],
-    );
-  },
-
   /** Update the AI analysis result for an existing summary. */
   async upsertAiResult(
     userId: string,

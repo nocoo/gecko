@@ -91,11 +91,11 @@ CREATE UNIQUE INDEX idx_daily_summaries_user_date ON daily_summaries(user_id, da
 
 ```ts
 findByUserAndDate(userId, date): Promise<Row | null>
-upsertStats(userId, date, statsJson): Promise<void>
 upsertAiResult(userId, date, aiScore, aiResultJson, aiModel): Promise<void>
 ```
 
 Uses `INSERT OR REPLACE` with composite unique index `(user_id, date)`.
+Stats are always computed fresh from D1 (not cached). Only AI results are cached.
 
 **Tests**: UT with mock D1 verifying correct SQL generation.
 
@@ -103,10 +103,10 @@ Uses `INSERT OR REPLACE` with composite unique index `(user_id, date)`.
 
 ## M4: API GET /api/daily/:date
 
-1. Validate date format (`YYYY-MM-DD`) + reject today or future.
-2. Check `daily_summaries` cache → hit: return directly.
-3. Miss: call `DailyStatsService.compute()` → write cache → return.
-4. Response: `{ stats: DailyStats, ai: AiResult | null }`.
+1. Validate date format (`YYYY-MM-DD`) + reject today or future (in user's timezone).
+2. Compute stats fresh from D1 using timezone-aware day boundaries.
+3. Check `daily_summaries` cache for AI result only.
+4. Response: `{ stats: DailyStats, ai: AiResult | null, timezone: string }`.
 
 **Tests**: UT (date validation, cache hit/miss) + E2E (HTTP round-trip).
 
