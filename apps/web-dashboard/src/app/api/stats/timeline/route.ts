@@ -37,6 +37,9 @@ export async function GET(req: Request): Promise<Response> {
   const conditions = ["user_id = ?"];
   const params: unknown[] = [user.userId];
 
+  // Track start date for timezone offset calculation
+  let rangeStartDateStr: string | undefined;
+
   if (days !== null) {
     // Calculate start-of-day N days ago in user's timezone
     const today = todayInTz(tz);
@@ -46,13 +49,15 @@ export async function GET(req: Request): Promise<Response> {
     const startTime = localDateToUTCEpoch(startDateStr, tz);
     conditions.push("start_time >= ?");
     params.push(startTime);
+    rangeStartDateStr = startDateStr;
   }
 
   const where = conditions.join(" AND ");
 
   // Aggregate by date in user's timezone
   // SQLite date() with unixepoch returns UTC; we add timezone offset to group by local date.
-  const { expr: dateExpr } = sqlDateExpr(tz);
+  // Use the query range start date for offset to handle DST correctly within the range.
+  const { expr: dateExpr } = sqlDateExpr(tz, rangeStartDateStr);
 
   const rows = await query<{
     date: string;

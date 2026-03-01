@@ -255,20 +255,31 @@ export function epochToDateStr(epoch: number, tz: string): string {
  * To group by local date, we add the timezone offset in seconds:
  *   `date(start_time + <offsetSec>, 'unixepoch')`
  *
+ * @param tz - IANA timezone
+ * @param refDateStr - Optional reference date (YYYY-MM-DD) whose offset
+ *   should be used. Defaults to today. Using the query range's start date
+ *   ensures the offset matches the majority of the data, even if "now" is
+ *   on the other side of a DST boundary.
+ *
  * NOTE: This uses a fixed offset which doesn't handle DST transitions
- * within a query range. For most use cases (charts spanning days/weeks),
- * the error is at most 1 hour at the DST boundary, which is acceptable.
- * For the daily review (single-day queries), we use getDateBoundsEpoch()
- * which handles DST correctly.
+ * within a query range. For ranges that span a DST change, sessions near
+ * the transition may be grouped into the wrong local date (off by at most
+ * 1 hour). For single-day queries, use getDateBoundsEpoch() which is exact.
  */
-export function sqlDateExpr(tz: string): { expr: string; offsetSec: number } {
-  const now = new Date();
-  const offset = getTimezoneOffsetMinutes(
-    now.getUTCFullYear(),
-    now.getUTCMonth() + 1,
-    now.getUTCDate(),
-    tz,
-  );
+export function sqlDateExpr(
+  tz: string,
+  refDateStr?: string,
+): { expr: string; offsetSec: number } {
+  let y: number, m: number, d: number;
+  if (refDateStr) {
+    [y, m, d] = refDateStr.split("-").map(Number);
+  } else {
+    const now = new Date();
+    y = now.getUTCFullYear();
+    m = now.getUTCMonth() + 1;
+    d = now.getUTCDate();
+  }
+  const offset = getTimezoneOffsetMinutes(y, m, d, tz);
   const offsetSec = offset * 60;
   return {
     expr: `date(start_time + ${offsetSec}, 'unixepoch')`,
