@@ -662,12 +662,12 @@ export function PromptTemplateSection() {
                               className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent"
                             >
                               <div className="flex items-center gap-2">
-                                <code className="shrink-0 rounded bg-secondary px-1 py-0.5 font-mono text-[10px]">
+                                <code className="shrink-0 rounded bg-secondary px-1 py-0.5 font-mono text-micro">
                                   {`{{${v.key}}}`}
                                 </code>
                                 <span className="text-foreground">{v.description}</span>
                               </div>
-                              <span className="whitespace-pre-wrap pl-1 text-[10px] text-muted-foreground">
+                              <span className="whitespace-pre-wrap pl-1 text-micro text-muted-foreground">
                                 e.g. {v.example}
                               </span>
                             </button>

@@ -4,10 +4,17 @@ import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const Inter = googleFonts.Inter;
+const DM_Sans = googleFonts.DM_Sans;
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -41,7 +48,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${inter.variable} ${dmSans.variable} antialiased`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

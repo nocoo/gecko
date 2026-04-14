@@ -244,7 +244,7 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
           Model Details
         </h3>
         {ai.cached && (
-          <span className="ml-auto text-[11px] font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
+          <span className="ml-auto text-xs font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
             Cached
           </span>
         )}
@@ -290,7 +290,7 @@ function PromptCard({
         <h3 className="text-sm font-normal text-muted-foreground">
           Prompt
         </h3>
-        <span className="ml-auto text-[11px] font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
+        <span className="ml-auto text-xs font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
           {Math.round(prompt.length / 1000)}k chars
         </span>
         <ChevronDown
@@ -474,7 +474,7 @@ function AiAnalysisPanel({
                     <span className="text-xs font-medium text-muted-foreground font-display tracking-tight">
                       {seg.timeRange}
                     </span>
-                    <span className="text-[11px] font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="text-xs font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
                       {seg.label}
                     </span>
                   </div>
@@ -658,7 +658,7 @@ export function DailyReviewClient({ date }: { date: string }) {
         {/* Header: Date navigation */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-lg md:text-xl font-semibold">Daily Review</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">Daily Review</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               {hasData
                 ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`

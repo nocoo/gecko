@@ -304,7 +304,7 @@ export function Sidebar() {
                   <span className="text-lg font-bold tracking-tight">
                     Gecko
                   </span>
-                  <span className="rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground leading-none">
+                  <span className="rounded-md bg-secondary px-1.5 py-0.5 text-micro font-medium text-muted-foreground leading-none">
                     v{APP_VERSION}
                   </span>
                 </div>

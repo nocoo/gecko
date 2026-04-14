@@ -256,6 +256,11 @@
   font-family: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
 }
 
+@utility text-micro {
+  font-size: 0.625rem;
+  line-height: 1rem;
+}
+
 @utility stagger-1 {
   animation-delay: 0ms;
 }
