@@ -19,6 +19,13 @@ import { localDateToUTCEpoch, epochToDateStr } from "@/lib/timezone";
 import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 
 // ---------------------------------------------------------------------------
+// Layout constants
+// ---------------------------------------------------------------------------
+
+const LABEL_WIDTH = 110;
+const AXIS_HEIGHT = 20;
+
+// ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
@@ -170,8 +177,8 @@ export function GanttChart({
         <div className="min-w-[500px]">
           {/* Time axis (top) */}
           <div
-            className="relative mb-1 ml-[110px]"
-            style={{ height: 20 }}
+            className="relative mb-1"
+            style={{ height: AXIS_HEIGHT, marginLeft: LABEL_WIDTH }}
           >
             {ticks.map((t) => {
               const pct = ((t - xMin) / range) * 100;
@@ -191,7 +198,8 @@ export function GanttChart({
           <div className="relative">
             {/* Vertical grid lines */}
             <div
-              className="absolute inset-0 ml-[110px] pointer-events-none"
+              className="absolute inset-0 pointer-events-none"
+              style={{ marginLeft: LABEL_WIDTH }}
               aria-hidden="true"
             >
               {ticks.map((t) => {
@@ -220,7 +228,7 @@ export function GanttChart({
                   {/* App label */}
                   <div
                     className="shrink-0 text-xs text-muted-foreground truncate pr-2 text-right"
-                    style={{ width: 110 }}
+                    style={{ width: LABEL_WIDTH }}
                     title={`${row.appName} — ${formatDurationCompact(row.totalDuration)}`}
                   >
                     {row.appName}

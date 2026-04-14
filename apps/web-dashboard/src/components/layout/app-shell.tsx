@@ -48,7 +48,7 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
             className="fixed inset-0 z-40 bg-black/50 backdrop-blur-xs"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="fixed inset-y-0 left-0 z-50 w-[260px]">
+          <div className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)]">
             <Sidebar />
           </div>
         </>
@@ -91,7 +91,7 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
 
         {/* Floating island content area */}
         <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3">
-          <div className="h-full rounded-[16px] md:rounded-[20px] bg-card p-3 md:p-5 overflow-y-auto">
+          <div className="h-full rounded-card md:rounded-card bg-card p-3 md:p-5 overflow-y-auto">
             {children}
           </div>
         </div>

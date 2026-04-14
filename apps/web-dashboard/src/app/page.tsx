@@ -523,7 +523,7 @@ function TopAppsTable({
                 {/* Progress bar */}
                 <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className="h-full rounded-full transition-all"
+                    className="h-full rounded-full transition-[width]"
                     style={{
                       width: `${Math.max(pct, 1)}%`,
                       backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
