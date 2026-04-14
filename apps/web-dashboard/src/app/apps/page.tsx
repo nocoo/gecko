@@ -635,6 +635,8 @@ function AppRow({
   const tagPanelRef = useRef<HTMLDivElement>(null);
   const [newTagName, setNewTagName] = useState("");
   const [creatingTag, setCreatingTag] = useState(false);
+  const [focusedCatIdx, setFocusedCatIdx] = useState(-1);
+  const [focusedTagIdx, setFocusedTagIdx] = useState(-1);
 
   // Close category panel on outside click
   useEffect(() => {
@@ -734,6 +736,27 @@ function AppRow({
           <button
             type="button"
             onClick={onToggleCatExpand}
+            aria-expanded={isCatExpanded}
+            onKeyDown={(e) => {
+              if (!isCatExpanded) return;
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setFocusedCatIdx((i) => Math.min(i + 1, categories.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setFocusedCatIdx((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter" && focusedCatIdx >= 0) {
+                e.preventDefault();
+                const cat = categories[focusedCatIdx];
+                if (cat) onCategoryChange(cat.id);
+                onToggleCatExpand();
+                setFocusedCatIdx(-1);
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                onToggleCatExpand();
+                setFocusedCatIdx(-1);
+              }
+            }}
             className={cn(
               "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
               isCatExpanded
@@ -745,11 +768,13 @@ function AppRow({
             {selectedCategory ? "Change" : "Category"}
           </button>
           {isCatExpanded && (
-            <div className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md">
-              {categories.map((cat) => (
+            <div role="listbox" className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md">
+              {categories.map((cat, idx) => (
                 <button
                   key={cat.id}
                   type="button"
+                  role="option"
+                  aria-selected={effectiveCategoryId === cat.id}
                   onClick={() => {
                     onCategoryChange(cat.id);
                     onToggleCatExpand();
@@ -757,6 +782,7 @@ function AppRow({
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-secondary",
                     effectiveCategoryId === cat.id && "bg-primary/10",
+                    focusedCatIdx === idx && "bg-secondary",
                   )}
                 >
                   <CategoryPill
@@ -794,6 +820,25 @@ function AppRow({
           <button
             type="button"
             onClick={onToggleTagExpand}
+            aria-expanded={isTagExpanded}
+            onKeyDown={(e) => {
+              if (!isTagExpanded) return;
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                setFocusedTagIdx((i) => Math.min(i + 1, tags.length - 1));
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                setFocusedTagIdx((i) => Math.max(i - 1, 0));
+              } else if (e.key === "Enter" && focusedTagIdx >= 0) {
+                e.preventDefault();
+                const tag = tags[focusedTagIdx];
+                if (tag) onToggleTag(tag.id);
+              } else if (e.key === "Escape") {
+                e.preventDefault();
+                onToggleTagExpand();
+                setFocusedTagIdx(-1);
+              }
+            }}
             className={cn(
               "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
               isTagExpanded
@@ -807,19 +852,22 @@ function AppRow({
           {isTagExpanded && (
             <div className="absolute left-0 z-10 mt-1 min-w-[220px] rounded-lg border bg-popover p-2 shadow-md">
               {tags.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-2">
-                  {tags.map((tag) => {
+                <div role="listbox" className="flex flex-wrap gap-1.5 mb-2">
+                  {tags.map((tag, idx) => {
                     const isSelected = effectiveTagIds.has(tag.id);
                     return (
                       <button
                         key={tag.id}
                         type="button"
+                        role="option"
+                        aria-selected={isSelected}
                         onClick={() => onToggleTag(tag.id)}
                         className={cn(
                           "rounded-full transition-[box-shadow,opacity]",
                           isSelected
                             ? "ring-2 ring-primary/40"
                             : "opacity-50 hover:opacity-80",
+                          focusedTagIdx === idx && "ring-2 ring-foreground/40",
                         )}
                       >
                         <TagBadge name={tag.name} size="sm" />

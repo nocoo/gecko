@@ -136,6 +136,15 @@ function DateNavigator({
   const today = todayStr(timezone);
   const canGoForward = addDays(date, 1) <= today;
 
+  useEffect(() => {
+    if (!calendarOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setCalendarOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [calendarOpen]);
+
   return (
     <div className="flex items-center gap-2">
       <Button

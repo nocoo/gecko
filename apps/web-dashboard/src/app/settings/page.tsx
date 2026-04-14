@@ -382,13 +382,14 @@ function NotificationsSection() {
               <Sparkles className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
-              <Label className="text-sm font-medium">Auto-summarize</Label>
+              <Label htmlFor="auto-summarize" className="text-sm font-medium">Auto-summarize</Label>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Automatically generate AI summaries for your daily screen time.
               </p>
             </div>
           </div>
           <ToggleSwitch
+            id="auto-summarize"
             checked={settings.autoSummarize}
             onChange={(checked) => handleSave({ autoSummarize: checked })}
             disabled={saving}
@@ -405,13 +406,14 @@ function NotificationsSection() {
                 <Mail className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <Label className="text-sm font-medium">Email notifications</Label>
+                <Label htmlFor="email-notifications" className="text-sm font-medium">Email notifications</Label>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Receive daily analysis reports via email.
                 </p>
               </div>
             </div>
             <ToggleSwitch
+              id="email-notifications"
               checked={settings.emailEnabled}
               onChange={(checked) => handleSave({ emailEnabled: checked })}
               disabled={saving}
@@ -459,16 +461,19 @@ function NotificationsSection() {
 // =============================================================================
 
 function ToggleSwitch({
+  id,
   checked,
   onChange,
   disabled,
 }: {
+  id?: string;
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
 }) {
   return (
     <button
+      id={id}
       type="button"
       role="switch"
       aria-checked={checked}

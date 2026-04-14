@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
@@ -95,7 +96,7 @@ function LoginContent() {
                 }}
               />
               <div className="flex items-center gap-2">
-                <img
+                <Image
                   src="/logo-24.png"
                   alt="Gecko"
                   width={16}
@@ -124,7 +125,7 @@ function LoginContent() {
           <div className="flex flex-1 flex-col items-center px-6 pt-6 pb-14">
             {/* Logo */}
             <div className="h-24 w-24 overflow-hidden rounded-full bg-secondary dark:bg-background ring-1 ring-border p-2.5">
-              <img
+              <Image
                 src="/logo-80.png"
                 alt="Gecko"
                 width={80}
