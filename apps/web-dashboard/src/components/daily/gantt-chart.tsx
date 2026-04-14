@@ -15,6 +15,7 @@
 import { formatDurationCompact } from "@/lib/chart-config";
 import { withAlpha } from "@/lib/palette";
 import { getHashColor } from "@/lib/hash-color";
+import { useIsDark } from "@/hooks/use-dark";
 import { localDateToUTCEpoch, epochToDateStr } from "@/lib/timezone";
 import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 
@@ -65,6 +66,7 @@ export function buildGanttData(
   sessions: SessionForChart[],
   topApps: AppSummary[],
   tz: string,
+  isDark = false,
 ): { rows: GanttRow[]; dayStartMin: number; dayEndMin: number } {
   if (sessions.length === 0) {
     return { rows: [], dayStartMin: 0, dayEndMin: 0 };
@@ -98,7 +100,7 @@ export function buildGanttData(
 
   const rows: GanttRow[] = topApps.map((app) => {
     const appSessions = sessionsByApp.get(app.appName) ?? [];
-    const color = getHashColor(app.appName).fg;
+    const color = getHashColor(app.appName, isDark).fg;
 
     const segments: GanttSegment[] = appSessions.map((s) => ({
       appName: s.appName,
@@ -136,7 +138,8 @@ export function GanttChart({
   timezone,
   className = "",
 }: GanttChartProps) {
-  const { rows } = buildGanttData(sessions, topApps, timezone);
+  const isDark = useIsDark();
+  const { rows } = buildGanttData(sessions, topApps, timezone, isDark);
 
   if (rows.length === 0) {
     return (
@@ -211,7 +214,7 @@ export function GanttChart({
 
             {/* App rows */}
             {rows.map((row) => {
-              const color = getHashColor(row.appName).fg;
+              const color = getHashColor(row.appName, isDark).fg;
               return (
                 <div
                   key={row.appName}
