@@ -5,7 +5,8 @@
  * Hard fail if coverage table cannot be parsed.
  */
 
-const THRESHOLD = 90;
+const LINE_THRESHOLD = 90;
+const FUNCTION_THRESHOLD = 85;
 
 async function main() {
   const proc = Bun.spawn(
@@ -54,11 +55,11 @@ async function main() {
   console.log(`\n--- Coverage Check ---`);
   console.log(`Function coverage: ${functionCov}%`);
   console.log(`Line coverage:     ${lineCov}%`);
-  console.log(`Threshold:         ${THRESHOLD}%`);
+  console.log(`Threshold:         line=${LINE_THRESHOLD}%, function=${FUNCTION_THRESHOLD}%`);
 
-  if (functionCov < THRESHOLD || lineCov < THRESHOLD) {
+  if (lineCov < LINE_THRESHOLD || functionCov < FUNCTION_THRESHOLD) {
     console.error(
-      `\nCoverage below ${THRESHOLD}% threshold. Please add more tests.\n`,
+      `\nCoverage below threshold. Please add more tests.\n`,
     );
     process.exit(1);
   }

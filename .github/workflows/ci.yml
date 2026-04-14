@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  quality:
+    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026
+    with:
+      pre-command: "cd apps/web-dashboard && bun install --frozen-lockfile"
+      test-command: "bun run --cwd apps/web-dashboard test:coverage"
+      lint-command: "bun run --cwd apps/web-dashboard lint"
+      typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
+      enable-l2: "false"
+    secrets: inherit
