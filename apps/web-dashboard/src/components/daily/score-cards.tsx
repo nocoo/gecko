@@ -178,7 +178,7 @@ function DimensionCard({
         <span className="text-xs text-muted-foreground">
           {dimension.label}
         </span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-xs text-muted-foreground">
           {Math.round(dimension.weight * 100)}%
         </span>
       </div>
@@ -188,7 +188,7 @@ function DimensionCard({
         </span>
         <span className="text-xs text-muted-foreground">/ 100</span>
       </div>
-      <p className="mt-1.5 text-[11px] text-muted-foreground">
+      <p className="mt-1.5 text-xs text-muted-foreground">
         {dimension.description}
       </p>
     </div>

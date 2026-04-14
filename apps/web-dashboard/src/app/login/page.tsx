@@ -63,7 +63,7 @@ function LoginContent() {
           aria-label="GitHub repository"
           className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
         >
-          <Github className="h-[18px] w-[18px]" aria-hidden="true" strokeWidth={1.5} />
+          <Github className="size-5" aria-hidden="true" strokeWidth={1.5} />
         </a>
         <ThemeToggle />
       </div>
@@ -105,13 +105,13 @@ function LoginContent() {
                   Gecko
                 </span>
               </div>
-              <span className="text-[10px] font-medium uppercase tracking-widest text-primary-foreground/60">
+              <span className="text-micro font-medium uppercase tracking-widest text-primary-foreground/60">
                 v{APP_VERSION}
               </span>
             </div>
             {/* Barcode row */}
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-[9px] font-mono text-primary-foreground/40 tracking-wider">
+              <span className="text-micro font-mono text-primary-foreground/40 tracking-wider">
                 ID 2026-{today.slice(4)}
               </span>
               <div className="h-6">
@@ -182,7 +182,7 @@ function LoginContent() {
             </button>
 
             {/* Footer note */}
-            <p className="mt-3 text-center text-[10px] leading-relaxed text-muted-foreground/60">
+            <p className="mt-3 text-center text-micro leading-relaxed text-muted-foreground/60">
               Only authorized email addresses can access this application
             </p>
           </div>
@@ -191,7 +191,7 @@ function LoginContent() {
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center border-t border-border bg-secondary/50 py-2.5">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="text-[10px] text-muted-foreground font-mono">
+              <span className="text-micro text-muted-foreground font-mono">
                 Secure Connection
               </span>
             </div>
