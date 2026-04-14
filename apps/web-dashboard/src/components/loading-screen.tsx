@@ -5,7 +5,7 @@ export default function LoadingScreen() {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background animate-in fade-in duration-300">
       <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary dark:bg-[#171717] ring-1 ring-border overflow-hidden p-2">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary dark:bg-background ring-1 ring-border overflow-hidden p-2">
           <img
             src="/logo-24.png"
             alt="Gecko"

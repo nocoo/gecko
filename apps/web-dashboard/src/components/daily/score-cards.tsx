@@ -73,25 +73,25 @@ export function getScoreColor(score: number): {
 } {
   if (score > 70) {
     return {
-      text: "text-emerald-600 dark:text-emerald-400",
-      bg: "bg-emerald-50 dark:bg-emerald-950/30",
-      ring: "ring-emerald-200 dark:ring-emerald-800",
-      stroke: "#10b981",
+      text: "text-success",
+      bg: "bg-success/10",
+      ring: "ring-success/30",
+      stroke: "hsl(var(--success))",
     };
   }
   if (score >= 40) {
     return {
-      text: "text-amber-600 dark:text-amber-400",
-      bg: "bg-amber-50 dark:bg-amber-950/30",
-      ring: "ring-amber-200 dark:ring-amber-800",
-      stroke: "#f59e0b",
+      text: "text-warning",
+      bg: "bg-warning/10",
+      ring: "ring-warning/30",
+      stroke: "hsl(var(--warning))",
     };
   }
   return {
-    text: "text-red-600 dark:text-red-400",
-    bg: "bg-red-50 dark:bg-red-950/30",
-    ring: "ring-red-200 dark:ring-red-800",
-    stroke: "#ef4444",
+    text: "text-destructive",
+    bg: "bg-destructive/10",
+    ring: "ring-destructive/30",
+    stroke: "hsl(var(--destructive))",
   };
 }
 

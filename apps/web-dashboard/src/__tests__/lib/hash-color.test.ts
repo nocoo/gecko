@@ -63,21 +63,41 @@ describe("getHashColor", () => {
     expect(result.fg).toContain("hsl(0,");
   });
 
-  test("fg is a saturated mid-lightness color", () => {
+  // Light mode (default)
+  test("fg is a saturated mid-lightness color in light mode", () => {
     const { fg } = getHashColor("test");
-    // Should have saturation 65% and lightness 45%
     expect(fg).toMatch(/hsl\(\d+,\s*65%,\s*45%\)/);
   });
 
-  test("bg is a saturated high-lightness color", () => {
+  test("bg is a saturated high-lightness color in light mode", () => {
     const { bg } = getHashColor("test");
-    // Should have saturation 60% and lightness 92%
     expect(bg).toMatch(/hsl\(\d+,\s*60%,\s*92%\)/);
   });
 
-  test("bgSubtle is a very light desaturated color", () => {
+  test("bgSubtle is a very light desaturated color in light mode", () => {
     const { bgSubtle } = getHashColor("test");
-    // Should have saturation 40% and lightness 96%
     expect(bgSubtle).toMatch(/hsl\(\d+,\s*40%,\s*96%\)/);
+  });
+
+  // Dark mode
+  test("fg uses lower saturation and higher lightness in dark mode", () => {
+    const { fg } = getHashColor("test", true);
+    expect(fg).toMatch(/hsl\(\d+,\s*55%,\s*65%\)/);
+  });
+
+  test("bg uses low lightness in dark mode", () => {
+    const { bg } = getHashColor("test", true);
+    expect(bg).toMatch(/hsl\(\d+,\s*40%,\s*18%\)/);
+  });
+
+  test("bgSubtle uses very low lightness in dark mode", () => {
+    const { bgSubtle } = getHashColor("test", true);
+    expect(bgSubtle).toMatch(/hsl\(\d+,\s*30%,\s*14%\)/);
+  });
+
+  test("hue is the same regardless of isDark", () => {
+    const light = getHashColor("browser", false);
+    const dark = getHashColor("browser", true);
+    expect(light.hue).toBe(dark.hue);
   });
 });

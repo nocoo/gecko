@@ -26,6 +26,7 @@ import {
   type LucideProps,
 } from "lucide-react";
 import { getHashColor } from "@/lib/hash-color";
+import { useIsDark } from "@/hooks/use-dark";
 import { cn } from "@/lib/utils";
 import type { ComponentProps, FC } from "react";
 
@@ -86,7 +87,8 @@ export function CategoryPill({
   className,
   ...props
 }: CategoryPillProps) {
-  const { fg, bg } = getHashColor(colorKey ?? title);
+  const isDark = useIsDark();
+  const { fg, bg } = getHashColor(colorKey ?? title, isDark);
   const IconComponent = ICON_MAP[icon] ?? DEFAULT_ICON;
 
   return (

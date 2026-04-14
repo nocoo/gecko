@@ -429,7 +429,7 @@ function AiAnalysisPanel({
                   key={i}
                   className="flex items-start gap-2 text-sm text-foreground"
                 >
-                  <span className="text-emerald-500 mt-0.5 shrink-0">+</span>
+                  <span className="text-success mt-0.5 shrink-0">+</span>
                   <span>{h}</span>
                 </li>
               ))}
@@ -449,7 +449,7 @@ function AiAnalysisPanel({
                   key={i}
                   className="flex items-start gap-2 text-sm text-foreground"
                 >
-                  <span className="text-amber-500 mt-0.5 shrink-0">-</span>
+                  <span className="text-warning mt-0.5 shrink-0">-</span>
                   <span>{imp}</span>
                 </li>
               ))}

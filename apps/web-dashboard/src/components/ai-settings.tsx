@@ -411,7 +411,7 @@ export function AiSettingsSection() {
         </Button>
 
         {testStatus === "success" && (
-          <Badge variant="outline" className="text-xs text-green-600 border-green-600">
+          <Badge variant="outline" className="text-xs text-success border-success">
             <Check className="mr-1 h-3 w-3" />
             Connected
           </Badge>
