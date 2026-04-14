@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.8.3] - 2026-04-14
+
+### Web Dashboard
+
+#### Fixed
+- **Hardcoded colors replaced with design tokens**: `dark:bg-[#171717]` → `dark:bg-background`, `bg-black` overlays → `bg-zinc-950`, status indicators unified to `text-success`/`text-warning`/`text-destructive` tokens, score ring SVG strokes now use CSS variables
+- **Dark mode hash-color adaptation**: `getHashColor()` now accepts `isDark` parameter — dark mode uses lower saturation + higher lightness foreground, dark background. New `useIsDark` hook (via `useSyncExternalStore`) wired into tag-badge, category-pill, and gantt-chart
+- **DM Sans font loading**: Added Google Font import alongside Inter; `font-display` no longer silently falls back to system-ui
+- **Non-standard font sizes eliminated**: New `text-micro` utility (10px); all `text-[9px]`/`text-[10px]`/`text-[11px]` replaced with `text-micro` or `text-xs`; icon sizes normalized to `size-5`
+- **`transition-all` replaced with scoped transitions**: `transition-colors` (button), `transition-[stroke-dashoffset]` (score ring), `transition-[width]` (progress bar), `transition-[box-shadow,opacity]` (tag toggle)
+- **Magic numbers extracted**: Sidebar widths to `--sidebar-width`/`--sidebar-collapsed` CSS variables; Gantt chart `LABEL_WIDTH`/`AXIS_HEIGHT` constants; `--radius-card` updated to 16px with `rounded-card` token
+- **Keyboard navigation and ARIA**: Calendar popup closes on Escape; session rows have `aria-expanded`; category/tag dropdowns support ArrowUp/Down/Enter/Escape with `role="listbox"`/`role="option"`/`aria-selected`; ToggleSwitch labels properly associated via `id`/`htmlFor`
+- **`<img>` → `next/image`**: Login page and sidebar logos replaced with Next.js Image component for optimization
+
 ## [1.8.2] - 2026-04-10
 
 ### Mac App
