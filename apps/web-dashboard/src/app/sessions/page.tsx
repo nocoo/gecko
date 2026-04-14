@@ -245,6 +245,8 @@ function SessionRow({
       {/* Summary row */}
       <button
         onClick={onToggle}
+        aria-expanded={expanded}
+        aria-label={`Toggle details for ${session.appName}`}
         className="w-full flex items-center gap-3 p-3 text-left hover:bg-accent/50 transition-colors"
       >
         {/* App color dot */}
