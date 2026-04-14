@@ -147,7 +147,7 @@ function ScoreRing({
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={dashOffset}
-          className="transition-all duration-500"
+          className="transition-[stroke-dashoffset] duration-500"
         />
       </svg>
       <span

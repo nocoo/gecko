@@ -68,7 +68,7 @@
   --color-chart-10: hsl(var(--chart-10));
 
   /* Radius tokens */
-  --radius-card: 14px;
+  --radius-card: 16px;
   --radius-widget: 10px;
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -101,6 +101,10 @@
  * Primary: Green (#2d8553 → HSL 146 49% 35%)
  */
 :root {
+  /* Sidebar widths */
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 68px;
+
   /* L0 body */
   --background: 140 14% 94%;
   --foreground: 0 0% 12%;

@@ -816,7 +816,7 @@ function AppRow({
                         type="button"
                         onClick={() => onToggleTag(tag.id)}
                         className={cn(
-                          "rounded-full transition-all",
+                          "rounded-full transition-[box-shadow,opacity]",
                           isSelected
                             ? "ring-2 ring-primary/40"
                             : "opacity-50 hover:opacity-80",
