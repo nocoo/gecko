@@ -6,7 +6,7 @@
  * Color coding: <40 red, 40-70 amber, >70 green.
  *
  * Design: basalt L2 card (rounded-card bg-secondary), inner elements
- * step back to L1 (rounded-widget border border-border bg-card).
+ * step back to L1 (rounded-widget bg-card).
  */
 
 "use client";
@@ -173,7 +173,7 @@ function DimensionCard({
   const color = getScoreColor(score);
 
   return (
-    <div className="rounded-widget border border-border bg-card p-3">
+    <div className="rounded-widget bg-card p-3">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-muted-foreground">
           {dimension.label}

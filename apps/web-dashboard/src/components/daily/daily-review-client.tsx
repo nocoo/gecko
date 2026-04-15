@@ -253,7 +253,7 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex items-center gap-2 rounded-widget border border-border bg-card px-3 py-2"
+            className="flex items-center gap-2 rounded-widget bg-card px-3 py-2"
           >
             <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
             <div className="min-w-0">
@@ -302,7 +302,7 @@ function PromptCard({
       </button>
       {!collapsed && (
         <div className="px-4 pb-4 md:px-5 md:pb-5">
-          <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-widget border border-border bg-card p-3 font-mono">
+          <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-widget bg-card p-3 font-mono">
             {prompt}
           </pre>
         </div>
@@ -467,7 +467,7 @@ function AiAnalysisPanel({
               {ai.result.timeSegments.map((seg, i) => (
                 <div
                   key={i}
-                  className="rounded-widget border border-border bg-card px-3 py-2.5"
+                  className="rounded-widget bg-card px-3 py-2.5"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
