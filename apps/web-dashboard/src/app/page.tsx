@@ -348,7 +348,7 @@ function DailyTooltip({
   const data = entry.payload;
 
   return (
-    <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
+    <div className="rounded-[var(--radius-widget)] bg-secondary px-3 py-2 text-sm">
       <p className="font-medium">{data.label}</p>
       <p className="text-muted-foreground">
         {formatDuration(data.duration)} &middot; {data.sessions} sessions
@@ -450,7 +450,7 @@ function DonutTooltip({
   const pct = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0";
 
   return (
-    <div className="rounded-md border bg-popover px-3 py-2 text-sm shadow-md">
+    <div className="rounded-[var(--radius-widget)] bg-secondary px-3 py-2 text-sm">
       <p className="font-medium">{data.name}</p>
       <p className="text-muted-foreground">
         {formatDuration(data.value)} ({pct}%)
