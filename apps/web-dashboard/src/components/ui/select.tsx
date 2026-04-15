@@ -13,7 +13,7 @@ function Select({
       <select
         data-slot="select"
         className={cn(
-          "flex h-10 w-full appearance-none rounded-md border border-input bg-input px-3 pr-9 py-1.5 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          "flex h-10 w-full appearance-none rounded-md border border-border bg-secondary px-3 pr-9 py-1.5 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-transparent disabled:text-muted-foreground/38 md:text-sm",
           className,
         )}
         {...props}
