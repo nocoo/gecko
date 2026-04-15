@@ -863,7 +863,7 @@ function AppRow({
         {isNoteExpanded ? (
           <div className="flex items-start gap-2 w-full">
             <textarea
-              className="flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring resize-none"
+              className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring resize-none"
               rows={2}
               placeholder="Add a note (e.g. 'Work email client', 'Personal project')..."
               value={effectiveNote}
