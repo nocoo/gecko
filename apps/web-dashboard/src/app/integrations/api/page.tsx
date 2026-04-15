@@ -350,7 +350,7 @@ function ApiKeysSection({
           ))}
         </div>
       ) : keys.length === 0 ? (
-        <div className="rounded-xl border border-dashed py-8 text-center">
+        <div className="rounded-[var(--radius-card)] bg-secondary py-8 text-center">
           <p className="text-sm text-muted-foreground">
             No API keys yet. Create one to get started.
           </p>
