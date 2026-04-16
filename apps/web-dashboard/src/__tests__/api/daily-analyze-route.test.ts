@@ -303,4 +303,160 @@ describe("POST /api/daily/[date]/analyze", () => {
     const sessionQuery = calls.find((c) => c.sql.includes("focus_sessions"));
     expect(sessionQuery).toBeDefined();
   });
+
+  test("returns 502 for parse_error from runAnalysis", async () => {
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: "not valid json at all",
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+    });
+
+    mockD1([
+      // 1. getUserTimezone
+      [tzRow],
+      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
+      [],
+      // 3. settingsRepo.findByUserId — AI settings
+      aiSettingsRows,
+      // 4. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+      ],
+      // 5-7. loadAppContext
+      [], [], [],
+    ]);
+
+    const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
+    expect(res.status).toBe(502);
+
+    const data = await res.json();
+    expect(data.error).toContain("Failed to parse AI response");
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns 504 for AI timeout error", async () => {
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => {
+      throw new DOMException("The operation was aborted.", "TimeoutError");
+    };
+
+    mockD1([
+      // 1. getUserTimezone
+      [tzRow],
+      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
+      [],
+      // 3. settingsRepo.findByUserId — AI settings
+      aiSettingsRows,
+      // 4. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+      ],
+      // 5-7. loadAppContext
+      [], [], [],
+    ]);
+
+    const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
+    expect(res.status).toBe(504);
+
+    const data = await res.json();
+    expect(data.error).toContain("timed out");
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns success with email notification on manual analyze", async () => {
+    const validResult = {
+      score: 72,
+      highlights: ["Good focus"],
+      improvements: ["Take breaks"],
+      timeSegments: [{ timeRange: "09:00-11:00", label: "Dev", description: "Coding" }],
+      summary: "Good day.",
+    };
+
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+    });
+
+    mockD1([
+      // 1. getUserTimezone
+      [tzRow],
+      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
+      [],
+      // 3. settingsRepo.findByUserId — AI settings
+      aiSettingsRows,
+      // 4. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+      ],
+      // 5-7. loadAppContext
+      [], [], [],
+      // 8. dailySummaryRepo.upsertAiResult (cache write)
+      [],
+      // 9. settingsRepo.findByKey (notification.email.onManualAnalyze) — enabled
+      [{ user_id: "e2e-test-user", key: "notification.email.onManualAnalyze", value: "true", updated_at: Date.now() }],
+      // 10. sendAnalysisEmail will make D1 calls — provide empty responses
+      [], [], [],
+    ]);
+
+    const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.cached).toBe(false);
+    expect(data.score).toBe(72);
+    expect(data.result.summary).toBe("Good day.");
+    expect(data.provider).toBe("anthropic");
+    expect(data.usage).toBeDefined();
+    expect(data.durationMs).toBeDefined();
+    expect(data.prompt).toBeDefined();
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns success without email when notification not enabled", async () => {
+    const validResult = {
+      score: 85,
+      highlights: ["Productive day"],
+      improvements: ["Drink water"],
+      timeSegments: [],
+      summary: "Great day.",
+    };
+
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },
+    });
+
+    mockD1([
+      // 1. getUserTimezone
+      [tzRow],
+      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
+      [],
+      // 3. settingsRepo.findByUserId — AI settings
+      aiSettingsRows,
+      // 4. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+      ],
+      // 5-7. loadAppContext
+      [], [], [],
+      // 8. dailySummaryRepo.upsertAiResult
+      [],
+      // 9. settingsRepo.findByKey — not enabled
+      [],
+    ]);
+
+    const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.cached).toBe(false);
+    expect(data.score).toBe(85);
+
+    __testOverrides.generateText = null;
+  });
 });

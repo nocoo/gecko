@@ -336,6 +336,212 @@ describe("runAnalysis", () => {
     }
   });
 
+  test("returns no_ai_config when resolveAiConfig throws", async () => {
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.resolveAiConfig = () => {
+      throw new Error("Unsupported provider: badprovider");
+    };
+
+    mockD1([
+      // loadAiSettings — has provider+apiKey so we pass the first check
+      [
+        { user_id: "u1", key: "ai.provider", value: "badprovider", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "some-model", updated_at: 100 },
+      ],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("no_ai_config");
+      expect(result.message).toContain("Unsupported provider");
+    }
+
+    __testOverrides.resolveAiConfig = null;
+  });
+
+  test("returns parse_error when AI response is unparseable", async () => {
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: "This is not valid JSON at all",
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+    });
+
+    mockD1([
+      // 1. loadAiSettings
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
+      ],
+      // 2. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      // 3-5. loadAppContext
+      [], [], [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("parse_error");
+    }
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns success and caches result on valid AI response", async () => {
+    const validResult = {
+      score: 72,
+      highlights: ["Good focus"],
+      improvements: ["Take breaks"],
+      timeSegments: [{ timeRange: "09:00-11:00", label: "Dev", description: "Coding" }],
+      summary: "Good day.",
+    };
+
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
+    });
+
+    const { calls } = mockD1([
+      // 1. loadAiSettings
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
+      ],
+      // 2. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      // 3-5. loadAppContext
+      [], [], [],
+      // 6. dailySummaryRepo.upsertAiResult
+      [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.score).toBe(72);
+      expect(result.model).toBe("claude-sonnet-4-20250514");
+      expect(result.provider).toBe("anthropic");
+      expect(result.result.summary).toBe("Good day.");
+      expect(result.usage!.totalTokens).toBe(300);
+      expect(typeof result.durationMs).toBe("number");
+    }
+
+    // Verify cache write happened
+    const upsertQuery = calls.find((c) => c.sql.includes("INSERT") || c.sql.includes("REPLACE"));
+    expect(upsertQuery).toBeDefined();
+
+    __testOverrides.generateText = null;
+  });
+
+  test("succeeds even when cache upsert fails (non-fatal)", async () => {
+    const validResult = {
+      score: 80,
+      highlights: ["Productive"],
+      improvements: ["Rest more"],
+      timeSegments: [],
+      summary: "Solid day.",
+    };
+
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+    });
+
+    // D1 mock: upsert call will fail
+    let callIndex = 0;
+    const responses: unknown[][] = [
+      // 1. loadAiSettings
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
+      ],
+      // 2. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      // 3-5. loadAppContext
+      [], [], [],
+    ];
+
+    globalThis.fetch = mock((_url: string, init: RequestInit) => {
+      let body: Record<string, unknown>;
+      try { body = JSON.parse(init.body as string); } catch {
+        return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
+      }
+      if (!body.sql) {
+        return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
+      }
+
+      const results = responses[callIndex] ?? [];
+      callIndex++;
+
+      // 6th call is the upsert — make it fail
+      if (callIndex > responses.length) {
+        return Promise.resolve(new Response(JSON.stringify({ error: "D1 write failed" }), { status: 500 }));
+      }
+
+      return Promise.resolve(
+        new Response(JSON.stringify({
+          success: true,
+          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
+          errors: [],
+        }), { status: 200 }),
+      );
+    }) as unknown as typeof fetch;
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    // Should still succeed despite cache failure
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.score).toBe(80);
+    }
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns ai_error with timeout message for DOMException TimeoutError", async () => {
+    const { __testOverrides } = await import("../preload");
+    __testOverrides.generateText = async () => {
+      const err = new DOMException("The operation was aborted.", "TimeoutError");
+      throw err;
+    };
+
+    mockD1([
+      // 1. loadAiSettings
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
+      ],
+      // 2. fetchSessionsForDate
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      // 3-5. loadAppContext
+      [], [], [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("ai_error");
+      expect(result.message).toContain("timed out");
+    }
+
+    __testOverrides.generateText = null;
+  });
+
   test("returns ai_error when AI provider call fails", async () => {
     mockD1([
       // 1. loadAiSettings
