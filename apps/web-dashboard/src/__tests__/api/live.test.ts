@@ -1,43 +1,61 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test";
+import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // /api/live route handler tests (surety standard)
+// Mock globalThis.fetch (same pattern as data-queries.test.ts) to avoid
+// mock.module leak across test files.
 // ---------------------------------------------------------------------------
 
-// Mock the D1 module so tests don't need real DB credentials.
-const mockQuery = mock(() => Promise.resolve([{ probe: 1 }]));
-const mockGetD1Config = mock(() => ({
-  accountId: "test-account",
-  apiToken: "test-token",
-  databaseId: "test-db",
-}));
+const originalFetch = globalThis.fetch;
 
-mock.module("@/lib/d1", () => ({
-  query: mockQuery,
-  getD1Config: mockGetD1Config,
-}));
+beforeEach(() => {
+  process.env.CF_ACCOUNT_ID = "test-account";
+  process.env.CF_API_TOKEN = "test-token";
+  process.env.CF_D1_DATABASE_ID = "test-db";
+});
 
-// Fresh import per test to avoid module cache issues.
+afterEach(() => {
+  globalThis.fetch = originalFetch;
+  delete process.env.CF_ACCOUNT_ID;
+  delete process.env.CF_API_TOKEN;
+  delete process.env.CF_D1_DATABASE_ID;
+});
+
+/** Mock fetch to return a successful D1 probe response. */
+function mockD1Probe(success = true, error?: string) {
+  globalThis.fetch = mock(() => {
+    if (!success && error) {
+      return Promise.reject(new Error(error));
+    }
+    return Promise.resolve(
+      new Response(
+        JSON.stringify({
+          success: true,
+          result: [
+            {
+              results: [{ probe: 1 }],
+              success: true,
+              meta: { changes: 0, last_row_id: 0 },
+            },
+          ],
+          errors: [],
+        }),
+        { status: 200 }
+      )
+    );
+  }) as unknown as typeof fetch;
+}
+
 async function callGET() {
   const { GET } = await import("../../app/api/live/route");
   return GET();
 }
 
 describe("/api/live (surety standard)", () => {
-  beforeEach(() => {
-    mockQuery.mockReset();
-    mockQuery.mockImplementation(() => Promise.resolve([{ probe: 1 }]));
-    mockGetD1Config.mockReset();
-    mockGetD1Config.mockImplementation(() => ({
-      accountId: "test-account",
-      apiToken: "test-token",
-      databaseId: "test-db",
-    }));
-  });
-
   // --- Happy path ---
 
   test("returns 200 with all surety fields when healthy", async () => {
+    mockD1Probe();
     const res = await callGET();
     expect(res.status).toBe(200);
 
@@ -56,11 +74,13 @@ describe("/api/live (surety standard)", () => {
   });
 
   test("sets Cache-Control: no-store", async () => {
+    mockD1Probe();
     const res = await callGET();
     expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
 
   test("response has exactly the expected keys on success", async () => {
+    mockD1Probe();
     const res = await callGET();
     const data = await res.json();
     const keys = Object.keys(data).sort();
@@ -77,9 +97,10 @@ describe("/api/live (surety standard)", () => {
   // --- Database unhealthy ---
 
   test("returns 503 when DB probe fails", async () => {
-    mockQuery.mockImplementation(() => {
+    // Mock fetch to throw (simulates network / DB error)
+    globalThis.fetch = mock(() => {
       throw new Error("connection refused");
-    });
+    }) as unknown as typeof fetch;
 
     const res = await callGET();
     expect(res.status).toBe(503);
@@ -91,11 +112,10 @@ describe("/api/live (surety standard)", () => {
   });
 
   test("returns 503 when DB is not configured", async () => {
-    mockGetD1Config.mockImplementation(() => ({
-      accountId: "",
-      apiToken: "",
-      databaseId: "",
-    }));
+    // Clear env vars to simulate unconfigured DB
+    delete process.env.CF_ACCOUNT_ID;
+    delete process.env.CF_API_TOKEN;
+    delete process.env.CF_D1_DATABASE_ID;
 
     const res = await callGET();
     expect(res.status).toBe(503);
@@ -108,9 +128,9 @@ describe("/api/live (surety standard)", () => {
   // --- Error sanitisation ---
 
   test("sanitises 'ok' from DB error messages", async () => {
-    mockQuery.mockImplementation(() => {
+    globalThis.fetch = mock(() => {
       throw new Error("something ok happened");
-    });
+    }) as unknown as typeof fetch;
 
     const res = await callGET();
     const data = await res.json();
@@ -122,6 +142,7 @@ describe("/api/live (surety standard)", () => {
   // --- Catastrophic error branch ---
 
   test("catastrophic error returns 503 with reason", async () => {
+    mockD1Probe();
     const origJson = Response.json;
     let callCount = 0;
     Response.json = (...args: Parameters<typeof Response.json>) => {
