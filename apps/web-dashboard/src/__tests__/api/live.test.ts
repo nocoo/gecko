@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, mock, beforeEach } from "bun:test";
 
 // ---------------------------------------------------------------------------
 // /api/live route handler tests (surety standard)
