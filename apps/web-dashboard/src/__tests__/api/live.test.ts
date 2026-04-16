@@ -1,137 +1,148 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
 
 // ---------------------------------------------------------------------------
-// /api/live route handler tests
+// /api/live route handler tests (surety standard)
 // ---------------------------------------------------------------------------
 
-describe("/api/live", () => {
-  describe("GET /api/live", () => {
-    test("returns 200 with status ok", async () => {
-      const { GET } = await import("../../app/api/live/route");
+// Mock the D1 module so tests don't need real DB credentials.
+const mockQuery = mock(() => Promise.resolve([{ probe: 1 }]));
+const mockGetD1Config = mock(() => ({
+  accountId: "test-account",
+  apiToken: "test-token",
+  databaseId: "test-db",
+}));
 
-      const res = await GET();
-      expect(res.status).toBe(200);
+mock.module("@/lib/d1", () => ({
+  query: mockQuery,
+  getD1Config: mockGetD1Config,
+}));
 
+// Fresh import per test to avoid module cache issues.
+async function callGET() {
+  const { GET } = await import("../../app/api/live/route");
+  return GET();
+}
+
+describe("/api/live (surety standard)", () => {
+  beforeEach(() => {
+    mockQuery.mockReset();
+    mockQuery.mockImplementation(() => Promise.resolve([{ probe: 1 }]));
+    mockGetD1Config.mockReset();
+    mockGetD1Config.mockImplementation(() => ({
+      accountId: "test-account",
+      apiToken: "test-token",
+      databaseId: "test-db",
+    }));
+  });
+
+  // --- Happy path ---
+
+  test("returns 200 with all surety fields when healthy", async () => {
+    const res = await callGET();
+    expect(res.status).toBe(200);
+
+    const data = await res.json();
+    expect(data.status).toBe("ok");
+    expect(typeof data.version).toBe("string");
+    expect(data.version.length).toBeGreaterThan(0);
+    expect(data.component).toBe("gecko-dashboard");
+    expect(typeof data.uptime).toBe("number");
+    expect(data.uptime).toBeGreaterThanOrEqual(0);
+    expect(data.database).toEqual({ connected: true });
+
+    // Validate ISO 8601 timestamp
+    const parsed = new Date(data.timestamp).getTime();
+    expect(Number.isNaN(parsed)).toBe(false);
+  });
+
+  test("sets Cache-Control: no-store", async () => {
+    const res = await callGET();
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  test("response has exactly the expected keys on success", async () => {
+    const res = await callGET();
+    const data = await res.json();
+    const keys = Object.keys(data).sort();
+    expect(keys).toEqual([
+      "component",
+      "database",
+      "status",
+      "timestamp",
+      "uptime",
+      "version",
+    ]);
+  });
+
+  // --- Database unhealthy ---
+
+  test("returns 503 when DB probe fails", async () => {
+    mockQuery.mockImplementation(() => {
+      throw new Error("connection refused");
+    });
+
+    const res = await callGET();
+    expect(res.status).toBe(503);
+
+    const data = await res.json();
+    expect(data.status).toBe("error");
+    expect(data.database.connected).toBe(false);
+    expect(typeof data.database.error).toBe("string");
+  });
+
+  test("returns 503 when DB is not configured", async () => {
+    mockGetD1Config.mockImplementation(() => ({
+      accountId: "",
+      apiToken: "",
+      databaseId: "",
+    }));
+
+    const res = await callGET();
+    expect(res.status).toBe(503);
+
+    const data = await res.json();
+    expect(data.database.connected).toBe(false);
+    expect(data.database.error).toContain("not configured");
+  });
+
+  // --- Error sanitisation ---
+
+  test("sanitises 'ok' from DB error messages", async () => {
+    mockQuery.mockImplementation(() => {
+      throw new Error("something ok happened");
+    });
+
+    const res = await callGET();
+    const data = await res.json();
+
+    expect(data.database.error).not.toMatch(/\bok\b/i);
+    expect(data.database.error).toContain("***");
+  });
+
+  // --- Catastrophic error branch ---
+
+  test("catastrophic error returns 503 with reason", async () => {
+    const origJson = Response.json;
+    let callCount = 0;
+    Response.json = (...args: Parameters<typeof Response.json>) => {
+      callCount++;
+      if (callCount === 1) throw new Error("total failure");
+      return origJson.apply(Response, args);
+    };
+
+    try {
+      const res = await callGET();
+      expect(res.status).toBe(503);
       const data = await res.json();
-      expect(data.status).toBe("ok");
-    });
+      expect(data.status).toBe("error");
+      expect(data.reason).toBe("total failure");
+      expect(data.component).toBe("gecko-dashboard");
 
-    test("returns version string", async () => {
-      const { GET } = await import("../../app/api/live/route");
-
-      const res = await GET();
-      const data = await res.json();
-
-      expect(typeof data.version).toBe("string");
-      expect(data.version.length).toBeGreaterThan(0);
-    });
-
-    test("returns uptime as a non-negative number", async () => {
-      const { GET } = await import("../../app/api/live/route");
-
-      const res = await GET();
-      const data = await res.json();
-
-      expect(typeof data.uptime).toBe("number");
-      expect(data.uptime).toBeGreaterThanOrEqual(0);
-    });
-
-    test("returns ISO 8601 timestamp", async () => {
-      const { GET } = await import("../../app/api/live/route");
-
-      const res = await GET();
-      const data = await res.json();
-
-      expect(typeof data.timestamp).toBe("string");
-      // Validate it's a parseable ISO date
-      const parsed = new Date(data.timestamp).getTime();
-      expect(Number.isNaN(parsed)).toBe(false);
-    });
-
-    test("sets no-cache headers", async () => {
-      const { GET } = await import("../../app/api/live/route");
-
-      const res = await GET();
-      const cc = res.headers.get("Cache-Control");
-
-      expect(cc).toContain("no-store");
-      expect(cc).toContain("no-cache");
-      expect(cc).toContain("must-revalidate");
-    });
-
-    test("does not include 'ok' anywhere in error responses", async () => {
-      // This test validates requirement #4: error responses must never
-      // contain the word "ok" to avoid false positives from keyword monitors.
-      // Since the happy path is the only reachable branch (Date/JSON can't
-      // throw), we verify the contract by inspecting the error branch shape
-      // via a simulated error scenario.
-
-      // We can force an error by temporarily breaking Response.json
-      const origJson = Response.json;
-      let callCount = 0;
-      Response.json = (...args: Parameters<typeof Response.json>) => {
-        callCount++;
-        if (callCount === 1) {
-          // First call is the happy path — throw to enter catch block
-          throw new Error("simulated failure");
-        }
-        // Second call is the error path — let it through
-        return origJson.apply(Response, args);
-      };
-
-      try {
-        const { GET } = await import("../../app/api/live/route");
-        const res = await GET();
-
-        expect(res.status).toBe(503);
-        const data = await res.json();
-        expect(data.status).toBe("error");
-        expect(typeof data.reason).toBe("string");
-        expect(data.timestamp).toBeTruthy();
-
-        // The word "ok" must not appear anywhere in the error response
-        const raw = JSON.stringify(data).toLowerCase();
-        expect(raw).not.toContain('"ok"');
-      } finally {
-        Response.json = origJson;
-      }
-    });
-
-    test("error response includes reason and timestamp but no status ok", async () => {
-      const origJson = Response.json;
-      let callCount = 0;
-      Response.json = (...args: Parameters<typeof Response.json>) => {
-        callCount++;
-        if (callCount === 1) {
-          throw new Error("test error message");
-        }
-        return origJson.apply(Response, args);
-      };
-
-      try {
-        const { GET } = await import("../../app/api/live/route");
-        const res = await GET();
-
-        const data = await res.json();
-        expect(data.reason).toBe("test error message");
-        expect(data.status).not.toBe("ok");
-
-        // Validate no-cache on error responses too
-        const cc = res.headers.get("Cache-Control");
-        expect(cc).toContain("no-store");
-      } finally {
-        Response.json = origJson;
-      }
-    });
-
-    test("response body has exactly the expected keys on success", async () => {
-      const { GET } = await import("../../app/api/live/route");
-
-      const res = await GET();
-      const data = await res.json();
-      const keys = Object.keys(data).sort();
-
-      expect(keys).toEqual(["status", "timestamp", "uptime", "version"]);
-    });
+      // No "ok" in error response
+      const raw = JSON.stringify(data).toLowerCase();
+      expect(raw).not.toContain('"ok"');
+    } finally {
+      Response.json = origJson;
+    }
   });
 });
