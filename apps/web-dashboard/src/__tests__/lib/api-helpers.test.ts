@@ -116,6 +116,34 @@ describe("api-helpers", () => {
   });
 
   // ---------------------------------------------------------------------------
+  // requireSession() — non-E2E mode (mocked auth)
+  // ---------------------------------------------------------------------------
+
+  describe("requireSession() non-E2E", () => {
+    test("returns 401 when auth() returns null session", async () => {
+      delete process.env.E2E_SKIP_AUTH;
+      mock.module("@/auth", () => ({
+        auth: () => Promise.resolve(null),
+      }));
+      const { requireSession } = await import("../../lib/api-helpers");
+      const result = await requireSession();
+      expect(result.error).toBeDefined();
+      expect(result.error!.status).toBe(401);
+    });
+
+    test("returns userId when auth() returns valid session", async () => {
+      delete process.env.E2E_SKIP_AUTH;
+      mock.module("@/auth", () => ({
+        auth: () => Promise.resolve({ user: { id: "google-user-42" } }),
+      }));
+      const { requireSession } = await import("../../lib/api-helpers");
+      const result = await requireSession();
+      expect(result.user).toBeDefined();
+      expect(result.user!.userId).toBe("google-user-42");
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // requireApiKey() — E2E mode
   // ---------------------------------------------------------------------------
 

@@ -183,6 +183,22 @@ describe("/api/categories", () => {
       expect(res.status).toBe(400);
     });
 
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { POST } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
+
     test("defaults icon to folder when not provided", async () => {
       mockD1([[]]);
       const { POST } = await import("../../app/api/categories/route");
@@ -289,6 +305,56 @@ describe("/api/categories", () => {
       const res = await PUT(req);
       expect(res.status).toBe(404);
     });
+
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { PUT } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
+
+    test("returns 404 when category belongs to another user", async () => {
+      mockD1([
+        [{ id: "cat-1", user_id: "other-user", is_default: 0 }],
+      ]);
+      const { PUT } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "cat-1", title: "stolen" }),
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(404);
+    });
+
+    test("returns 400 when no fields to update", async () => {
+      mockD1([
+        [{ id: "cat-1", user_id: "e2e-test-user", is_default: 0 }],
+      ]);
+      const { PUT } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "cat-1" }),
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("No fields to update");
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -343,6 +409,52 @@ describe("/api/categories", () => {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "nonexistent" }),
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(404);
+    });
+
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { DELETE } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
+
+    test("returns 400 when id is missing", async () => {
+      mockD1();
+      const { DELETE } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(400);
+    });
+
+    test("returns 404 when category belongs to another user", async () => {
+      mockD1([
+        [{ id: "cat-1", user_id: "other-user", is_default: 0 }],
+      ]);
+      const { DELETE } = await import("../../app/api/categories/route");
+
+      const req = new Request("http://localhost/api/categories", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "cat-1" }),
       });
 
       const res = await DELETE(req);

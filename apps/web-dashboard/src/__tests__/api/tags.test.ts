@@ -121,6 +121,22 @@ describe("/api/tags", () => {
       const res = await POST(req);
       expect(res.status).toBe(400);
     });
+
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { POST } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await POST(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
   });
 
   describe("PUT /api/tags", () => {
@@ -171,6 +187,52 @@ describe("/api/tags", () => {
       const res = await PUT(req);
       expect(res.status).toBe(400);
     });
+
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { PUT } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
+
+    test("returns 400 when id is missing", async () => {
+      mockD1();
+      const { PUT } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: "x" }),
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(400);
+    });
+
+    test("returns 404 when tag belongs to another user", async () => {
+      mockD1([
+        [{ id: "tag-1", user_id: "other-user" }],
+      ]);
+      const { PUT } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "tag-1", name: "stolen" }),
+      });
+
+      const res = await PUT(req);
+      expect(res.status).toBe(404);
+    });
   });
 
   describe("DELETE /api/tags", () => {
@@ -203,6 +265,52 @@ describe("/api/tags", () => {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "nonexistent" }),
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(404);
+    });
+
+    test("returns 400 when body is not valid JSON", async () => {
+      mockD1();
+      const { DELETE } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: "not json",
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(400);
+      const data = await res.json();
+      expect(data.error).toContain("Invalid JSON body");
+    });
+
+    test("returns 400 when id is missing", async () => {
+      mockD1();
+      const { DELETE } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      const res = await DELETE(req);
+      expect(res.status).toBe(400);
+    });
+
+    test("returns 404 when tag belongs to another user", async () => {
+      mockD1([
+        [{ id: "tag-1", user_id: "other-user" }],
+      ]);
+      const { DELETE } = await import("../../app/api/tags/route");
+
+      const req = new Request("http://localhost/api/tags", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: "tag-1" }),
       });
 
       const res = await DELETE(req);
