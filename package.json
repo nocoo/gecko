@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "bun run --cwd apps/web-dashboard dev",
-    "prepare": "husky"
+    "prepare": "husky",
+    "release": "bun run scripts/release.ts"
   },
   "devDependencies": {
     "husky": "^9.1.7"
