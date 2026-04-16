@@ -105,4 +105,59 @@ describe("SCORE_DIMENSIONS", () => {
     expect(keys).toContain("switchRate");
     expect(keys).toContain("concentration");
   });
+
+  test("every dimension has a non-empty label and description", () => {
+    for (const dim of SCORE_DIMENSIONS) {
+      expect(dim.label.length).toBeGreaterThan(0);
+      expect(dim.description.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("every weight is between 0 and 1 exclusive", () => {
+    for (const dim of SCORE_DIMENSIONS) {
+      expect(dim.weight).toBeGreaterThan(0);
+      expect(dim.weight).toBeLessThan(1);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getScoreColor — additional boundary tests
+// ---------------------------------------------------------------------------
+
+describe("getScoreColor boundary", () => {
+  test("all return objects have required keys", () => {
+    for (const score of [0, 39, 40, 70, 71, 100]) {
+      const color = getScoreColor(score);
+      expect(color).toHaveProperty("text");
+      expect(color).toHaveProperty("bg");
+      expect(color).toHaveProperty("ring");
+      expect(color).toHaveProperty("stroke");
+    }
+  });
+
+  test("negative score returns red", () => {
+    const color = getScoreColor(-10);
+    expect(color.text).toContain("destructive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getScoreLabel — additional boundary tests
+// ---------------------------------------------------------------------------
+
+describe("getScoreLabel boundary", () => {
+  test("exact boundary at 85", () => {
+    expect(getScoreLabel(85)).toBe("Excellent");
+    expect(getScoreLabel(84)).toBe("Good");
+  });
+
+  test("exact boundary at 55", () => {
+    expect(getScoreLabel(55)).toBe("Fair");
+    expect(getScoreLabel(54)).toBe("Needs Work");
+  });
+
+  test("negative score returns Poor", () => {
+    expect(getScoreLabel(-5)).toBe("Poor");
+  });
 });

@@ -81,6 +81,19 @@ describe("formatTime", () => {
   test("formats 23:59", () => {
     expect(formatTime(1439)).toBe("23:59");
   });
+
+  test("formats exactly 24:00 (1440 min)", () => {
+    expect(formatTime(1440)).toBe("24:00");
+  });
+
+  test("formats fractional minutes by flooring", () => {
+    expect(formatTime(570.9)).toBe("09:30");
+  });
+
+  test("formats single-digit hours and minutes with padding", () => {
+    expect(formatTime(61)).toBe("01:01");
+    expect(formatTime(5)).toBe("00:05");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -259,5 +272,31 @@ describe("buildGanttData", () => {
     expect(left).toBe(0);
     expect(width).toBeCloseTo(5.26, 1);
     expect(left + width).toBeLessThanOrEqual(100);
+  });
+
+  test("isDark parameter affects segment colors", () => {
+    const light = buildGanttData(sessions, topApps, TZ, false);
+    const dark = buildGanttData(sessions, topApps, TZ, true);
+    // Colors should differ between light and dark mode
+    const lightColor = light.rows[0]!.segments[0]!.color;
+    const darkColor = dark.rows[0]!.segments[0]!.color;
+    expect(lightColor).not.toBe(darkColor);
+  });
+
+  test("app not in topApps produces empty segments row", () => {
+    const extraApp: AppSummary[] = [
+      ...topApps,
+      { appName: "Unknown", bundleId: null, totalDuration: 0, sessionCount: 0 },
+    ];
+    const { rows } = buildGanttData(sessions, extraApp, TZ);
+    const unknown = rows.find((r) => r.appName === "Unknown")!;
+    expect(unknown.segments).toHaveLength(0);
+  });
+
+  test("segments preserve windowTitle from sessions", () => {
+    const { rows } = buildGanttData(sessions, topApps, TZ);
+    const vscode = rows[0]!;
+    expect(vscode.segments[0]!.windowTitle).toBe("main.ts");
+    expect(vscode.segments[1]!.windowTitle).toBe("utils.ts");
   });
 });

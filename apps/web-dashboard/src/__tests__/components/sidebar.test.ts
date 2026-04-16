@@ -117,5 +117,52 @@ describe("sidebar navigation", () => {
       expect(isActive("/settings/tags", "/settings", true)).toBe(false);
       expect(isActive("/settings/categories", "/settings", true)).toBe(false);
     });
+
+    it("exact mode on root: matches only /", () => {
+      expect(isActive("/", "/", true)).toBe(true);
+      expect(isActive("/anything", "/", true)).toBe(false);
+    });
+
+    it("handles deeply nested child paths", () => {
+      expect(isActive("/settings/ai/models/gpt", "/settings")).toBe(true);
+      expect(isActive("/integrations/api/keys", "/integrations/api")).toBe(true);
+    });
+
+    it("does not match sibling routes with shared prefix", () => {
+      expect(isActive("/apps", "/apps")).toBe(true);
+      expect(isActive("/apps-extra", "/apps")).toBe(false);
+    });
+
+    it("returns false for empty pathname", () => {
+      expect(isActive("", "/settings")).toBe(false);
+    });
+  });
+
+  describe("navGroups structure", () => {
+    it("every group has a non-empty label", () => {
+      for (const group of navGroups) {
+        expect(group.label.length).toBeGreaterThan(0);
+      }
+    });
+
+    it("every item has a unique label within its group", () => {
+      for (const group of navGroups) {
+        const labels = group.items.map((i) => i.label);
+        expect(new Set(labels).size).toBe(labels.length);
+      }
+    });
+
+    it("General settings uses exact matching", () => {
+      const settingsGroup = navGroups.find((g) => g.label === "Settings")!;
+      const general = settingsGroup.items.find((i) => i.label === "General")!;
+      expect(general.exact).toBe(true);
+    });
+
+    it("non-exact items do not have exact flag", () => {
+      const nonExactItems = allNavItems.filter((i) => !i.exact);
+      for (const item of nonExactItems) {
+        expect(item.exact).toBeUndefined();
+      }
+    });
   });
 });
