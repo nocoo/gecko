@@ -7,6 +7,10 @@
 import { describe, test, expect, mock } from "bun:test";
 import {
   createAutoAnalyze,
+  getAutoAnalyze,
+  resetAutoAnalyze,
+  ensureAutoAnalyze,
+  resetEnsureAutoAnalyze,
   type AutoAnalyzeDeps,
 } from "@/lib/auto-analyze";
 import type { AnalysisOutcome } from "@/services/analyze-core";
@@ -360,5 +364,39 @@ describe("getRunningTasks()", () => {
     // Cleanup
     resolveAnalysis!({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats });
     await new Promise((r) => setTimeout(r, 10));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Singleton & wiring (getAutoAnalyze, resetAutoAnalyze, ensureAutoAnalyze)
+// ---------------------------------------------------------------------------
+
+describe("singleton management", () => {
+  test("getAutoAnalyze returns same instance on repeated calls", () => {
+    resetAutoAnalyze();
+    const a = getAutoAnalyze();
+    const b = getAutoAnalyze();
+    expect(a).toBe(b);
+    resetAutoAnalyze();
+  });
+
+  test("resetAutoAnalyze clears singleton so next call creates new instance", () => {
+    resetAutoAnalyze();
+    const a = getAutoAnalyze();
+    resetAutoAnalyze();
+    const b = getAutoAnalyze();
+    expect(a).not.toBe(b);
+    resetAutoAnalyze();
+  });
+
+  test("ensureAutoAnalyze is idempotent (only wires once)", () => {
+    resetEnsureAutoAnalyze();
+    resetAutoAnalyze();
+    // First call wires up
+    ensureAutoAnalyze();
+    // Second call is a no-op (no error)
+    ensureAutoAnalyze();
+    resetEnsureAutoAnalyze();
+    resetAutoAnalyze();
   });
 });
