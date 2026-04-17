@@ -6,9 +6,15 @@
     "dev": "bun run --cwd apps/web-dashboard dev",
     "prepare": "husky",
     "release": "bun run scripts/release.ts",
-    "typecheck": "tsc --noEmit -p apps/web-dashboard/tsconfig.json"
+    "typecheck": "tsc --noEmit -p apps/web-dashboard/tsconfig.json",
+    "lint": "cd apps/web-dashboard && eslint --max-warnings 0"
   },
   "devDependencies": {
     "husky": "^9.1.7"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --max-warnings 0"
+    ]
   }
 }
