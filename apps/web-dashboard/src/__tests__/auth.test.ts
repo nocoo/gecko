@@ -4,11 +4,11 @@ import { describe, test, expect, mock } from "bun:test";
 // Capture NextAuth callbacks for direct testing
 // ---------------------------------------------------------------------------
 
-let capturedCallbacks: Record<string, Function> = {};
+let capturedCallbacks: Record<string, (...args: unknown[]) => unknown> = {};
 
 mock.module("next-auth", () => ({
   default: (config: Record<string, unknown>) => {
-    capturedCallbacks = (config.callbacks ?? {}) as Record<string, Function>;
+    capturedCallbacks = (config.callbacks ?? {}) as Record<string, (...args: unknown[]) => unknown>;
     return { handlers: {}, signIn: () => {}, signOut: () => {}, auth: () => null };
   },
 }));
@@ -315,7 +315,7 @@ describe("auth", () => {
       const token = { sub: "random-sub" } as Record<string, unknown>;
       const user = { id: "random-id", email: "a@b.com", name: "A", image: "http://img" };
       const account = { providerAccountId: "stable-123" };
-      const result = await capturedCallbacks.jwt!({ token, user, account });
+      const result = (await capturedCallbacks.jwt!({ token, user, account })) as Record<string, unknown>;
       expect(result.id).toBe("stable-123");
       expect(result.email).toBe("a@b.com");
       expect(result.name).toBe("A");
@@ -326,14 +326,14 @@ describe("auth", () => {
       await import("@/auth");
       const token = { sub: "fallback" } as Record<string, unknown>;
       const user = { id: "x", email: "a@b.com", name: "A", image: "http://img" };
-      const result = await capturedCallbacks.jwt!({ token, user, account: undefined });
+      const result = (await capturedCallbacks.jwt!({ token, user, account: undefined })) as Record<string, unknown>;
       expect(result.id).toBe("fallback");
     });
 
     test("jwt callback preserves token when no user (subsequent calls)", async () => {
       await import("@/auth");
       const token = { sub: "s", id: "existing", email: "a@b.com" } as Record<string, unknown>;
-      const result = await capturedCallbacks.jwt!({ token });
+      const result = (await capturedCallbacks.jwt!({ token })) as Record<string, unknown>;
       expect(result.id).toBe("existing");
     });
 
@@ -341,7 +341,7 @@ describe("auth", () => {
       await import("@/auth");
       const session = { user: { id: undefined as string | undefined } };
       const token = { id: "u123" };
-      const result = await capturedCallbacks.session!({ session, token });
+      const result = (await capturedCallbacks.session!({ session, token })) as { user: { id?: string } };
       expect(result.user.id).toBe("u123");
     });
 
@@ -349,7 +349,7 @@ describe("auth", () => {
       await import("@/auth");
       const session = { user: {} };
       const token = {};
-      const result = await capturedCallbacks.session!({ session, token });
+      const result = (await capturedCallbacks.session!({ session, token })) as { user: { id?: string } };
       expect(result.user.id).toBeUndefined();
     });
   });
