@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun run --cwd apps/web-dashboard dev",
     "prepare": "husky",
-    "release": "bun run scripts/release.ts"
+    "release": "bun run scripts/release.ts",
+    "typecheck": "tsc --noEmit -p apps/web-dashboard/tsconfig.json"
   },
   "devDependencies": {
     "husky": "^9.1.7"
