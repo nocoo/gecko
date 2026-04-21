@@ -228,7 +228,7 @@ function PeriodSelector({
           onClick={() => onChange(p.value)}
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
             value === p.value
-              ? "bg-card text-foreground shadow-sm"
+              ? "bg-secondary text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"
           }`}
         >

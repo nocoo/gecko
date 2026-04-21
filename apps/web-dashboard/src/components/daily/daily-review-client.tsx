@@ -253,7 +253,7 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
           Model Details
         </h3>
         {ai.cached && (
-          <span className="ml-auto text-xs font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
+          <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
             Cached
           </span>
         )}
@@ -262,7 +262,7 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex items-center gap-2 rounded-widget bg-card px-3 py-2"
+            className="flex items-center gap-2 rounded-widget bg-secondary px-3 py-2"
           >
             <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
             <div className="min-w-0">
@@ -299,7 +299,7 @@ function PromptCard({
         <h3 className="text-sm font-normal text-muted-foreground">
           Prompt
         </h3>
-        <span className="ml-auto text-xs font-medium text-muted-foreground bg-card px-2 py-0.5 rounded-widget">
+        <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
           {Math.round(prompt.length / 1000)}k chars
         </span>
         <ChevronDown
@@ -311,7 +311,7 @@ function PromptCard({
       </button>
       {!collapsed && (
         <div className="px-4 pb-4 md:px-5 md:pb-5">
-          <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-widget bg-card p-3 font-mono">
+          <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-widget bg-secondary p-3 font-mono">
             {prompt}
           </pre>
         </div>
@@ -476,7 +476,7 @@ function AiAnalysisPanel({
               {ai.result.timeSegments.map((seg, i) => (
                 <div
                   key={i}
-                  className="rounded-widget bg-card px-3 py-2.5"
+                  className="rounded-widget bg-secondary px-3 py-2.5"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
@@ -502,7 +502,7 @@ function AiAnalysisPanel({
             <h4 className="text-xs text-muted-foreground mb-2">
               Summary
             </h4>
-            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-card [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
+            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
               <Markdown>{ai.result.summary}</Markdown>
             </div>
           </div>

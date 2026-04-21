@@ -173,7 +173,7 @@ function DimensionCard({
   const color = getScoreColor(score);
 
   return (
-    <div className="rounded-widget bg-card p-3">
+    <div className="rounded-widget bg-secondary p-3">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs text-muted-foreground">
           {dimension.label}
