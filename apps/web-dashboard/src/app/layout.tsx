@@ -21,10 +21,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXTAUTH_URL ?? "http://localhost:3000",
   ),
-  title: "gecko - 屏幕时间追踪面板",
+  title: "gecko - Screen Time Dashboard",
   description: "Personal screen time tracking and focus analytics",
   openGraph: {
-    title: "gecko - 屏幕时间追踪面板",
+    title: "gecko - Screen Time Dashboard",
     description: "Personal screen time tracking and focus analytics",
     type: "website",
     // opengraph-image.png in src/app/ is auto-discovered by Next.js
