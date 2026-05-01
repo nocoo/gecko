@@ -498,3 +498,84 @@ describe("computeDailyStats", () => {
     expect(stats.scores.overall).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Branch coverage: switchRate ladder & zero activeSpan
+// ---------------------------------------------------------------------------
+
+describe("computeScores branch coverage", () => {
+  test("switch rate: 8 < x ≤ 15 switches/h yields 60", () => {
+    // 12 deep switches in ~1h → 12/h → 60
+    const sessions: SessionRow[] = [];
+    for (let i = 0; i < 13; i++) {
+      sessions.push(
+        session({ appName: `App${i}`, startTime: i * 300, duration: 300 }),
+      );
+    }
+    const scores = computeScores(sessions);
+    // 12 switches in ~1.08h ≈ 11/h → 60
+    expect(scores.switchRate).toBe(60);
+  });
+
+  test("switch rate: 15 < x ≤ 25 switches/h yields 40", () => {
+    // 22 deep switches in ~1.1h → 20/h → 40
+    const sessions: SessionRow[] = [];
+    for (let i = 0; i < 23; i++) {
+      sessions.push(
+        session({ appName: `App${i}`, startTime: i * 180, duration: 300 }),
+      );
+    }
+    const scores = computeScores(sessions);
+    expect(scores.switchRate).toBe(40);
+  });
+
+  test("switch rate: > 25 switches/h yields 20", () => {
+    // 35 deep switches in ~0.5h → 70/h → 20
+    const sessions: SessionRow[] = [];
+    for (let i = 0; i < 36; i++) {
+      sessions.push(
+        session({ appName: `App${i}`, startTime: i * 50, duration: 300 }),
+      );
+    }
+    const scores = computeScores(sessions);
+    expect(scores.switchRate).toBe(20);
+  });
+
+  test("zero activeSpan (single zero-duration session) yields focus=0", () => {
+    const sessions = [
+      session({ appName: "A", startTime: 1000, duration: 0 }),
+    ];
+    const scores = computeScores(sessions);
+    expect(scores.focus).toBe(0);
+    // switchesPerHour falls into the activeHours <= 0 branch
+    expect(scores.switchRate).toBe(100);
+  });
+
+  test("zero totalDuration yields concentration=0", () => {
+    // Multiple zero-duration sessions at same timestamp
+    const sessions = [
+      session({ appName: "A", startTime: 1000, duration: 0 }),
+      session({ appName: "B", startTime: 1000, duration: 0 }),
+    ];
+    const scores = computeScores(sessions);
+    expect(scores.concentration).toBe(0);
+  });
+
+  test("isDevWorkflowUrl: invalid URL string is treated as non-dev", () => {
+    // URL constructor throws → caught → returns false (not a dev URL)
+    const sessions = [
+      session({ appName: "VSCode", startTime: 0, duration: 600 }),
+      session({
+        appName: "Chrome",
+        url: "not a valid url",
+        startTime: 600,
+        duration: 600,
+      }),
+      session({ appName: "VSCode", startTime: 1200, duration: 600 }),
+    ];
+    const scores = computeScores(sessions);
+    // Invalid URL → not dev workflow → switches counted
+    // 2 switches in 30min = 4/h → 100 (still in ≤4 band)
+    expect(scores.switchRate).toBe(100);
+  });
+});

@@ -32,13 +32,7 @@ export function getDateBoundsEpoch(
 
   // Compute next day's date string, then get its midnight epoch
   const parts = dateStr.split("-").map(Number);
-  const y = parts[0];
-  const m = parts[1];
-  const d = parts[2];
-  /* v8 ignore next 3 */
-  if (y === undefined || m === undefined || d === undefined) {
-    throw new Error(`Invalid date string: ${dateStr}`);
-  }
+  const [y, m, d] = parts as [number, number, number];
   const nextDay = new Date(Date.UTC(y, m - 1, d + 1));
   const nextDateStr = formatDateParts(
     nextDay.getUTCFullYear(),
@@ -68,13 +62,7 @@ export function getDateBoundsEpoch(
 export function localDateToUTCEpoch(dateStr: string, tz: string): number {
   // Parse date parts
   const parts = dateStr.split("-").map(Number);
-  const year = parts[0];
-  const month = parts[1];
-  const day = parts[2];
-  /* v8 ignore next 3 */
-  if (year === undefined || month === undefined || day === undefined) {
-    throw new Error(`Invalid date string: ${dateStr}`);
-  }
+  const [year, month, day] = parts as [number, number, number];
 
   // First estimate: probe offset using noon on the same date (safe from DST gaps)
   const noonOffset = getTimezoneOffsetMinutes(year, month, day, tz, 12);
@@ -109,16 +97,14 @@ function offsetAtEpoch(epochSec: number, tz: string): number {
     hour12: false,
   });
   const parts = fmt.formatToParts(new Date(ms));
+  // Intl.DateTimeFormat always emits every requested field — assert non-null.
   const get = (type: string) =>
-    // Intl.DateTimeFormat always emits every requested field — the `?? "0"`
-    // fallback exists only to satisfy TS noUncheckedIndexedAccess.
-    /* v8 ignore next */
-    parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    parseInt(parts.find((p) => p.type === type)!.value, 10);
 
   const lY = get("year"), lM = get("month"), lD = get("day");
-  let lH = get("hour");
-  /* v8 ignore next */
-  if (lH === 24) lH = 0;
+  // Intl may return hour 24 for midnight on some platforms — normalize to 0.
+  const lH = get("hour") % 24;
   const lMin = get("minute");
   const lS = get("second");
 
@@ -168,19 +154,16 @@ export function getTimezoneOffsetMinutes(
   });
 
   const parts = fmt.formatToParts(new Date(utcRef));
+  // Intl.DateTimeFormat always emits every requested field — assert non-null.
   const get = (type: string) =>
-    // Intl.DateTimeFormat always emits every requested field — the `?? "0"`
-    // fallback exists only to satisfy TS noUncheckedIndexedAccess.
-    /* v8 ignore next */
-    parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    parseInt(parts.find((p) => p.type === type)!.value, 10);
 
   const localYear = get("year");
   const localMonth = get("month");
   const localDay = get("day");
-  let localHour = get("hour");
-  // Intl may return hour 24 for midnight — normalize to 0
-  /* v8 ignore next */
-  if (localHour === 24) localHour = 0;
+  // Intl may return hour 24 for midnight on some platforms — normalize to 0.
+  const localHour = get("hour") % 24;
   const localMinute = get("minute");
 
   // Reconstruct what UTC timestamp this local time represents
@@ -243,13 +226,7 @@ export function yesterdayInTz(tz: string): string {
   // Get today in tz, then subtract 1 day
   const today = todayInTz(tz);
   const todayParts = today.split("-").map(Number);
-  const y = todayParts[0];
-  const m = todayParts[1];
-  const d = todayParts[2];
-  /* v8 ignore next 3 */
-  if (y === undefined || m === undefined || d === undefined) {
-    throw new Error(`Invalid date string from todayInTz: ${today}`);
-  }
+  const [y, m, d] = todayParts as [number, number, number];
   const prev = new Date(Date.UTC(y, m - 1, d - 1));
   return formatDateParts(
     prev.getUTCFullYear(),
@@ -303,12 +280,7 @@ export function sqlDateExpr(
   if (refDateStr) {
     const refParts = refDateStr.split("-").map(Number);
     // Caller contract: refDateStr is always YYYY-MM-DD (validated upstream).
-    // The `?? default` fallbacks are TS noUncheckedIndexedAccess satisfaction.
-    /* v8 ignore start */
-    y = refParts[0] ?? 0;
-    m = refParts[1] ?? 1;
-    d = refParts[2] ?? 1;
-    /* v8 ignore stop */
+    [y, m, d] = refParts as [number, number, number];
   } else {
     const now = new Date();
     y = now.getUTCFullYear();

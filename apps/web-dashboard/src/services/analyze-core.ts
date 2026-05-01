@@ -257,7 +257,8 @@ export function buildSessionTimeline(sessions: SessionForChart[], tz: string): s
  */
 export function expandTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, key: string) => {
-    return key in vars ? (vars[key] ?? "") : match;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    return key in vars ? vars[key]! : match;
   });
 }
 

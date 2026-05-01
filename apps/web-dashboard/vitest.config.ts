@@ -66,33 +66,6 @@ export default defineConfig({
         "src/lib/palette.ts",
         "src/lib/chart-config.ts",
         "src/services/prompt-defaults.ts",
-        // ---------------------------------------------------------------------
-        // backy-push.ts — thin orchestration wrapper: load config → call
-        // exportUserData (covered) → gzip (covered) → multipart fetch.
-        // The remaining branches are FormData/HTTP plumbing whose units
-        // (envelopeStats, compressEnvelope, buildBackupTag) are tested
-        // directly in backy.test.ts. End-to-end push is verified by
-        // backy-roundtrip.test.ts (E2E).
-        // ---------------------------------------------------------------------
-        "src/lib/backy-push.ts",
-        // ---------------------------------------------------------------------
-        // analyze-core.ts — self-described "Pure orchestration: settings →
-        // data → prompt → AI call → cache". Statement/line coverage already
-        // sits >99%; the residual uncovered branches are exclusively
-        // `?? ""` / `?? 0` defaults against already-typed AI-SDK fields and
-        // `err instanceof Error ? err.message : err` plumbing. Logic units
-        // (settings resolution, prompt assembly, cache repo) are covered
-        // directly in their own tests.
-        // ---------------------------------------------------------------------
-        "src/services/analyze-core.ts",
-        // ---------------------------------------------------------------------
-        // daily-stats.ts — pure aggregation/reduction over session arrays.
-        // Residual branches are `sorted[0]?.field ?? 0` guards on arrays
-        // the call sites have already filtered to be non-empty. The
-        // top-level computeDailyStats is exercised end-to-end via
-        // analyze-core integration paths and BDD.
-        // ---------------------------------------------------------------------
-        "src/services/daily-stats.ts",
       ],
       thresholds: {
         statements: 95,

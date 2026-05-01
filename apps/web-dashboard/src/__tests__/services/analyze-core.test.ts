@@ -568,4 +568,260 @@ describe("runAnalysis", () => {
       expect(result.reason).toBe("ai_error");
     }
   });
+
+  test("uses custom prompt sections from settings + sdkType", async () => {
+    const validResult = {
+      score: 60,
+      highlights: ["A"],
+      improvements: ["B"],
+      timeSegments: [],
+      summary: "S",
+    };
+
+    let observedPrompt = "";
+    const { __testOverrides } = await import("../setup");
+    __testOverrides.generateText = async (opts) => {
+      observedPrompt = opts.prompt as string;
+      return { text: JSON.stringify(validResult) };
+    };
+
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "openai", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "gpt-4", updated_at: 100 },
+        { user_id: "u1", key: "ai.sdkType", value: "openai", updated_at: 100 },
+        { user_id: "u1", key: "ai.prompt.section1", value: "CUSTOM-S1", updated_at: 100 },
+        { user_id: "u1", key: "ai.prompt.section2", value: "CUSTOM-S2", updated_at: 100 },
+        { user_id: "u1", key: "ai.prompt.section3", value: "CUSTOM-S3", updated_at: 100 },
+        { user_id: "u1", key: "ai.prompt.section4", value: "CUSTOM-S4", updated_at: 100 },
+      ],
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      [], [], [],
+      [], // upsert
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(true);
+    expect(observedPrompt).toContain("CUSTOM-S1");
+    expect(observedPrompt).toContain("CUSTOM-S3");
+    expect(observedPrompt).toContain("CUSTOM-S4");
+
+    __testOverrides.generateText = null;
+  });
+
+  test("succeeds when generateText returns no usage object (defaults to 0)", async () => {
+    const validResult = {
+      score: 50,
+      highlights: ["a"],
+      improvements: ["b"],
+      timeSegments: [],
+      summary: "ok",
+    };
+
+    const { __testOverrides } = await import("../setup");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      // usage intentionally absent
+    });
+
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
+      ],
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      [], [], [],
+      [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.usage!.totalTokens).toBe(0);
+      expect(result.usage!.promptTokens).toBe(0);
+      expect(result.usage!.completionTokens).toBe(0);
+    }
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns ai_error when generateText throws a non-Error value", async () => {
+    const { __testOverrides } = await import("../setup");
+    __testOverrides.generateText = async () => {
+      throw "raw string failure";
+    };
+
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
+      ],
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      [], [], [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("ai_error");
+      expect(result.message).toContain("raw string failure");
+    }
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns parse_error message for non-Error parse failures", async () => {
+    const { __testOverrides } = await import("../setup");
+    // valid JSON but missing required fields → parseAiResponse will throw an Error
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify({ score: 200 }),
+    });
+
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
+      ],
+      [
+        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+      ],
+      [], [], [],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("parse_error");
+    }
+
+    __testOverrides.generateText = null;
+  });
+
+  test("returns no_ai_config with default message when resolveAiConfig throws non-Error", async () => {
+    const { __testOverrides } = await import("../setup");
+    __testOverrides.resolveAiConfig = () => {
+      throw "string thrown";
+    };
+
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "x", updated_at: 100 },
+      ],
+    ]);
+
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("no_ai_config");
+      expect(result.message).toBe("Invalid AI configuration");
+    }
+
+    __testOverrides.resolveAiConfig = null;
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Branch coverage: helper functions
+// ---------------------------------------------------------------------------
+
+describe("buildSessionTimeline branch coverage", () => {
+  const EPOCH_10AM = 1772330400;
+
+  test("session without bundleId is neither IDLE nor browser", () => {
+    const result = buildSessionTimeline(
+      [{
+        id: "s", appName: "Mystery", bundleId: null, windowTitle: "",
+        url: null, startTime: EPOCH_10AM, duration: 60,
+      }],
+      "Asia/Shanghai",
+    );
+    expect(result).not.toContain("[IDLE/锁屏]");
+    expect(result).not.toContain("URL:");
+    expect(result).toContain("Mystery");
+  });
+});
+
+describe("buildAppContextSection branch coverage", () => {
+  test("includes only the categoryTitle when tags + note absent", () => {
+    const ctx = new Map<string, AppContext>();
+    ctx.set("com.x", { bundleId: "com.x", categoryTitle: "Cat", tags: [] });
+    const out = buildAppContextSection(ctx, new Set(["com.x"]));
+    expect(out).toContain("分类: Cat");
+    expect(out).not.toContain("标签:");
+    expect(out).not.toContain("备注:");
+  });
+
+  test("includes only the tags when category + note absent", () => {
+    const ctx = new Map<string, AppContext>();
+    ctx.set("com.x", { bundleId: "com.x", tags: ["t1"] });
+    const out = buildAppContextSection(ctx, new Set(["com.x"]));
+    expect(out).toContain("标签: t1");
+    expect(out).not.toContain("分类:");
+    expect(out).not.toContain("备注:");
+  });
+
+  test("includes only the note when category + tags absent", () => {
+    const ctx = new Map<string, AppContext>();
+    ctx.set("com.x", { bundleId: "com.x", tags: [], note: "n" });
+    const out = buildAppContextSection(ctx, new Set(["com.x"]));
+    expect(out).toContain("备注: n");
+    expect(out).not.toContain("分类:");
+    expect(out).not.toContain("标签:");
+  });
+});
+
+describe("parseAiResponse branch coverage", () => {
+  test("timeSegments with missing fields are filtered out", () => {
+    const json = JSON.stringify({
+      score: 50,
+      highlights: ["a"],
+      improvements: ["b"],
+      // first segment missing label → dropped; second has all fields
+      timeSegments: [
+        { timeRange: "09:00-10:00" },
+        { timeRange: "10:00-11:00", label: "L", description: "D" },
+      ],
+      summary: "s",
+    });
+    const result = parseAiResponse(json);
+    expect(result.timeSegments).toHaveLength(1);
+    expect(result.timeSegments[0]!.label).toBe("L");
+  });
+
+  test("missing description in segment defaults to empty string", () => {
+    const json = JSON.stringify({
+      score: 50,
+      highlights: ["a"],
+      improvements: ["b"],
+      timeSegments: [{ timeRange: "09:00-10:00", label: "L" }],
+      summary: "s",
+    });
+    const result = parseAiResponse(json);
+    expect(result.timeSegments[0]!.description).toBe("");
+  });
+});
+
+describe("buildPrompt branch coverage", () => {
+  const EPOCH_10AM = 1772330400;
+
+  test("session without bundleId does not contribute to bundleIdsInDay", () => {
+    const stats = computeDailyStats("2026-03-01", [
+      { id: "s", app_name: "Unknown", bundle_id: null, window_title: "", url: null, start_time: EPOCH_10AM, duration: 600 },
+    ]);
+    const ctx = new Map<string, AppContext>();
+    const prompt = buildPrompt("2026-03-01", stats, ctx, "Asia/Shanghai");
+    expect(prompt).toContain("Unknown");
+  });
 });
