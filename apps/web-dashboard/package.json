@@ -11,8 +11,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint --max-warnings 0",
     "lint:staged": "lint-staged",
-    "test": "bun test src/__tests__/ --timeout 30000 --path-ignore-patterns '**/bdd/**'",
-    "test:coverage": "bun run scripts/check-coverage.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "RUN_E2E=true bun test --env-file=.env --env-file=.env.e2e src/__tests__/e2e/ --timeout 60000",
     "dev:bdd": "E2E_SKIP_AUTH=true CF_D1_DATABASE_ID_TEST=bbe41479-5eeb-4598-abc5-12ccebcb9465 vinext dev --port 27018",
     "test:bdd": "bunx playwright test",
@@ -26,6 +27,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint": "9",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
@@ -33,7 +35,8 @@
     "tailwindcss": "^4.2.1",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.0.0",
-    "vite": "^7.3.2"
+    "vite": "^7.3.2",
+    "vitest": "^4.1.5"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.49",
