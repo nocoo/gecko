@@ -3,7 +3,7 @@
  * These are exported with _ prefix specifically for testing.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -21,7 +21,7 @@ afterEach(() => {
 
 function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
-  globalThis.fetch = mock((_url: string, _init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, _init: RequestInit) => {
     const results = responses[callIndex] ?? [];
     callIndex++;
     return Promise.resolve(

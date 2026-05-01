@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/apps/notes route handler tests
@@ -22,7 +22,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 
@@ -247,7 +247,7 @@ describe("/api/apps/notes", () => {
     test("deletes an existing note", async () => {
       // Mock D1 returning changes=1 (1 row deleted)
       const calls: Array<{ sql: string; params: unknown[] }> = [];
-      globalThis.fetch = mock((_url: string, init: RequestInit) => {
+      globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
         const body = JSON.parse(init.body as string);
         calls.push({ sql: body.sql, params: body.params });
         return Promise.resolve(
@@ -290,7 +290,7 @@ describe("/api/apps/notes", () => {
 
     test("returns deleted=false when note does not exist", async () => {
       // Mock D1 returning changes=0 (no rows deleted)
-      globalThis.fetch = mock((_url: string, _init: RequestInit) => {
+      globalThis.fetch = vi.fn((_url: string, _init: RequestInit) => {
         return Promise.resolve(
           new Response(
             JSON.stringify({

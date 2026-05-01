@@ -39,5 +39,7 @@ const AVATAR_COLORS = [
 export function getAvatarColor(name: string): string {
   const hash = hashString(name);
   const index = hash % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index] ?? AVATAR_COLORS[0];
+  // `index` is `hash % AVATAR_COLORS.length`, always a valid index.
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return AVATAR_COLORS[index]!;
 }

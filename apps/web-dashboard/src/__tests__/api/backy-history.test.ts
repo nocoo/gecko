@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/backy/history route handler tests
@@ -27,7 +27,7 @@ function mockFetchRouter(opts: {
 }) {
   let d1CallIndex = 0;
 
-  globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
     if (urlStr.includes("api.cloudflare.com")) {

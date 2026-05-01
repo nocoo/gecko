@@ -7,7 +7,7 @@
  * 3. Zero-duration sessions after clipping are filtered out
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -34,7 +34,7 @@ function mockD1(results: unknown[][]) {
   let callIndex = 0;
   const calls: D1Call[] = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql as string, params: body.params as unknown[] });
 

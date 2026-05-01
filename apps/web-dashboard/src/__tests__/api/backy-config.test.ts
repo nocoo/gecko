@@ -2,7 +2,7 @@
  * Tests for /api/backy/config and /api/backy/test route handlers.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -31,7 +31,7 @@ function mockD1WithExternal(
   const d1Calls: Array<{ sql: string; params: unknown[] }> = [];
   const externalCalls: Array<{ url: string; method: string }> = [];
 
-  globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
     const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
     // D1 API calls

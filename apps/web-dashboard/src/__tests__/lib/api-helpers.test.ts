@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // API helpers tests — auth extraction for route handlers
@@ -20,7 +20,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 
@@ -122,7 +122,8 @@ describe("api-helpers", () => {
   describe("requireSession() non-E2E", () => {
     test("returns 401 when auth() returns null session", async () => {
       delete process.env.E2E_SKIP_AUTH;
-      mock.module("@/auth", () => ({
+      vi.resetModules();
+      vi.doMock("@/auth", () => ({
         auth: () => Promise.resolve(null),
       }));
       const { requireSession } = await import("../../lib/api-helpers");
@@ -133,7 +134,8 @@ describe("api-helpers", () => {
 
     test("returns userId when auth() returns valid session", async () => {
       delete process.env.E2E_SKIP_AUTH;
-      mock.module("@/auth", () => ({
+      vi.resetModules();
+      vi.doMock("@/auth", () => ({
         auth: () => Promise.resolve({ user: { id: "google-user-42" } }),
       }));
       const { requireSession } = await import("../../lib/api-helpers");
@@ -217,6 +219,42 @@ describe("api-helpers", () => {
       expect(result.user).toBeDefined();
       expect(result.user!.userId).toBe("user-123");
       expect(result.user!.deviceId).toBe("macbook-1");
+    });
+
+    test("swallows errors from the fire-and-forget last_used UPDATE", async () => {
+      let callIndex = 0;
+      globalThis.fetch = vi.fn(() => {
+        const i = callIndex++;
+        if (i === 0) {
+          // SELECT api_keys → success
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                success: true,
+                result: [
+                  {
+                    results: [{ id: "key-1", user_id: "user-x", device_id: "dev-x" }],
+                    success: true,
+                    meta: { changes: 0, last_row_id: 0 },
+                  },
+                ],
+                errors: [],
+              }),
+              { status: 200 },
+            ),
+          );
+        }
+        // UPDATE last_used → fail
+        return Promise.reject(new Error("simulated D1 outage"));
+      }) as unknown as typeof fetch;
+
+      const req = new Request("http://localhost", {
+        headers: { Authorization: "Bearer gk_valid_key_12345" },
+      });
+      const result = await requireApiKey(req);
+      expect(result.user!.userId).toBe("user-x");
+      // give the fire-and-forget catch a tick to run
+      await new Promise((r) => setTimeout(r, 10));
     });
   });
 
@@ -339,7 +377,7 @@ describe("api-helpers", () => {
     });
 
     test("falls back to default on DB error", async () => {
-      globalThis.fetch = mock(() => {
+      globalThis.fetch = vi.fn(() => {
         return Promise.reject(new Error("DB connection failed"));
       }) as unknown as typeof fetch;
       const tz = await getUserTimezone("u1");

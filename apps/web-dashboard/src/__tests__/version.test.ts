@@ -1,7 +1,11 @@
-import { describe, expect, test } from "bun:test";
+import { describe, expect, test } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { APP_VERSION } from "@/lib/version";
 
-const pkg = await Bun.file("package.json").json();
+const pkg = JSON.parse(
+  readFileSync(resolve(__dirname, "../../package.json"), "utf8"),
+) as { version: string };
 
 describe("version", () => {
   test("APP_VERSION matches package.json version", () => {

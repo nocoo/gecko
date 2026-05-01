@@ -2,7 +2,7 @@
  * Tests for backy-export.ts — full data export with pagination.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { PAGE_SIZE, exportUserData } from "@/lib/backy-export";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/backy";
 
@@ -34,7 +34,7 @@ function d1Response(results: unknown[], meta?: { changes: number }) {
 function mockD1Router(handlers: Record<string, (params: unknown[]) => unknown[]>) {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 

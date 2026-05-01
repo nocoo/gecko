@@ -81,6 +81,9 @@ export async function requireApiKey(
   }
 
   const row = rows[0];
+  // Above `rows.length === 0` already returned; `rows[0]` is always defined.
+  // The `!row` guard exists only for TS noUncheckedIndexedAccess.
+  /* v8 ignore next 3 */
   if (!row) {
     return { error: jsonError("Invalid API key", 401) };
   }

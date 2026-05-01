@@ -71,6 +71,9 @@ export async function execute(
       });
 
       if (!response.ok) {
+        // response.text() doesn't reject in practice for fetch Responses;
+        // the `.catch` is defense-in-depth only.
+        /* v8 ignore next */
         const text = await response.text().catch(() => "Unknown error");
         throw new Error(`D1 API error (${response.status}): ${text}`);
       }

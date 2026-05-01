@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { generateApiKey, hashApiKey, API_KEY_PREFIX } from "../../lib/api-key";
 
 describe("api-key", () => {

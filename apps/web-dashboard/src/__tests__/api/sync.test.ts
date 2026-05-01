@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { resetSyncQueue } from "../../lib/sync-queue";
 
 // ---------------------------------------------------------------------------
@@ -91,7 +91,7 @@ describe("POST /api/sync", () => {
     // Capture all fetch calls — none should go to D1
     const originalFetch = globalThis.fetch;
     const fetchCalls: string[] = [];
-    globalThis.fetch = mock((...args: unknown[]) => {
+    globalThis.fetch = vi.fn((...args: unknown[]) => {
       const url =
         typeof args[0] === "string"
           ? args[0]

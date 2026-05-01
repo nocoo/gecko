@@ -2,7 +2,7 @@
  * Unit tests for score card utility functions.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import {
   getScoreColor,
   getScoreLabel,

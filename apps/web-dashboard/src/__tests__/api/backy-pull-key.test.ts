@@ -2,7 +2,7 @@
  * Tests for /api/backy/pull-key — Pull key management endpoints.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -33,7 +33,7 @@ function d1Resp(results: unknown[], changes = 0) {
 function mockD1(handler: (sql: string, params: unknown[]) => { results: unknown[]; changes?: number }) {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock(async (_url: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
     const body = JSON.parse((init?.body ?? "") as string);
     calls.push({ sql: body.sql, params: body.params });
     const { results, changes } = handler(body.sql, body.params);

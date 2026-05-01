@@ -165,12 +165,15 @@ export class AutoAnalyzeService {
       .then(async (outcome) => {
         if (outcome.ok) {
           console.log(`[AutoAnalyze] Analysis complete for user ${userId} date ${yesterday}: score=${outcome.score}`);
-          // Fire-and-forget email notification
+          // Fire-and-forget email notification.
+          // sendAnalysisEmail is documented "Never throws"; the .catch is
+          // defense-in-depth only, hence not reachable from tests.
           sendAnalysisEmail({
             userId,
             date: yesterday,
             result: outcome.result,
             stats: outcome.stats,
+          /* v8 ignore next */
           }).catch(() => {}); // swallow — sendAnalysisEmail already handles errors internally
         } else {
           console.warn(`[AutoAnalyze] Analysis failed for user ${userId} date ${yesterday}: ${outcome.reason} — ${outcome.message}`);

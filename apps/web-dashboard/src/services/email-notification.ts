@@ -118,6 +118,9 @@ export async function sendAnalysisEmail(
     });
 
     if (!response.ok) {
+      // response.text() doesn't reject in practice for fetch Responses;
+      // the `.catch` is defense-in-depth only.
+      /* v8 ignore next */
       const body = await response.text().catch(() => "(unreadable)");
       console.error(
         `[email-notification] Dove returned ${response.status}: ${body}`,

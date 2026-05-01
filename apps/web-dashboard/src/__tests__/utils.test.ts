@@ -1,4 +1,4 @@
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { cn, getAvatarColor } from "../lib/utils";
 
 describe("src/lib/utils", () => {

@@ -1,4 +1,4 @@
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Capture NextAuth callbacks for direct testing
@@ -6,7 +6,7 @@ import { describe, test, expect, mock } from "bun:test";
 
 let capturedCallbacks: Record<string, (...args: unknown[]) => unknown> = {};
 
-mock.module("next-auth", () => ({
+vi.doMock("next-auth", () => ({
   default: (config: Record<string, unknown>) => {
     capturedCallbacks = (config.callbacks ?? {}) as Record<string, (...args: unknown[]) => unknown>;
     return { handlers: {}, signIn: () => {}, signOut: () => {}, auth: () => null };
@@ -14,7 +14,7 @@ mock.module("next-auth", () => ({
 }));
 
 // Mock the Google provider
-mock.module("next-auth/providers/google", () => ({
+vi.doMock("next-auth/providers/google", () => ({
   default: () => ({ id: "google", name: "Google" }),
 }));
 

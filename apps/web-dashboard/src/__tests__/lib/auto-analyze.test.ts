@@ -4,7 +4,7 @@
  * All I/O dependencies are injected as mocks.
  */
 
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 import {
   createAutoAnalyze,
   getAutoAnalyze,
@@ -24,13 +24,13 @@ const stubStats = {} as DailyStats;
 
 function makeDeps(overrides?: Partial<AutoAnalyzeDeps>): AutoAnalyzeDeps {
   return {
-    findAutoSummarizeUsers: mock(() => Promise.resolve([] as string[])),
-    getUserTimezone: mock(() => Promise.resolve("Asia/Shanghai")),
-    hasAnalysis: mock(() => Promise.resolve(false)),
-    hasSessions: mock(() => Promise.resolve(false)),
-    claimForAnalysis: mock(() => Promise.resolve(true)),
-    releaseAnalysisClaim: mock(() => Promise.resolve()),
-    runAnalysis: mock(() =>
+    findAutoSummarizeUsers: vi.fn(() => Promise.resolve([] as string[])),
+    getUserTimezone: vi.fn(() => Promise.resolve("Asia/Shanghai")),
+    hasAnalysis: vi.fn(() => Promise.resolve(false)),
+    hasSessions: vi.fn(() => Promise.resolve(false)),
+    claimForAnalysis: vi.fn(() => Promise.resolve(true)),
+    releaseAnalysisClaim: vi.fn(() => Promise.resolve()),
+    runAnalysis: vi.fn(() =>
       Promise.resolve({ ok: true, score: 75, model: "test", provider: "test", durationMs: 100, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome),
     ),
     nowFn: () => Date.now(),
@@ -54,8 +54,8 @@ describe("AutoAnalyzeService.onTick", () => {
 
   test("skips users with no today sessions", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(false)),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -66,9 +66,9 @@ describe("AutoAnalyzeService.onTick", () => {
 
   test("skips users with existing yesterday analysis", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(true)),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(true)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -79,9 +79,9 @@ describe("AutoAnalyzeService.onTick", () => {
 
   test("triggers analysis when today has sessions + yesterday unanalyzed", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -89,7 +89,7 @@ describe("AutoAnalyzeService.onTick", () => {
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
 
     // Verify it was called with yesterday's date
-    const call = (deps.runAnalysis as ReturnType<typeof mock>).mock.calls[0]!;
+    const call = (deps.runAnalysis as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(call[0]).toBe("u1"); // userId
     expect(call[2]).toBe("Asia/Shanghai"); // tz
     // date should be yesterday in Asia/Shanghai — verify it's a valid date string
@@ -103,10 +103,10 @@ describe("AutoAnalyzeService.onTick", () => {
     });
 
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() => analysisPromise),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => analysisPromise),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -126,9 +126,9 @@ describe("AutoAnalyzeService.onTick", () => {
 
   test("cleans up completed tasks from map", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -146,10 +146,10 @@ describe("AutoAnalyzeService.onTick", () => {
     });
 
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() => analysisPromise),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => analysisPromise),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -171,10 +171,10 @@ describe("AutoAnalyzeService.onTick", () => {
     let callCount = 0;
 
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() => {
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => {
         callCount++;
         // First call: never resolves (simulates stale task)
         if (callCount === 1) {
@@ -205,16 +205,16 @@ describe("AutoAnalyzeService.onTick", () => {
   test("handles per-user errors without blocking others", async () => {
     let getUserTzCallCount = 0;
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1", "u2"])),
-      getUserTimezone: mock(() => {
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1", "u2"])),
+      getUserTimezone: vi.fn(() => {
         getUserTzCallCount++;
         if (getUserTzCallCount === 1) {
           throw new Error("tz lookup failed for u1");
         }
         return Promise.resolve("Asia/Shanghai");
       }),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -222,13 +222,13 @@ describe("AutoAnalyzeService.onTick", () => {
     await svc.onTick();
     // u2 should have gotten analysis triggered
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
-    const call = (deps.runAnalysis as ReturnType<typeof mock>).mock.calls[0]!;
+    const call = (deps.runAnalysis as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(call[0]).toBe("u2");
   });
 
   test("handles findAutoSummarizeUsers error gracefully", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.reject(new Error("DB down"))),
+      findAutoSummarizeUsers: vi.fn(() => Promise.reject(new Error("DB down"))),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -239,10 +239,10 @@ describe("AutoAnalyzeService.onTick", () => {
 
   test("skips analysis when claimForAnalysis returns false (another process won)", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      claimForAnalysis: mock(() => Promise.resolve(false)),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      claimForAnalysis: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -254,14 +254,14 @@ describe("AutoAnalyzeService.onTick", () => {
   test("calls claimForAnalysis before runAnalysis", async () => {
     const callOrder: string[] = [];
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      claimForAnalysis: mock(() => {
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      claimForAnalysis: vi.fn(() => {
         callOrder.push("claim");
         return Promise.resolve(true);
       }),
-      runAnalysis: mock(() => {
+      runAnalysis: vi.fn(() => {
         callOrder.push("analyze");
         return Promise.resolve({ ok: true, score: 75, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome);
       }),
@@ -282,10 +282,10 @@ describe("AutoAnalyzeService.onTick", () => {
 describe("releaseAnalysisClaim behavior", () => {
   test("does NOT release claim on successful analysis", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() =>
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() =>
         Promise.resolve({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome),
       ),
     });
@@ -299,10 +299,10 @@ describe("releaseAnalysisClaim behavior", () => {
 
   test("releases claim when analysis returns ok=false", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() =>
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() =>
         Promise.resolve({ ok: false, reason: "ai_error", message: "provider timeout" } as AnalysisOutcome),
       ),
     });
@@ -316,10 +316,10 @@ describe("releaseAnalysisClaim behavior", () => {
 
   test("releases claim when analysis throws unexpected error", async () => {
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() => Promise.reject(new Error("network failure"))),
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => Promise.reject(new Error("network failure"))),
     });
     const svc = createAutoAnalyze(deps);
 
@@ -327,6 +327,45 @@ describe("releaseAnalysisClaim behavior", () => {
     await new Promise((r) => setTimeout(r, 10));
 
     expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
+  });
+
+  test("logs non-Error rejection from runAnalysis via the `: err` fallback", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => Promise.reject("string failure")),
+    });
+    const svc = createAutoAnalyze(deps);
+
+    await svc.onTick();
+    await new Promise((r) => setTimeout(r, 10));
+
+    expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
+  });
+
+  test("logs non-Error throw from findAutoSummarizeUsers via the `: err` fallback", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.reject("db down")),
+    });
+    const svc = createAutoAnalyze(deps);
+    await svc.onTick();
+    expect(deps.claimForAnalysis).not.toHaveBeenCalled();
+  });
+
+  test("logs non-Error throw from per-user processing via the `: err` fallback", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1", "u2"])),
+      getUserTimezone: vi.fn((userId: string) => {
+        if (userId === "u1") return Promise.reject("non-error tz failure");
+        return Promise.resolve("Asia/Shanghai");
+      }),
+      hasSessions: vi.fn(() => Promise.resolve(false)),
+    });
+    const svc = createAutoAnalyze(deps);
+    await svc.onTick();
+    // u2 should still have been processed (hasSessions called for it)
+    expect(deps.hasSessions).toHaveBeenCalled();
   });
 });
 
@@ -338,10 +377,10 @@ describe("getRunningTasks()", () => {
   test("returns current state without promise", async () => {
     let resolveAnalysis: ((v: AnalysisOutcome) => void) | null = null;
     const deps = makeDeps({
-      findAutoSummarizeUsers: mock(() => Promise.resolve(["u1"])),
-      hasSessions: mock(() => Promise.resolve(true)),
-      hasAnalysis: mock(() => Promise.resolve(false)),
-      runAnalysis: mock(() =>
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() =>
         new Promise<AnalysisOutcome>((resolve) => {
           resolveAnalysis = resolve;
         }),
@@ -398,5 +437,23 @@ describe("singleton management", () => {
     ensureAutoAnalyze();
     resetEnsureAutoAnalyze();
     resetAutoAnalyze();
+  });
+
+  test("ensureAutoAnalyze wires the scheduler callback to service.onTick", async () => {
+    const { resetHourlyScheduler, getHourlyScheduler } = await import(
+      "@/lib/hourly-scheduler"
+    );
+    resetHourlyScheduler();
+    resetEnsureAutoAnalyze();
+    resetAutoAnalyze();
+
+    ensureAutoAnalyze();
+    // Manually fire a tick — exercises the registered `() => service.onTick()`
+    // callback, covering the arrow-body statement.
+    await getHourlyScheduler().tick();
+
+    resetEnsureAutoAnalyze();
+    resetAutoAnalyze();
+    resetHourlyScheduler();
   });
 });

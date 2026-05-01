@@ -1,4 +1,4 @@
-import { describe, test, expect, mock } from "bun:test";
+import { describe, test, expect, vi } from "vitest";
 import {
   createSyncQueue,
   buildMultiRowInsert,
@@ -89,7 +89,7 @@ describe("SyncQueue", () => {
   describe("drain()", () => {
     test("drains pending items via writeFn", async () => {
       const written: unknown[][] = [];
-      const writeFn = mock(async (batch: unknown[]) => {
+      const writeFn = vi.fn(async (batch: unknown[]) => {
         written.push(batch);
       });
 
@@ -111,7 +111,7 @@ describe("SyncQueue", () => {
     });
 
     test("batches items according to batchSize", async () => {
-      const writeFn = mock(async (_batch: unknown[]) => {});
+      const writeFn = vi.fn(async (_batch: unknown[]) => {});
 
       const queue = createSyncQueue({ autoStart: false, writeFn, batchSize: 2 });
       queue.enqueue([
@@ -131,7 +131,7 @@ describe("SyncQueue", () => {
     });
 
     test("is a no-op when queue is empty", async () => {
-      const writeFn = mock(async (_batch: unknown[]) => {});
+      const writeFn = vi.fn(async (_batch: unknown[]) => {});
       const queue = createSyncQueue({ autoStart: false, writeFn });
 
       await queue.drain();
@@ -141,7 +141,7 @@ describe("SyncQueue", () => {
     });
 
     test("increments failed count on writeFn error", async () => {
-      const writeFn = mock(async (_batch: unknown[]) => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {
         throw new Error("D1 timeout");
       });
 
@@ -157,9 +157,49 @@ describe("SyncQueue", () => {
       expect(stats.pending).toBe(0);
     });
 
+    test("logs non-Error throw via the `: err` fallback branch", async () => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {
+        throw "string failure";
+      });
+      const queue = createSyncQueue({ autoStart: false, writeFn, batchSize: 50 });
+      queue.enqueue([sampleItem({ id: "id-1" })]);
+      await queue.drain();
+      expect(queue.getStats().failed).toBe(1);
+    });
+
+    test("substitutes nulls for missing optional columns", async () => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {});
+      const queue = createSyncQueue({ autoStart: false, writeFn, batchSize: 50 });
+      queue.enqueue([
+        sampleItem({
+          id: "id-nulls",
+          url: undefined,
+          bundle_id: undefined,
+          tab_title: undefined,
+          tab_count: undefined,
+          is_minimized: true,
+        }),
+      ]);
+      await queue.drain();
+      expect(writeFn).toHaveBeenCalledTimes(1);
+    });
+
+    test("setInterval callback drains the queue when autoStart=true", async () => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {});
+      const queue = createSyncQueue({
+        autoStart: true,
+        drainIntervalMs: 5,
+        writeFn,
+      });
+      queue.enqueue([sampleItem({ id: "id-1" })]);
+      await new Promise((r) => setTimeout(r, 30));
+      queue.shutdown();
+      expect(writeFn).toHaveBeenCalled();
+    });
+
     test("continues draining remaining batches after one batch fails", async () => {
       let callCount = 0;
-      const writeFn = mock(async (_batch: unknown[]) => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {
         callCount++;
         if (callCount === 1) {
           throw new Error("Transient error");
@@ -188,7 +228,7 @@ describe("SyncQueue", () => {
       let activeCount = 0;
       let maxActive = 0;
 
-      const writeFn = mock(async (_batch: unknown[]) => {
+      const writeFn = vi.fn(async (_batch: unknown[]) => {
         activeCount++;
         maxActive = Math.max(maxActive, activeCount);
         // Simulate async work
@@ -272,6 +312,21 @@ describe("SyncQueue", () => {
       expect(params[12]).toBe(1);
       expect(params[13]).toBe(0);
     });
+
+    test("substitutes null for missing optional fields and handles is_minimized=true", () => {
+      const item = sampleItem({
+        url: undefined,
+        bundle_id: undefined,
+        tab_title: undefined,
+        tab_count: undefined,
+        is_minimized: true,
+      });
+      const { params } = buildMultiRowInsert([item]);
+      // All four optional columns become null
+      expect(params).toContain(null);
+      // is_minimized=true → 1
+      expect(params[13]).toBe(1);
+    });
   });
 
   // -------------------------------------------------------------------------
@@ -348,6 +403,38 @@ describe("SyncQueue", () => {
 
     test("COLUMNS does not include synced_at (uses D1 DEFAULT)", () => {
       expect(COLUMNS).not.toContain("synced_at");
+    });
+  });
+
+  describe("default writeFn", () => {
+    test("invokes execute() against D1 when no writeFn is injected", async () => {
+      const originalFetch = globalThis.fetch;
+      process.env.CF_ACCOUNT_ID = "test-account-id";
+      process.env.CF_API_TOKEN = "test-api-token";
+      process.env.CF_D1_DATABASE_ID = "test-db-id";
+      const fetchMock = vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: true,
+              result: [
+                { results: [], success: true, meta: { changes: 1, last_row_id: 1 } },
+              ],
+              errors: [],
+            }),
+            { status: 200 },
+          ),
+        ),
+      );
+      globalThis.fetch = fetchMock as unknown as typeof fetch;
+      try {
+        const queue = createSyncQueue({ autoStart: false });
+        queue.enqueue([sampleItem({ id: "id-default" })]);
+        await queue.drain();
+        expect(fetchMock).toHaveBeenCalled();
+      } finally {
+        globalThis.fetch = originalFetch;
+      }
     });
   });
 });

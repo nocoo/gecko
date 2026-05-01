@@ -19,7 +19,10 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     [userId],
   );
 
-  if ((existing[0]?.cnt ?? 0) > 0) {
+  // SELECT COUNT(*) always returns exactly one row.
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const cnt = existing[0]!.cnt;
+  if (cnt > 0) {
     return false;
   }
 
@@ -37,7 +40,9 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     () => "(?, ?, ?, ?, 1, ?, ?)",
   ).join(", ");
   const catParams = DEFAULT_CATEGORIES.flatMap((cat) => [
-    categoryIdBySlug.get(cat.slug) ?? "",
+    // categoryIdBySlug was just populated from DEFAULT_CATEGORIES above.
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    categoryIdBySlug.get(cat.slug)!,
     userId,
     cat.title,
     cat.icon,
@@ -52,17 +57,12 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   );
 
   // ── Step 2: Auto-map known bundle_ids ──
-  // Build mapping entries: only for bundle_ids whose category slug exists.
+  // Build mapping entries. Every BUNDLE_ID_MAPPINGS slug exists in
+  // DEFAULT_CATEGORIES (verified statically), so the lookup is total.
   const mappingEntries: Array<{ bundleId: string; categoryId: string }> = [];
   for (const [bundleId, slug] of BUNDLE_ID_MAPPINGS) {
-    const categoryId = categoryIdBySlug.get(slug);
-    if (categoryId) {
-      mappingEntries.push({ bundleId, categoryId });
-    }
-  }
-
-  if (mappingEntries.length === 0) {
-    return true;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    mappingEntries.push({ bundleId, categoryId: categoryIdBySlug.get(slug)! });
   }
 
   // Batch insert: 3 params per row (user_id, bundle_id, category_id) + datetime('now') in SQL.

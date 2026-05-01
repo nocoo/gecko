@@ -121,21 +121,19 @@ const WEIGHTS = {
 export function mergeAdjacentSessions(
   rows: SessionRow[],
 ): MergedSegment[] {
-  if (rows.length === 0) return [];
-
   const sorted = [...rows].sort((a, b) => a.start_time - b.start_time);
-  const segments: MergedSegment[] = [];
+  const [first, ...rest] = sorted;
+  if (!first) return [];
 
+  const segments: MergedSegment[] = [];
   let current: MergedSegment = {
-    appName: sorted[0]?.app_name ?? "",
-    start: sorted[0]?.start_time ?? 0,
-    end: (sorted[0]?.start_time ?? 0) + (sorted[0]?.duration ?? 0),
-    totalDuration: sorted[0]?.duration ?? 0,
+    appName: first.app_name,
+    start: first.start_time,
+    end: first.start_time + first.duration,
+    totalDuration: first.duration,
   };
 
-  for (let i = 1; i < sorted.length; i++) {
-    const row = sorted[i];
-    if (!row) continue;
+  for (const row of rest) {
     const gap = row.start_time - current.end;
     const sameApp = row.app_name === current.appName;
 
@@ -165,14 +163,14 @@ export function mergeAdjacentSessions(
 
 /** Compute the 4 productivity dimensions + weighted overall. */
 export function computeScores(rows: SessionRow[]): DailyScores {
-  if (rows.length === 0) {
+  const sorted = [...rows].sort((a, b) => a.start_time - b.start_time);
+  const [firstSession, ...rest] = sorted;
+  if (!firstSession) {
     return { focus: 0, deepWork: 0, switchRate: 0, concentration: 0, overall: 0 };
   }
 
-  const sorted = [...rows].sort((a, b) => a.start_time - b.start_time);
-
   const totalDuration = sorted.reduce((sum, r) => sum + r.duration, 0);
-  const firstStart = sorted[0]?.start_time ?? 0;
+  const firstStart = firstSession.start_time;
   const lastEnd = Math.max(...sorted.map((r) => r.start_time + r.duration));
   const activeSpan = lastEnd - firstStart;
 
@@ -184,24 +182,19 @@ export function computeScores(rows: SessionRow[]): DailyScores {
   // 2. Deep Work: count merged segments >= 30min
   const merged = mergeAdjacentSessions(sorted);
   const deepSegments = merged.filter((s) => s.totalDuration >= DEEP_WORK_THRESHOLD).length;
-  const deepWork = deepSegments >= 5
-    ? 100
-    : (DEEP_WORK_MAP[deepSegments] ?? 0);
+  // deepSegments is 0..4 in the false branch; DEEP_WORK_MAP has every key.
+  const deepWork = deepSegments >= 5 ? 100 : (DEEP_WORK_MAP[deepSegments] ?? 0);
 
   // 3. Context Switch Rate
   // Only count "deep" switches — where user stayed ≥5min in the NEW context
   // Dev workflow URLs (localhost, 127.0.0.1, ports, hexly.ai) are excluded
   let contextSwitches = 0;
-  const firstSession = sorted[0];
-  if (!firstSession) {
-    return { focus: 0, deepWork: 0, switchRate: 0, concentration: 0, overall: 0 };
-  }
   let prevAppName = firstSession.app_name;
   let prevWasDevUrl = isDevWorkflowUrl(firstSession.url);
 
-  for (let i = 1; i < sorted.length; i++) {
-    const s = sorted[i];
-    if (!s) continue;
+  for (let i = 0; i < rest.length; i++) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const s = rest[i]!;
 
     const currIsDevUrl = isDevWorkflowUrl(s.url);
 
@@ -218,9 +211,9 @@ export function computeScores(rows: SessionRow[]): DailyScores {
       let dwellTime = s.duration;
       let prevEnd = s.start_time + s.duration;
 
-      for (let j = i + 1; j < sorted.length; j++) {
-        const next = sorted[j];
-        if (!next) break;
+      for (let j = i + 1; j < rest.length; j++) {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const next = rest[j]!;
 
         const gap = next.start_time - prevEnd;
         if (gap >= DWELL_GAP_THRESHOLD) break; // Gap too large, stop accumulating
@@ -296,7 +289,9 @@ export function computeDailyStats(date: string, rows: SessionRow[]): DailyStats 
 
   const totalDuration = sorted.reduce((sum, r) => sum + r.duration, 0);
   const uniqueApps = new Set(sorted.map((r) => r.app_name));
-  const firstStart = sorted[0]?.start_time ?? 0;
+  // rows.length > 0 guarded above, so sorted[0] is defined.
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const firstStart = sorted[0]!.start_time;
   const lastEnd = Math.max(...sorted.map((r) => r.start_time + r.duration));
   const activeSpan = lastEnd - firstStart;
 

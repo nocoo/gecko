@@ -3,7 +3,7 @@
  * /api/backy/push + /api/backy/history route handlers.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { gunzipSync } from "node:zlib";
 import { executePush } from "@/lib/backy-push";
 import type { BackupEnvelope } from "@/lib/backy";
@@ -44,7 +44,7 @@ function mockFetchRouter(opts: {
   const d1Calls: Array<{ sql: string; params: unknown[] }> = [];
   const backyCalls: Array<{ url: string; method: string; body: FormData | null }> = [];
 
-  globalThis.fetch = mock(async (url: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
     const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
     if (urlStr.includes("api.cloudflare.com")) {
