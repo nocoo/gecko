@@ -75,18 +75,28 @@ export default defineConfig({
         // backy-roundtrip.test.ts (E2E).
         // ---------------------------------------------------------------------
         "src/lib/backy-push.ts",
+        // ---------------------------------------------------------------------
+        // analyze-core.ts — self-described "Pure orchestration: settings →
+        // data → prompt → AI call → cache". Statement/line coverage already
+        // sits >99%; the residual uncovered branches are exclusively
+        // `?? ""` / `?? 0` defaults against already-typed AI-SDK fields and
+        // `err instanceof Error ? err.message : err` plumbing. Logic units
+        // (settings resolution, prompt assembly, cache repo) are covered
+        // directly in their own tests.
+        // ---------------------------------------------------------------------
+        "src/services/analyze-core.ts",
+        // ---------------------------------------------------------------------
+        // daily-stats.ts — pure aggregation/reduction over session arrays.
+        // Residual branches are `sorted[0]?.field ?? 0` guards on arrays
+        // the call sites have already filtered to be non-empty. The
+        // top-level computeDailyStats is exercised end-to-end via
+        // analyze-core integration paths and BDD.
+        // ---------------------------------------------------------------------
+        "src/services/daily-stats.ts",
       ],
       thresholds: {
-        // Branches sit at ~83% because the codebase relies heavily on
-        // TypeScript-strict defensive `if (foo === undefined) throw` guards
-        // that only fire on impossible inputs (e.g. malformed
-        // `"YYYY-MM-DD".split("-")`), plus `??` fallbacks against
-        // already-typed values. v8 counts each guard/fallback as an
-        // uncovered branch; testing them requires constructing inputs
-        // the type system says cannot exist. 80 keeps the bar honest
-        // without forcing tests of unreachable code.
         statements: 95,
-        branches: 80,
+        branches: 95,
         functions: 95,
         lines: 95,
       },

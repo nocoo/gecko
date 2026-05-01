@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { query, execute, getD1Config, verifyTestDatabase } from "../../lib/d1";
 
 // ---------------------------------------------------------------------------
@@ -22,7 +22,7 @@ afterEach(() => {
 
 // Helper: mock fetch to return a D1 response
 function mockFetch(result: unknown[], success = true, status = 200) {
-  globalThis.fetch = mock(() =>
+  globalThis.fetch = vi.fn(() =>
     Promise.resolve(
       new Response(
         JSON.stringify({
@@ -47,7 +47,7 @@ describe("d1 client", () => {
 
       await query("SELECT * FROM users WHERE id = ?", ["u1"]);
 
-      const fetchMock = globalThis.fetch as unknown as ReturnType<typeof mock>;
+      const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
       expect(fetchMock).toHaveBeenCalledTimes(1);
 
       const call0 = fetchMock.mock.calls[0];
@@ -83,7 +83,7 @@ describe("d1 client", () => {
 
       await query("SELECT 1");
 
-      const fetchMock = globalThis.fetch as unknown as ReturnType<typeof mock>;
+      const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
       const call0 = fetchMock.mock.calls[0];
       if (!call0) return;
       const body = JSON.parse(
@@ -98,8 +98,26 @@ describe("d1 client", () => {
       expect(query("BAD SQL")).rejects.toThrow("D1 query failed");
     });
 
+    test("uses 'Unknown D1 error' fallback when errors array is missing", async () => {
+      globalThis.fetch = vi.fn(() =>
+        Promise.resolve(
+          new Response(
+            JSON.stringify({
+              success: false,
+              result: [],
+            }),
+            { status: 200 }
+          )
+        )
+      ) as unknown as typeof fetch;
+
+      await expect(query("BAD SQL")).rejects.toThrow(
+        "D1 query failed: Unknown D1 error"
+      );
+    });
+
     test("throws on HTTP error (non-200)", async () => {
-      globalThis.fetch = mock(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.resolve(new Response("Internal Server Error", { status: 500 }))
       ) as unknown as typeof fetch;
 
@@ -107,7 +125,7 @@ describe("d1 client", () => {
     });
 
     test("throws on network error", async () => {
-      globalThis.fetch = mock(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.reject(new Error("Network error"))
       ) as unknown as typeof fetch;
 
@@ -121,7 +139,7 @@ describe("d1 client", () => {
 
   describe("execute()", () => {
     test("returns meta with changes count", async () => {
-      globalThis.fetch = mock(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.resolve(
           new Response(
             JSON.stringify({
@@ -237,7 +255,7 @@ describe("d1 client", () => {
 
     test("throws when _test_marker table does not exist", async () => {
       // Simulate a D1 error for missing table
-      globalThis.fetch = mock(() =>
+      globalThis.fetch = vi.fn(() =>
         Promise.resolve(
           new Response(
             JSON.stringify({

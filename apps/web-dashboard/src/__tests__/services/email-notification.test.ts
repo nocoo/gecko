@@ -4,7 +4,7 @@
  * Mocks: globalThis.fetch for Dove webhook, D1 queries for settingsRepo.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   sendAnalysisEmail,
   formatHighlights,
@@ -57,7 +57,7 @@ function mockD1(responses: unknown[][]) {
   let callIndex = 0;
   const fetchCalls: Array<{ url: string; body: Record<string, unknown> }> = [];
 
-  globalThis.fetch = mock((url: string | URL | Request, init?: RequestInit) => {
+  globalThis.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
     const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
     // Dove webhook call (non-D1)
@@ -250,7 +250,7 @@ describe("sendAnalysisEmail", () => {
   test("does not throw when Dove returns an error", async () => {
     // Override fetch to return error for Dove calls
     let callIndex = 0;
-    globalThis.fetch = mock((url: string | URL | Request, _init?: RequestInit) => {
+    globalThis.fetch = vi.fn((url: string | URL | Request, _init?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
       if (!urlStr.includes("cloudflare")) {
@@ -284,7 +284,7 @@ describe("sendAnalysisEmail", () => {
   test("does not throw when fetch itself throws", async () => {
     // Override fetch to reject for Dove calls
     let callIndex = 0;
-    globalThis.fetch = mock((url: string | URL | Request, _init?: RequestInit) => {
+    globalThis.fetch = vi.fn((url: string | URL | Request, _init?: RequestInit) => {
       const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
 
       if (!urlStr.includes("cloudflare")) {
@@ -313,5 +313,51 @@ describe("sendAnalysisEmail", () => {
 
     // Should not throw
     await sendAnalysisEmail(makeParams());
+  });
+
+  test("does not throw when fetch rejects with non-Error value", async () => {
+    let callIndex = 0;
+    globalThis.fetch = vi.fn((url: string | URL | Request, _init?: RequestInit) => {
+      const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
+
+      if (!urlStr.includes("cloudflare")) {
+        // Reject with a plain string — exercises the `: err` fallback branch.
+        return Promise.reject("string failure");
+      }
+
+      const responses: unknown[][] = [
+        [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
+        [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      ];
+      const results = responses[callIndex] ?? [];
+      callIndex++;
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            success: true,
+            result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
+            errors: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    }) as unknown as typeof fetch;
+
+    await sendAnalysisEmail(makeParams());
+  });
+
+  test("falls back to default dashboard URL when neither param nor NEXTAUTH_URL is set", async () => {
+    delete process.env.NEXTAUTH_URL;
+    const { fetchCalls } = mockD1([
+      [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
+      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+    ]);
+
+    await sendAnalysisEmail(makeParams());
+
+    const doveCall = fetchCalls.find((c) => c.url.includes("dove"));
+    if (!doveCall) throw new Error("expected Dove call");
+    const vars = (doveCall.body as { variables: Record<string, string> }).variables;
+    expect(vars.dashboard_url).toBe("https://gecko.hexly.ai/daily/2026-03-30");
   });
 });

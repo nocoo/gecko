@@ -5,7 +5,7 @@
 //
 // IMPORTANT: Skipped unless RUN_E2E=true.
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type Subprocess } from "bun";
 
 // ---------------------------------------------------------------------------

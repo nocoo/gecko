@@ -7,7 +7,7 @@
  * daily-analyze.test.ts.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -31,7 +31,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     // AI SDK calls won't have a SQL body — detect and reject them
     let body: Record<string, unknown>;
     try {
@@ -305,7 +305,7 @@ describe("POST /api/daily/[date]/analyze", () => {
   });
 
   test("returns 502 for parse_error from runAnalysis", async () => {
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: "not valid json at all",
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
@@ -336,7 +336,7 @@ describe("POST /api/daily/[date]/analyze", () => {
   });
 
   test("returns 504 for AI timeout error", async () => {
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => {
       throw new DOMException("The operation was aborted.", "TimeoutError");
     };
@@ -374,7 +374,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       summary: "Good day.",
     };
 
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: JSON.stringify(validResult),
       usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
@@ -425,7 +425,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       summary: "Great day.",
     };
 
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: JSON.stringify(validResult),
       usage: { promptTokens: 50, completionTokens: 100, totalTokens: 150 },

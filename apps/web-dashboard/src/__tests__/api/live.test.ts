@@ -1,4 +1,4 @@
-import { describe, test, expect, mock, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/live route handler tests (surety standard)
@@ -23,7 +23,7 @@ afterEach(() => {
 
 /** Mock fetch to return a successful D1 probe response. */
 function mockD1Probe(success = true, error?: string) {
-  globalThis.fetch = mock(() => {
+  globalThis.fetch = vi.fn(() => {
     if (!success && error) {
       return Promise.reject(new Error(error));
     }
@@ -98,7 +98,7 @@ describe("/api/live (surety standard)", () => {
 
   test("returns 503 when DB probe fails", async () => {
     // Mock fetch to throw (simulates network / DB error)
-    globalThis.fetch = mock(() => {
+    globalThis.fetch = vi.fn(() => {
       throw new Error("connection refused");
     }) as unknown as typeof fetch;
 
@@ -128,7 +128,7 @@ describe("/api/live (surety standard)", () => {
   // --- Error sanitisation ---
 
   test("sanitises 'ok' from DB error messages", async () => {
-    globalThis.fetch = mock(() => {
+    globalThis.fetch = vi.fn(() => {
       throw new Error("something ok happened");
     }) as unknown as typeof fetch;
 

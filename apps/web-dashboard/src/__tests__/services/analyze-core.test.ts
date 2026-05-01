@@ -2,10 +2,10 @@
  * Tests for services/analyze-core.ts — AI analysis pipeline.
  *
  * Uses D1 mock pattern (globalThis.fetch) for database calls and
- * bun:test mock() for the `ai` module's generateText.
+ * bun:test vi.fn() for the `ai` module's generateText.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   loadAiSettings,
   loadAppContext,
@@ -40,7 +40,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     let body: Record<string, unknown>;
     try {
       body = JSON.parse(init.body as string);
@@ -337,7 +337,7 @@ describe("runAnalysis", () => {
   });
 
   test("returns no_ai_config when resolveAiConfig throws", async () => {
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.resolveAiConfig = () => {
       throw new Error("Unsupported provider: badprovider");
     };
@@ -362,7 +362,7 @@ describe("runAnalysis", () => {
   });
 
   test("returns parse_error when AI response is unparseable", async () => {
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: "This is not valid JSON at all",
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
@@ -401,7 +401,7 @@ describe("runAnalysis", () => {
       summary: "Good day.",
     };
 
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: JSON.stringify(validResult),
       usage: { promptTokens: 100, completionTokens: 200, totalTokens: 300 },
@@ -451,7 +451,7 @@ describe("runAnalysis", () => {
       summary: "Solid day.",
     };
 
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => ({
       text: JSON.stringify(validResult),
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
@@ -474,7 +474,7 @@ describe("runAnalysis", () => {
       [], [], [],
     ];
 
-    globalThis.fetch = mock((_url: string, init: RequestInit) => {
+    globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
       let body: Record<string, unknown>;
       try { body = JSON.parse(init.body as string); } catch {
         return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
@@ -511,7 +511,7 @@ describe("runAnalysis", () => {
   });
 
   test("returns ai_error with timeout message for DOMException TimeoutError", async () => {
-    const { __testOverrides } = await import("../preload");
+    const { __testOverrides } = await import("../setup");
     __testOverrides.generateText = async () => {
       const err = new DOMException("The operation was aborted.", "TimeoutError");
       throw err;

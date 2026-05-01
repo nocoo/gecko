@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/keys route handler tests
@@ -26,7 +26,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 

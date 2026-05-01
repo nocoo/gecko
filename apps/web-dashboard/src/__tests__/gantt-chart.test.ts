@@ -2,7 +2,7 @@
  * Unit tests for the Gantt chart data transformation functions.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import { buildGanttData, formatTime } from "@/components/daily/gantt-chart";
 import type { SessionForChart, AppSummary } from "@/services/daily-stats";
 

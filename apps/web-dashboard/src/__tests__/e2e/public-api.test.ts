@@ -3,7 +3,7 @@
 // Runs against the dev:e2e server (port 17018, E2E_SKIP_AUTH=true).
 // IMPORTANT: Skipped unless RUN_E2E=true.
 
-import { describe, test, expect, beforeAll, afterAll } from "bun:test";
+import { describe, test, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type Subprocess } from "bun";
 
 // ---------------------------------------------------------------------------

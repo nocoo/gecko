@@ -2,7 +2,7 @@
  * Tests for backy.ts — types and pure utility functions.
  */
 
-import { describe, test, expect } from "bun:test";
+import { describe, test, expect } from "vitest";
 import {
   BACKUP_SCHEMA_VERSION,
   type BackupEnvelope,

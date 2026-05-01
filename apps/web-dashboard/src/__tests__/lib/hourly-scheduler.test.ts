@@ -3,7 +3,7 @@
  * Target: ≥95% coverage.
  */
 
-import { describe, test, expect, afterEach, mock } from "bun:test";
+import { describe, test, expect, afterEach, vi } from "vitest";
 import {
   createHourlyScheduler,
   getHourlyScheduler,
@@ -29,6 +29,17 @@ describe("HourlyScheduler constructor", () => {
     const s = createHourlyScheduler({ autoStart: false });
     expect(s.getStats().running).toBe(false);
   });
+
+  test("setInterval callback fires void this.tick() when interval elapses", async () => {
+    let ticked = 0;
+    const s = createHourlyScheduler({ intervalMs: 5 });
+    s.on(() => {
+      ticked++;
+    });
+    await new Promise((r) => setTimeout(r, 30));
+    s.shutdown();
+    expect(ticked).toBeGreaterThan(0);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -38,7 +49,7 @@ describe("HourlyScheduler constructor", () => {
 describe("on()", () => {
   test("registers listener, returns unsubscribe fn", async () => {
     const s = createHourlyScheduler({ autoStart: false });
-    const fn = mock(() => {});
+    const fn = vi.fn(() => {});
     const unsub = s.on(fn);
 
     await s.tick();
@@ -51,7 +62,7 @@ describe("on()", () => {
 
   test("unsubscribe removes listener from set", () => {
     const s = createHourlyScheduler({ autoStart: false });
-    const fn = mock(() => {});
+    const fn = vi.fn(() => {});
     const unsub = s.on(fn);
 
     expect(s.getStats().listenerCount).toBe(1);
@@ -82,10 +93,10 @@ describe("tick()", () => {
 
   test("catches per-listener errors, continues to next", async () => {
     const s = createHourlyScheduler({ autoStart: false });
-    const fn1 = mock(() => {
+    const fn1 = vi.fn(() => {
       throw new Error("boom");
     });
-    const fn2 = mock(() => {});
+    const fn2 = vi.fn(() => {});
 
     s.on(fn1);
     s.on(fn2);
@@ -93,6 +104,14 @@ describe("tick()", () => {
     await s.tick(); // should not throw
     expect(fn1).toHaveBeenCalledTimes(1);
     expect(fn2).toHaveBeenCalledTimes(1);
+  });
+
+  test("logs non-Error rejections via the `: err` fallback branch", async () => {
+    const s = createHourlyScheduler({ autoStart: false });
+    s.on(() => {
+      throw "string failure";
+    });
+    await s.tick();
   });
 
   test("skips when already ticking (re-entrancy guard)", async () => {
@@ -125,7 +144,7 @@ describe("tick()", () => {
 
   test("handles sync callbacks", async () => {
     const s = createHourlyScheduler({ autoStart: false });
-    const fn = mock(() => {
+    const fn = vi.fn(() => {
       // sync callback, no return value
     });
     s.on(fn);

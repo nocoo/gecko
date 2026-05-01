@@ -2,7 +2,7 @@
  * Tests for settings-repo.ts — key-value CRUD via D1 REST API.
  */
 
-import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { settingsRepo } from "@/lib/settings-repo";
 
 const originalFetch = globalThis.fetch;
@@ -21,7 +21,7 @@ function mockD1(responses: Array<{ results: unknown[]; meta?: { changes: number 
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = mock((_url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 

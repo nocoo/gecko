@@ -39,5 +39,9 @@ const AVATAR_COLORS = [
 export function getAvatarColor(name: string): string {
   const hash = hashString(name);
   const index = hash % AVATAR_COLORS.length;
-  return AVATAR_COLORS[index] ?? AVATAR_COLORS[0];
+  // `index` is `hash % AVATAR_COLORS.length`, always a valid index.
+  // The `?? AVATAR_COLORS[0]` is a TS noUncheckedIndexedAccess fallback only.
+  const color = AVATAR_COLORS[index];
+  /* v8 ignore next */
+  return color ?? AVATAR_COLORS[0];
 }

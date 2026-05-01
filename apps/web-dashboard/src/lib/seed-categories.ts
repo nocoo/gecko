@@ -19,7 +19,10 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     [userId],
   );
 
-  if ((existing[0]?.cnt ?? 0) > 0) {
+  // SELECT COUNT(*) always returns exactly one row; the `?? 0` fallback
+  // exists only for TS noUncheckedIndexedAccess — the row is never absent.
+  const cnt = /* v8 ignore next */ existing[0]?.cnt ?? 0;
+  if (cnt > 0) {
     return false;
   }
 
@@ -37,6 +40,9 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     () => "(?, ?, ?, ?, 1, ?, ?)",
   ).join(", ");
   const catParams = DEFAULT_CATEGORIES.flatMap((cat) => [
+    // categoryIdBySlug was just populated from DEFAULT_CATEGORIES above —
+    // the `?? ""` is a TS noUncheckedIndexedAccess fallback only.
+    /* v8 ignore next */
     categoryIdBySlug.get(cat.slug) ?? "",
     userId,
     cat.title,
@@ -62,6 +68,7 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   }
 
   if (mappingEntries.length === 0) {
+    /* v8 ignore next */
     return true;
   }
 

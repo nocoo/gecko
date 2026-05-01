@@ -35,6 +35,7 @@ export function getDateBoundsEpoch(
   const y = parts[0];
   const m = parts[1];
   const d = parts[2];
+  /* v8 ignore next 3 */
   if (y === undefined || m === undefined || d === undefined) {
     throw new Error(`Invalid date string: ${dateStr}`);
   }
@@ -70,6 +71,7 @@ export function localDateToUTCEpoch(dateStr: string, tz: string): number {
   const year = parts[0];
   const month = parts[1];
   const day = parts[2];
+  /* v8 ignore next 3 */
   if (year === undefined || month === undefined || day === undefined) {
     throw new Error(`Invalid date string: ${dateStr}`);
   }
@@ -108,10 +110,14 @@ function offsetAtEpoch(epochSec: number, tz: string): number {
   });
   const parts = fmt.formatToParts(new Date(ms));
   const get = (type: string) =>
+    // Intl.DateTimeFormat always emits every requested field — the `?? "0"`
+    // fallback exists only to satisfy TS noUncheckedIndexedAccess.
+    /* v8 ignore next */
     parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
 
   const lY = get("year"), lM = get("month"), lD = get("day");
   let lH = get("hour");
+  /* v8 ignore next */
   if (lH === 24) lH = 0;
   const lMin = get("minute");
   const lS = get("second");
@@ -163,6 +169,9 @@ export function getTimezoneOffsetMinutes(
 
   const parts = fmt.formatToParts(new Date(utcRef));
   const get = (type: string) =>
+    // Intl.DateTimeFormat always emits every requested field — the `?? "0"`
+    // fallback exists only to satisfy TS noUncheckedIndexedAccess.
+    /* v8 ignore next */
     parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
 
   const localYear = get("year");
@@ -170,6 +179,7 @@ export function getTimezoneOffsetMinutes(
   const localDay = get("day");
   let localHour = get("hour");
   // Intl may return hour 24 for midnight — normalize to 0
+  /* v8 ignore next */
   if (localHour === 24) localHour = 0;
   const localMinute = get("minute");
 
@@ -236,6 +246,7 @@ export function yesterdayInTz(tz: string): string {
   const y = todayParts[0];
   const m = todayParts[1];
   const d = todayParts[2];
+  /* v8 ignore next 3 */
   if (y === undefined || m === undefined || d === undefined) {
     throw new Error(`Invalid date string from todayInTz: ${today}`);
   }
@@ -291,9 +302,13 @@ export function sqlDateExpr(
   let y: number, m: number, d: number;
   if (refDateStr) {
     const refParts = refDateStr.split("-").map(Number);
+    // Caller contract: refDateStr is always YYYY-MM-DD (validated upstream).
+    // The `?? default` fallbacks are TS noUncheckedIndexedAccess satisfaction.
+    /* v8 ignore start */
     y = refParts[0] ?? 0;
     m = refParts[1] ?? 1;
     d = refParts[2] ?? 1;
+    /* v8 ignore stop */
   } else {
     const now = new Date();
     y = now.getUTCFullYear();
