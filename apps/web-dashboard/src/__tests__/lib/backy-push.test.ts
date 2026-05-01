@@ -18,7 +18,7 @@ beforeEach(() => {
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  delete process.env.NODE_ENV;
+  vi.unstubAllEnvs();
 });
 
 /**
@@ -196,7 +196,7 @@ describe("executePush", () => {
   });
 
   test("uses 'prod' env mapping for production NODE_ENV", async () => {
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
     let observedEnv: string | undefined;
     mockFetch(
       [
@@ -220,7 +220,7 @@ describe("executePush", () => {
   });
 
   test("falls back to 'dev' for an unknown NODE_ENV", async () => {
-    process.env.NODE_ENV = "staging";
+    vi.stubEnv("NODE_ENV", "staging");
     let observedEnv: string | undefined;
     mockFetch(
       [
