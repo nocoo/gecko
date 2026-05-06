@@ -1,11 +1,8 @@
-# D1: Verify test database isolation (_test_marker check)
-# L2: API E2E (integration tests)
+# L2: API E2E (local SQLite — no remote D1 needed)
 # G2: Security gate (osv-scanner + gitleaks)
-# L2 & G2 run in parallel after D1 verification passes
+# L2 & G2 run in parallel
 
 cd apps/web-dashboard
-
-bun run verify:test-db || exit 1
 
 bun run test:e2e &
 PID_L2=$!

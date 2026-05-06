@@ -1,8 +1,11 @@
 import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { query, execute, getD1Config, verifyTestDatabase } from "../../lib/d1";
+import { query, execute, getD1Config, isLocalMode, closeLocal } from "../../lib/d1";
 
 // ---------------------------------------------------------------------------
-// D1 client tests — unit tests with mocked fetch
+// D1 client tests — unit tests with mocked fetch (remote mode)
+//
+// Local mode (bun:sqlite) is tested implicitly by E2E tests which run under
+// Bun runtime. Vitest runs under Node which cannot resolve `bun:sqlite`.
 // ---------------------------------------------------------------------------
 
 const originalFetch = globalThis.fetch;
@@ -11,13 +14,14 @@ beforeEach(() => {
   process.env.CF_ACCOUNT_ID = "test-account-id";
   process.env.CF_API_TOKEN = "test-api-token";
   process.env.CF_D1_DATABASE_ID = "test-db-id";
-  // Remove test override so getD1Config() uses CF_D1_DATABASE_ID
-  delete process.env.CF_D1_DATABASE_ID_TEST;
+  // Ensure remote mode (no D1_LOCAL_PATH)
+  delete process.env.D1_LOCAL_PATH;
 });
 
 afterEach(() => {
   globalThis.fetch = originalFetch;
-  delete process.env.CF_D1_DATABASE_ID_TEST;
+  delete process.env.D1_LOCAL_PATH;
+  closeLocal();
 });
 
 // Helper: mock fetch to return a D1 response
@@ -38,7 +42,24 @@ function mockFetch(result: unknown[], success = true, status = 200) {
 
 describe("d1 client", () => {
   // ---------------------------------------------------------------------------
-  // query()
+  // isLocalMode()
+  // ---------------------------------------------------------------------------
+
+  describe("isLocalMode()", () => {
+    test("returns false when D1_LOCAL_PATH is not set", () => {
+      delete process.env.D1_LOCAL_PATH;
+      expect(isLocalMode()).toBe(false);
+    });
+
+    test("returns true when D1_LOCAL_PATH is set", () => {
+      process.env.D1_LOCAL_PATH = "/tmp/test.db";
+      expect(isLocalMode()).toBe(true);
+      delete process.env.D1_LOCAL_PATH;
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // query() [remote mode]
   // ---------------------------------------------------------------------------
 
   describe("query()", () => {
@@ -207,70 +228,6 @@ describe("d1 client", () => {
       expect(config.accountId).toBe("");
       expect(config.apiToken).toBe("");
       expect(config.databaseId).toBe("");
-    });
-
-    test("CF_D1_DATABASE_ID_TEST takes priority over CF_D1_DATABASE_ID", () => {
-      process.env.CF_D1_DATABASE_ID_TEST = "test-override-db-id";
-
-      const config = getD1Config();
-      expect(config.databaseId).toBe("test-override-db-id");
-
-      delete process.env.CF_D1_DATABASE_ID_TEST;
-    });
-
-    test("falls back to CF_D1_DATABASE_ID when TEST var is absent", () => {
-      delete process.env.CF_D1_DATABASE_ID_TEST;
-
-      const config = getD1Config();
-      expect(config.databaseId).toBe("test-db-id");
-    });
-  });
-
-  // ---------------------------------------------------------------------------
-  // verifyTestDatabase()
-  // ---------------------------------------------------------------------------
-
-  describe("verifyTestDatabase()", () => {
-    test("passes when _test_marker has env=test", async () => {
-      mockFetch([{ key: "env", value: "test" }]);
-
-      await expect(verifyTestDatabase()).resolves.toBeUndefined();
-    });
-
-    test("throws when _test_marker has wrong value", async () => {
-      mockFetch([{ key: "env", value: "production" }]);
-
-      await expect(verifyTestDatabase()).rejects.toThrow(
-        "is NOT a test instance"
-      );
-    });
-
-    test("throws when _test_marker returns empty rows", async () => {
-      mockFetch([]);
-
-      await expect(verifyTestDatabase()).rejects.toThrow(
-        "is NOT a test instance"
-      );
-    });
-
-    test("throws when _test_marker table does not exist", async () => {
-      // Simulate a D1 error for missing table
-      globalThis.fetch = vi.fn(() =>
-        Promise.resolve(
-          new Response(
-            JSON.stringify({
-              success: false,
-              result: [{ results: [], success: false, meta: { changes: 0, last_row_id: 0 } }],
-              errors: [{ message: "no such table: _test_marker" }],
-            }),
-            { status: 200 }
-          )
-        )
-      ) as unknown as typeof fetch;
-
-      await expect(verifyTestDatabase()).rejects.toThrow(
-        "not configured for E2E testing"
-      );
     });
   });
 });

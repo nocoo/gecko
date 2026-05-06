@@ -1,6 +1,12 @@
-// D1 REST API client for Cloudflare D1 database access.
-// Since the web dashboard runs on Bun (not Workers), we access D1
-// via the Cloudflare REST API.
+// D1 database client — supports both Cloudflare D1 REST API (production)
+// and local SQLite via bun:sqlite (development / E2E testing).
+//
+// Mode selection:
+//   - D1_LOCAL_PATH env var set → local SQLite file (bun:sqlite)
+//   - Otherwise → Cloudflare D1 REST API (requires CF_ACCOUNT_ID, CF_API_TOKEN, CF_D1_DATABASE_ID)
+//
+// Note: bun:sqlite is loaded lazily (only when D1_LOCAL_PATH is set) so that
+// unit tests running under vitest/Node can import this module without error.
 
 export interface D1Config {
   accountId: string;
@@ -29,15 +35,76 @@ interface D1Response {
   errors: Array<{ message: string }>;
 }
 
-/** Read D1 config from environment variables.
- *  When CF_D1_DATABASE_ID_TEST is set (E2E mode), it takes priority
- *  over the production CF_D1_DATABASE_ID to ensure test isolation. */
+// ---------------------------------------------------------------------------
+// Local SQLite mode (bun:sqlite) — lazy loaded
+// Covered by E2E tests under Bun runtime; excluded from v8 coverage (Node).
+// ---------------------------------------------------------------------------
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let localDb: any = null;
+
+/* v8 ignore start */
+/** Get or create the local SQLite database connection. */
+function getLocalDb() {
+  if (!localDb) {
+    // Dynamic require — only resolves under Bun runtime (not Node/vitest).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { Database } = require("bun:sqlite");
+    const dbPath = process.env.D1_LOCAL_PATH ?? "";
+    localDb = new Database(dbPath);
+    localDb.exec("PRAGMA journal_mode = WAL");
+    localDb.exec("PRAGMA foreign_keys = ON");
+  }
+  return localDb;
+}
+/* v8 ignore stop */
+
+/** Check if we should use local SQLite mode. */
+export function isLocalMode(): boolean {
+  return !!process.env.D1_LOCAL_PATH;
+}
+
+/* v8 ignore start */
+/** Execute a query against local SQLite and return D1-compatible result. */
+function executeLocal(sql: string, params: unknown[] = []): D1ExecuteResult {
+  const db = getLocalDb();
+  const trimmed = sql.trim().toUpperCase();
+  const isSelect =
+    trimmed.startsWith("SELECT") ||
+    trimmed.startsWith("WITH") ||
+    trimmed.startsWith("PRAGMA");
+
+  if (isSelect) {
+    const stmt = db.prepare(sql);
+    const results = stmt.all(...params);
+    return {
+      results,
+      meta: { changes: 0, last_row_id: 0 },
+    };
+  }
+
+  const stmt = db.prepare(sql);
+  const info = stmt.run(...params);
+  return {
+    results: [],
+    meta: {
+      changes: info.changes,
+      last_row_id: Number(info.lastInsertRowid),
+    },
+  };
+}
+/* v8 ignore stop */
+
+// ---------------------------------------------------------------------------
+// Remote D1 REST API mode
+// ---------------------------------------------------------------------------
+
+/** Read D1 config from environment variables. */
 export function getD1Config(): D1Config {
-  const testDbId = process.env.CF_D1_DATABASE_ID_TEST;
   return {
     accountId: process.env.CF_ACCOUNT_ID ?? "",
     apiToken: process.env.CF_API_TOKEN ?? "",
-    databaseId: testDbId || process.env.CF_D1_DATABASE_ID || "",
+    databaseId: process.env.CF_D1_DATABASE_ID || "",
   };
 }
 
@@ -46,8 +113,8 @@ function buildUrl(config: D1Config): string {
   return `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/d1/database/${config.databaseId}/query`;
 }
 
-/** Execute a raw SQL query and return the full result with meta. */
-export async function execute(
+/** Execute a query against the remote D1 REST API. */
+async function executeRemote(
   sql: string,
   params: unknown[] = []
 ): Promise<D1ExecuteResult> {
@@ -107,6 +174,22 @@ export async function execute(
   throw lastError;
 }
 
+// ---------------------------------------------------------------------------
+// Public API — routes to local or remote based on D1_LOCAL_PATH
+// ---------------------------------------------------------------------------
+
+/** Execute a raw SQL query and return the full result with meta. */
+export async function execute(
+  sql: string,
+  params: unknown[] = []
+): Promise<D1ExecuteResult> {
+  /* v8 ignore next 3 */
+  if (isLocalMode()) {
+    return executeLocal(sql, params);
+  }
+  return executeRemote(sql, params);
+}
+
 /** Execute a SELECT query and return typed results. */
 export async function query<T = Record<string, unknown>>(
   sql: string,
@@ -116,37 +199,12 @@ export async function query<T = Record<string, unknown>>(
   return result.results as T[];
 }
 
-/** Verify the connected D1 database has a _test_marker table with env=test.
- *  Call this in E2E setup to prevent accidental writes to production. */
-export async function verifyTestDatabase(): Promise<void> {
-  const config = getD1Config();
-  try {
-    const rows = await query<{ key: string; value: string }>(
-      "SELECT key, value FROM _test_marker WHERE key = ?",
-      ["env"]
-    );
-    if (rows.length === 0) {
-      throw new Error(
-        `D1 test marker check failed: database ${config.databaseId} is NOT a test instance. ` +
-          `Expected _test_marker.env = 'test'. Refusing to run E2E tests against production data.`
-      );
-    }
-    const marker = rows[0];
-    if (!marker || marker.value !== "test") {
-      throw new Error(
-        `D1 test marker check failed: database ${config.databaseId} is NOT a test instance. ` +
-          `Expected _test_marker.env = 'test'. Refusing to run E2E tests against production data.`
-      );
-    }
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("test marker check failed")) {
-      throw err;
-    }
-    throw new Error(
-      `D1 test marker table missing in database ${config.databaseId}. ` +
-        `This database is not configured for E2E testing. ` +
-        `Create the marker: INSERT INTO _test_marker (key, value) VALUES ('env', 'test')`
-    );
+/** Close the local SQLite connection (for clean shutdown in tests). */
+export function closeLocal(): void {
+  /* v8 ignore next 4 */
+  if (localDb) {
+    localDb.close();
+    localDb = null;
   }
 }
 

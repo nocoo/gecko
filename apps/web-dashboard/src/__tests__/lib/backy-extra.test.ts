@@ -57,7 +57,6 @@ describe("d1.execute retry path", () => {
     process.env.CF_ACCOUNT_ID = "a";
     process.env.CF_API_TOKEN = "b";
     process.env.CF_D1_DATABASE_ID = "c";
-    delete process.env.CF_D1_DATABASE_ID_TEST;
   });
 
   afterEach(() => {

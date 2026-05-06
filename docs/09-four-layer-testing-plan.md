@@ -54,13 +54,12 @@ violations but may miss warning-level issues.
 
 Update: `dev:e2e` script, all E2E test files, pre-push hook.
 
-### 2.2 E2E server auto-management script
+### 2.2 E2E server auto-management
 
-Create `scripts/e2e-server.sh`:
-- Check target port for conflicts, kill stale processes
-- Start E2E dev server in background
-- Health-check loop (poll `/api/live` until ready, 30s timeout)
-- Trap EXIT to ensure cleanup
+E2E tests spawn the dev server automatically via `bun run dev:e2e`.
+The server uses `D1_LOCAL_PATH=.local/gecko-test.db` (local SQLite) — no
+remote Cloudflare D1 dependency. Database is initialized fresh by
+`scripts/init-local-db.ts` before each test run.
 
 ### 2.3 Fill uncovered API routes
 
@@ -88,10 +87,8 @@ Create `scripts/e2e-server.sh`:
 
 ### 2.4 Update pre-push hook
 
-Integrate `scripts/e2e-server.sh` into `.husky/pre-push`:
-- Auto-start E2E server before tests
-- Run with `RUN_E2E=true`
-- Auto-stop server after tests
+Pre-push runs `bun run test:e2e` (which calls `db:init` then the test suite)
+and `bun run gate:security` in parallel. No remote D1 verification needed.
 
 ## Phase 3 — BDD E2E (Playwright) ✓
 
@@ -136,7 +133,7 @@ Phase 1.1  Fix pre-push E2E skip bug          ✓ Done
 Phase 1.2  ESLint strict                       ✓ Done (strict, not strictTypeChecked)
 Phase 1.3  SwiftLint --strict                  ✓ Done
 Phase 2.1  Port standardization                ✓ Done (17018 / 27018)
-Phase 2.2  E2E server auto-management          ✓ Done (scripts/e2e-server.sh)
+Phase 2.2  E2E server auto-management          ✓ Done (local SQLite via D1_LOCAL_PATH)
 Phase 2.3  Fill uncovered API E2E tests        ✓ Done (11 test files)
 Phase 2.4  Update pre-push hook                ✓ Done
 Phase 3.1  Install Playwright                  ✓ Done
