@@ -1,12 +1,12 @@
 // D1 database client — supports both Cloudflare D1 REST API (production)
-// and local SQLite via bun:sqlite (development / E2E testing).
+// and local SQLite via better-sqlite3 (development / E2E testing).
 //
 // Mode selection:
-//   - D1_LOCAL_PATH env var set → local SQLite file (bun:sqlite)
+//   - D1_LOCAL_PATH env var set → local SQLite file (better-sqlite3)
 //   - Otherwise → Cloudflare D1 REST API (requires CF_ACCOUNT_ID, CF_API_TOKEN, CF_D1_DATABASE_ID)
 //
-// Note: bun:sqlite is loaded lazily (only when D1_LOCAL_PATH is set) so that
-// unit tests running under vitest/Node can import this module without error.
+// Note: better-sqlite3 is loaded via dynamic import() so vitest/Node unit
+// tests (which never set D1_LOCAL_PATH) don't pay the import cost.
 
 export interface D1Config {
   accountId: string;
@@ -36,8 +36,8 @@ interface D1Response {
 }
 
 // ---------------------------------------------------------------------------
-// Local SQLite mode (bun:sqlite) — lazy loaded
-// Covered by E2E tests under Bun runtime; excluded from v8 coverage (Node).
+// Local SQLite mode (better-sqlite3) — lazy loaded
+// Covered by E2E tests; excluded from v8 coverage (unit tests don't set D1_LOCAL_PATH).
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,15 +45,13 @@ let localDb: any = null;
 
 /* v8 ignore start */
 /** Get or create the local SQLite database connection. */
-function getLocalDb() {
+async function getLocalDb() {
   if (!localDb) {
-    // Dynamic require — only resolves under Bun runtime (not Node/vitest).
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { Database } = require("bun:sqlite");
+    const Database = (await import("better-sqlite3")).default;
     const dbPath = process.env.D1_LOCAL_PATH ?? "";
     localDb = new Database(dbPath);
-    localDb.exec("PRAGMA journal_mode = WAL");
-    localDb.exec("PRAGMA foreign_keys = ON");
+    localDb.pragma("journal_mode = WAL");
+    localDb.pragma("foreign_keys = ON");
   }
   return localDb;
 }
@@ -66,8 +64,8 @@ export function isLocalMode(): boolean {
 
 /* v8 ignore start */
 /** Execute a query against local SQLite and return D1-compatible result. */
-function executeLocal(sql: string, params: unknown[] = []): D1ExecuteResult {
-  const db = getLocalDb();
+async function executeLocal(sql: string, params: unknown[] = []): Promise<D1ExecuteResult> {
+  const db = await getLocalDb();
   const trimmed = sql.trim().toUpperCase();
   const isSelect =
     trimmed.startsWith("SELECT") ||

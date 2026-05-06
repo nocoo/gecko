@@ -30,3 +30,6 @@ coverage/
 
 # local test database
 .local/
+
+# TypeScript build info
+*.tsbuildinfo
