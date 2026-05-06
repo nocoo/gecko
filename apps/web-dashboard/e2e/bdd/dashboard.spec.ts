@@ -13,7 +13,7 @@ test.describe("Dashboard", () => {
     const main = page.getByRole("main");
     await expect(main.getByText("Total Time")).toBeVisible();
     await expect(main.getByText("Apps Used")).toBeVisible();
-    await expect(main.getByText("Sessions")).toBeVisible();
+    await expect(main.getByText("Sessions", { exact: true })).toBeVisible();
     await expect(main.getByText("Longest Session")).toBeVisible();
   });
 

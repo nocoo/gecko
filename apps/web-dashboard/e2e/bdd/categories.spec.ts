@@ -63,6 +63,11 @@ test.describe("Categories — CRUD", () => {
     await page.locator("#edit-title").fill(renamed);
     await page.getByRole("button", { name: "Save", exact: true }).click();
 
+    // Wait for dialog to close before asserting on list
+    await expect(
+      page.getByRole("heading", { name: "Edit Category" })
+    ).not.toBeVisible({ timeout: 3_000 });
+
     await expect(page.getByText(renamed)).toBeVisible({ timeout: 5_000 });
   });
 

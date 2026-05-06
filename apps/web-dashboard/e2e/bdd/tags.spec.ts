@@ -60,6 +60,11 @@ test.describe("Tags — CRUD", () => {
     await page.locator("#edit-name").fill(renamed);
     await page.getByRole("button", { name: "Save", exact: true }).click();
 
+    // Wait for dialog to close before asserting on list
+    await expect(
+      page.getByRole("heading", { name: "Rename Tag" })
+    ).not.toBeVisible({ timeout: 3_000 });
+
     await expect(page.getByText(renamed, { exact: true })).toBeVisible({
       timeout: 5_000,
     });
