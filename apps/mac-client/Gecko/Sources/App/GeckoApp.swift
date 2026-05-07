@@ -49,23 +49,10 @@ struct GeckoApp: App {
             wrappedValue: SettingsViewModel(settingsManager: settings, syncService: sync)
         )
 
-        // Primary auto-start: runs after app finishes launching.
-        // This is the most reliable path — init() always executes regardless of
-        // how the app was launched (login item, double-click, CLI, etc.).
-        // The delay ensures StateObjects are fully initialized before we access them.
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(500))
-            guard settings.autoStartTracking else { return }
-            guard !engine.isTracking else { return }
-
-            // Wait up to ~6s for permissions
-            for _ in 0..<6 {
-                if permission.allPermissionsGranted {
-                    engine.start()
-                    return
-                }
-                try? await Task.sleep(for: .seconds(1))
-            }
+            await Self.waitForPermissionsAndStart(
+                settings: settings, engine: engine, permission: permission
+            )
         }
     }
 
@@ -104,19 +91,48 @@ struct GeckoApp: App {
 
     // MARK: - Auto-Start
 
-    /// If the user enabled "auto-start tracking", wait for permissions then start.
+    @MainActor
+    private static func waitForPermissionsAndStart(
+        settings: SettingsManager, engine: TrackingEngine, permission: PermissionManager
+    ) async {
+        guard settings.autoStartTracking else { return }
+        try? await Task.sleep(for: .milliseconds(500))
+        guard !engine.isTracking else { return }
+
+        if permission.allPermissionsGranted {
+            engine.start()
+            return
+        }
+
+        let granted = await withTaskGroup(of: Bool.self) { group in
+            group.addTask { @MainActor in
+                for await (ax, auto) in permission.$isAccessibilityGranted
+                    .combineLatest(permission.$isAutomationGranted)
+                    .values {
+                    if ax && auto { return true }
+                }
+                return false
+            }
+            group.addTask {
+                try? await Task.sleep(for: .seconds(30))
+                return false
+            }
+            let result = await group.next() ?? false
+            group.cancelAll()
+            return result
+        }
+
+        if granted && !engine.isTracking {
+            engine.start()
+        }
+    }
+
     @MainActor
     private func autoStartTrackingIfNeeded() async {
         guard settingsManager.autoStartTracking else { return }
         guard !trackingEngine.isTracking else { return }
-
-        // Permissions are polled asynchronously — wait up to ~6 s for them.
-        for _ in 0..<6 {
-            if permissionManager.allPermissionsGranted {
-                trackingEngine.start()
-                return
-            }
-            try? await Task.sleep(for: .seconds(1))
+        if permissionManager.allPermissionsGranted {
+            trackingEngine.start()
         }
     }
 }
