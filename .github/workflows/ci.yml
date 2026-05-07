@@ -15,5 +15,6 @@ jobs:
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
-      enable-l2: "false"
+      enable-l2: "true"
+      l2-command: "bun run test:l2"
     secrets: inherit

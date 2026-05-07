@@ -6,7 +6,8 @@
     "dev": "bun run --cwd apps/web-dashboard dev",
     "prepare": "husky",
     "release": "bun run scripts/release.ts",
-    "typecheck": "tsc --noEmit -p apps/web-dashboard/tsconfig.json"
+    "typecheck": "tsc --noEmit -p apps/web-dashboard/tsconfig.json",
+    "test:l2": "bun run --cwd apps/web-dashboard vitest run src/__tests__/api/"
   },
   "devDependencies": {
     "husky": "^9.1.7"
