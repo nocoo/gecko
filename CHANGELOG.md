@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.9.0] - 2026-05-09
+
+### Added
+- **live**: upgrade /api/live to surety standard
+- add automated release script
+- **ui**: add success/warning/info badge variants
+
+### Fixed
+- **mac**: make auto-start watcher persistent instead of time-bounded
+- **mac**: replace polling with reactive Combine for auto-start tracking
+- **bdd**: resolve Playwright strict mode violations in rename/edit tests
+- **web**: use better-sqlite3 for local D1 mode (Node/vinext compatible)
+- **gecko**: use vi.stubEnv for NODE_ENV in backy-push.test.ts
+- **coverage**: remove core module exclusions, add tests for backy-push/daily-stats/analyze-core
+- **ui**: align bg-card usage to B05 luminance spec
+- **test**: replace Function type with explicit callable signature
+- **test**: rewrite live.test.ts to use fetch mock instead of mock.module
+- **lint**: remove unused afterEach import
+- **ui**: add hover border darkening to Input and Select
+- **ui**: tab switcher bg-background → bg-card
+- **ui**: migrate L3 controls from bg-input to bg-secondary + border-border
+- **ui**: remove border from L1 bg-card containers in daily components
+- **assets**: remove unreferenced logo-192.png
+- **ui**: chart tooltips to bg-secondary without border/shadow
+- **ui**: empty state to bg-secondary without border-dashed
+
+### Changed
+- **web**: replace remote D1 test database with local SQLite
+
+### CI
+- **l2**: add test:l2 script and enable L2 gate in CI
+- upgrade base-ci to v2026.1
+- retrigger (flaky test)
+- retrigger
+
+### Maintenance
+- **deps**: fix 4 medium-severity vulnerabilities
+- **web**: add vitest config and replace bun:test infra
+- **deps**: upgrade @nocoo/next-ai to ^0.2.1
+- **g1**: add typecheck script
+- **quality**: 6DQ L1+G1 compliance — add CI workflow (#9)
+
+### Style
+- fix HTML title language to match UI (gecko - Screen Time Dashboard)
+- unify HTML title to "gecko - 屏幕时间追踪面板
+- **login**: GitHub icon size-5 → h-[18px] w-[18px]
+- **shell**: GitHub icon size-5 → h-[18px] w-[18px]
+- **sidebar**: brand name tracking-tight → tracking-tighter
+
+### Tests
+- **l2**: add L2 tests for sync-status route
+- **l2**: add L2 tests for daily routes
+- **l2**: add L2 tests for stats route
+- **l2**: add L2 tests for settings routes
+- **l2**: add L2 tests for sessions route
+- **web**: migrate test imports from bun:test to vitest
+- add analyze-core and analyze route tests for error paths and success flow
+- **web**: add tests for analyze-core, analyze-route, auth, and auto-analyze uncovered lines
+- **web**: add coverage tests for api-helpers, tags, categories, backy-history
+- **web**: improve coverage for sidebar, score-cards, and gantt-chart
+
 ## [1.8.3] - 2026-04-14
 
 ### Web Dashboard

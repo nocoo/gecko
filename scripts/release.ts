@@ -31,6 +31,9 @@ const PACKAGE_JSON_PATHS = [
   pathResolve(PROJECT_ROOT, "apps/web-dashboard/package.json"),
 ];
 const CHANGELOG_PATH = pathResolve(PROJECT_ROOT, "CHANGELOG.md");
+const MAC_CLIENT_DIR = pathResolve(PROJECT_ROOT, "apps/mac-client");
+const PROJECT_YML_PATH = pathResolve(MAC_CLIENT_DIR, "project.yml");
+const ABOUT_VIEW_PATH = pathResolve(MAC_CLIENT_DIR, "Gecko/Sources/Views/AboutView.swift");
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -212,6 +215,61 @@ function updateVersionConstants(version: string, dry: boolean): void {
 }
 
 // ---------------------------------------------------------------------------
+// Mac app versioning
+// ---------------------------------------------------------------------------
+
+function updateMacVersions(version: string, dry: boolean): void {
+  // project.yml — MARKETING_VERSION
+  const ymlContent = readFileSync(PROJECT_YML_PATH, "utf-8");
+  const ymlUpdated = ymlContent.replace(
+    /MARKETING_VERSION: "[\d.]+"/,
+    `MARKETING_VERSION: "${version}"`
+  );
+  if (ymlUpdated !== ymlContent) {
+    console.log(`  apps/mac-client/project.yml: MARKETING_VERSION → ${version}`);
+    if (!dry) writeFileSync(PROJECT_YML_PATH, ymlUpdated);
+  }
+
+  // AboutView.swift — fallback version string
+  const swiftContent = readFileSync(ABOUT_VIEW_PATH, "utf-8");
+  const swiftUpdated = swiftContent.replace(
+    /\?\? "[\d.]+"/,
+    `?? "${version}"`
+  );
+  if (swiftUpdated !== swiftContent) {
+    console.log(`  apps/mac-client/.../AboutView.swift: fallback → ${version}`);
+    if (!dry) writeFileSync(ABOUT_VIEW_PATH, swiftUpdated);
+  }
+
+  // Regenerate Xcode project
+  console.log("  Regenerating Xcode project...");
+  run("xcodegen generate", { dry, cwd: MAC_CLIENT_DIR });
+}
+
+// ---------------------------------------------------------------------------
+// DMG build + upload
+// ---------------------------------------------------------------------------
+
+function buildAndUploadDmg(version: string, dry: boolean): void {
+  if (dry) {
+    console.log(`[dry-run] ./scripts/build-dmg.sh`);
+    console.log(`[dry-run] gh release upload v${version} build/Gecko-${version}.dmg`);
+    return;
+  }
+
+  console.log("  Building DMG...");
+  run("./scripts/build-dmg.sh", { cwd: PROJECT_ROOT });
+
+  const dmgPath = pathResolve(PROJECT_ROOT, `build/Gecko-${version}.dmg`);
+  if (!existsSync(dmgPath)) {
+    throw new Error(`DMG not found at ${dmgPath}`);
+  }
+
+  console.log("  Uploading DMG to GitHub release...");
+  run(`gh release upload v${version} ${dmgPath}`);
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -243,11 +301,15 @@ async function main() {
   console.log("\n🔍 Checking for version constants...");
   updateVersionConstants(nextVersion, dry);
 
-  // 3. Sync lockfile
+  // 3. Update Mac app versions (project.yml + AboutView.swift + xcodegen)
+  console.log("\n🍎 Updating Mac app versions...");
+  updateMacVersions(nextVersion, dry);
+
+  // 4. Sync lockfile
   console.log("\n📦 Syncing lockfile...");
   run("bun install", { dry });
 
-  // 4. Generate changelog
+  // 5. Generate changelog
   console.log("\n📝 Generating changelog...");
   const changelogEntry = generateChangelog(nextVersion, dry);
   if (changelogEntry) {
@@ -257,7 +319,7 @@ async function main() {
     console.log("  No conventional commits found since last tag.");
   }
 
-  // 5. Git commit, tag, push
+  // 6. Git commit, tag, push
   console.log("\n📌 Committing and tagging...");
   run("git add -A", { dry });
   run(`git commit -m "release: v${nextVersion}"`, { dry });
@@ -265,7 +327,7 @@ async function main() {
   run("git push", { dry });
   run("git push --tags", { dry });
 
-  // 6. GitHub release
+  // 7. GitHub release
   console.log("\n🎉 Creating GitHub release...");
   const releaseNotes = changelogEntry || `Release v${nextVersion}`;
   const notesFile = pathResolve(PROJECT_ROOT, ".release-notes-tmp.md");
@@ -281,6 +343,10 @@ async function main() {
   } else {
     console.log(`[dry-run] gh release create v${nextVersion}`);
   }
+
+  // 8. Build and upload DMG
+  console.log("\n📀 Building and uploading DMG...");
+  buildAndUploadDmg(nextVersion, dry);
 
   console.log(`\n✅ Released v${nextVersion}!`);
 }
