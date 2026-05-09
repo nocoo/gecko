@@ -95,35 +95,20 @@ struct GeckoApp: App {
     private static func waitForPermissionsAndStart(
         settings: SettingsManager, engine: TrackingEngine, permission: PermissionManager
     ) async {
-        guard settings.autoStartTracking else { return }
         try? await Task.sleep(for: .milliseconds(500))
-        guard !engine.isTracking else { return }
 
-        if permission.allPermissionsGranted {
-            engine.start()
-            return
-        }
-
-        let granted = await withTaskGroup(of: Bool.self) { group in
-            group.addTask { @MainActor in
-                for await (ax, auto) in permission.$isAccessibilityGranted
-                    .combineLatest(permission.$isAutomationGranted)
-                    .values {
-                    if ax && auto { return true }
-                }
-                return false
+        for await (ax, auto, autoStart, tracking) in permission.$isAccessibilityGranted
+            .combineLatest(
+                permission.$isAutomationGranted,
+                settings.$autoStartTracking,
+                engine.$isTracking
+            )
+            .values {
+            guard autoStart, !tracking else { return }
+            if ax && auto {
+                engine.start()
+                return
             }
-            group.addTask {
-                try? await Task.sleep(for: .seconds(30))
-                return false
-            }
-            let result = await group.next() ?? false
-            group.cancelAll()
-            return result
-        }
-
-        if granted && !engine.isTracking {
-            engine.start()
         }
     }
 
