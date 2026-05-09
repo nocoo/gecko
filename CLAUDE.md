@@ -72,3 +72,9 @@ This project includes both a **web dashboard** and a **Mac app** — both are ve
 - **Fix**: Moved `ensureAutoAnalyze()` call from `instrumentation.ts` to the analyze route module (`src/app/api/daily/[date]/analyze/route.ts`) as a module-level side effect. Route modules are eagerly bundled into `dist/server/index.js`, so the call executes at server startup.
 - **Lesson**: In vinext (and likely other Vite-based Next.js alternatives), `instrumentation.ts` is a dev-only feature. For production side effects (schedulers, background tasks), place initialization calls in route modules that are guaranteed to be bundled. Always verify critical code appears in the build output with `grep` before deploying.
 
+### 2026-05-09: better-sqlite3 NODE_MODULE_VERSION mismatch breaks all E2E tests
+- **Problem**: All E2E tests returned 500 errors — every API endpoint failed silently. Pre-push hook blocked the release push.
+- **Root cause**: `better-sqlite3` native addon was compiled against Node.js MODULE_VERSION 141, but the current Node.js (v24, managed via fnm) requires MODULE_VERSION 137. This happens when Node.js is upgraded (or fnm switches versions) without rebuilding native addons. The server starts fine but crashes on the first database access.
+- **Fix**: `bun install --force` to rebuild native addons against the current Node.js ABI.
+- **Lesson**: After any Node.js version change (fnm switch, brew upgrade, etc.), always `bun install --force` to rebuild native addons. The error is invisible until runtime — the server starts, routes register, but every DB query throws `ERR_DLOPEN_FAILED`.
+
