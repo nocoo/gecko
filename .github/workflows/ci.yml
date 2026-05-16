@@ -9,9 +9,10 @@ on:
 
 jobs:
   quality:
-    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026.1
+    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026.4
     with:
-      pre-command: "cd apps/web-dashboard && bun install --frozen-lockfile"
+      ignore-scripts: true
+      extra-install-dirs: "apps/web-dashboard"
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
