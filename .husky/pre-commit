@@ -5,7 +5,15 @@
 (cd apps/web-dashboard && bun run typecheck && bun run lint:staged && bun run test:coverage) &
 PID_WEB=$!
 
-(cd apps/mac-client && swiftlint --strict && xcodebuild test -project Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests -quiet) &
+(
+  if [ -d apps/mac-client ]; then
+    if command -v swiftlint >/dev/null 2>&1 && xcrun --find xcodebuild >/dev/null 2>&1; then
+      cd apps/mac-client && swiftlint --strict && xcodebuild test -project Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests -quiet
+    else
+      echo "⚠️  swiftlint or xcodebuild not available, skipping mac-client checks"
+    fi
+  fi
+) &
 PID_MAC=$!
 
 FAIL=0
