@@ -102,7 +102,7 @@ private func makeURLSession() -> URLSession {
 
 private func jsonResponse(statusCode: Int, body: [String: Any]) -> (Data, HTTPURLResponse) {
     let data = try! JSONSerialization.data(withJSONObject: body) // swiftlint:disable:this force_try
-    let url = URL(string: "https://test.example.com")! // swiftlint:disable:this force_unwrapping
+    let url = URL(string: "https://test.example.com")!
     let response = HTTPURLResponse(url: url, statusCode: statusCode,
                                    httpVersion: nil, headerFields: nil)! // swiftlint:disable:this force_unwrapping
     return (data, response)
