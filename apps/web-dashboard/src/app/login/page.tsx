@@ -4,7 +4,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Github } from "lucide-react";
+import { Github } from "@/components/icons/github";
 import { APP_VERSION } from "@/lib/version";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import LoadingScreen from "@/components/loading-screen";
