@@ -7,7 +7,7 @@
       "dependencies": {
         "@ai-sdk/anthropic": "^3.0.81",
         "@ai-sdk/openai": "^3.0.68",
-        "@hono/node-server": "^1.19.13",
+        "@hono/node-server": "^2.0.4",
         "@nocoo/next-ai": "^0.2.1",
         "ai": "^6.0.198",
         "class-variance-authority": "^0.7.1",
@@ -49,7 +49,7 @@
     },
   },
   "overrides": {
-    "@hono/node-server": "^1.19.13",
+    "@hono/node-server": "^2.0.4",
     "brace-expansion": "^2.0.2",
     "express-rate-limit": "^8.2.2",
     "flatted": "^3.4.0",
@@ -222,7 +222,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
-    "@hono/node-server": ["@hono/node-server@1.19.14", "", { "peerDependencies": { "hono": "^4" } }, "sha512-GwtvgtXxnWsucXvbQXkRgqksiH2Qed37H9xHZocE5sA3N8O8O8/8FA3uclQXxXVzc9XBZuEOMK7+r02FmSpHtw=="],
+    "@hono/node-server": ["@hono/node-server@2.0.4", "", { "peerDependencies": { "hono": "^4" } }, "sha512-Ut3y0dMMPWy6bZ2kVfx25EOVbZlm15dhF4mOsezMlhpNHy+4MkU1qN9Y6lnruYi4wPmFzimGX2X7LF/FwHli4A=="],
 
     "@humanfs/core": ["@humanfs/core@0.19.2", "", { "dependencies": { "@humanfs/types": "^0.15.0" } }, "sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA=="],
 
