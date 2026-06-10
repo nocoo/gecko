@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { exposeOwnAccessorsSync } from "@/lib/vinext-request-shim";
 
 // Skip auth in E2E test environment
 const SKIP_AUTH = process.env.E2E_SKIP_AUTH === "true";
@@ -53,12 +54,22 @@ const authHandler = auth((req) => {
 
 // Export as named 'proxy' function for Next.js 16
 export function proxy(request: NextRequest) {
-  return authHandler(request, {} as never);
+  return authHandler(exposeOwnAccessorsSync(request), {} as never);
 }
 
 export const config = {
   matcher: [
-    // Match all paths except static files
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.ico$|.*\\.svg$|api/(?!auth)).*)",
+    // Match everything EXCEPT static assets and the next-auth route handlers.
+    // /api/auth/* MUST be excluded: if the proxy invokes `auth()` on those
+    // endpoints, the middleware-side auth() generates its own CSRF cookie
+    // which vinext then forwards as an extra Set-Cookie on the route
+    // handler's response, leaving the browser with a CSRF cookie that no
+    // longer matches the token returned by /api/auth/csrf — every sign-in
+    // then fails with MissingCSRF. (The previous matcher used
+    // `api/(?!auth)` inside the exclusion lookahead, which inverted the
+    // intent and instead *included* /api/auth/*. This was harmless until
+    // vinext 0.1.x started honouring the Next.js 16 `proxy.ts` convention
+    // and actually started executing this file.)
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.png$|.*\\.ico$|.*\\.svg$|api/auth).*)",
   ],
 };
