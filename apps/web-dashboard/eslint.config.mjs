@@ -10,6 +10,7 @@ const eslintConfig = defineConfig([
     "dist/**",
     "coverage/**",
     "next-env.d.ts",
+    ".vinext/**",
   ]),
   {
     rules: {
