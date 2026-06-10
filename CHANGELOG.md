@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.0] - 2026-06-10
+
+### Fixed
+- **lint**: silence ESLint 10 warn-ignored on vinext-generated files
+- **auth**: make next-auth survive vinext 0.1.x's NextRequest spread
+- **hooks**: guard mac-client swiftlint+xcodebuild behind toolchain check
+
+### CI
+- harden gecko against Shai-Hulud (base-ci@v2026.4, --ignore-scripts)
+
+### Documentation
+- add retrospective for better-sqlite3 ABI mismatch
+
+### Maintenance
+- **deps**: bump radix-ui 1.4.3 -> 1.5.0
+- **deps**: override qs to ^6.15.2 (security)
+- **deps**: bump next 16.2.7 -> 16.2.9 (patches)
+- **deps**: bump hono 4.12.18 -> 4.12.25 (security)
+- **deps**: bump AI SDK / @types/bun / express-rate-limit patches
+- **deps**: bump vinext 0.0.9 -> 0.1.1 + vite 7 -> 8.0.16 (coupled)
+- **deps**: bump lint-staged 16.4.0 -> 17.0.7
+- **deps**: bump eslint 9 -> 10
+- **deps**: bump typescript 5.x -> 6.0.3
+- **deps**: bump shadcn 3.8.5 -> 4.11.0
+- **deps**: bump react-day-picker 9.14.0 -> 10.0.1
+- **deps**: bump lucide-react 0.575.0 -> 1.17.0
+- **deps**: bump @hono/node-server 1.19.13 -> 2.0.4
+- **deps**: bump misc minor/patch (hono, recharts, sqlite, etc.)
+- **deps**: bump tailwind family to latest minors
+- **deps**: bump test tooling patches
+- **deps**: bump AI SDK, react and types to latest patches
+- **mac-client**: remove superfluous swiftlint:disable in SyncServiceTests
+- **deps**: upgrade next to 16.2.7
+- **deps**: upgrade next to 16.2.6
+
 ## [1.9.0] - 2026-05-09
 
 ### Added
