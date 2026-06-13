@@ -2,7 +2,12 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
-RUN bun install --frozen-lockfile
+# --ignore-scripts: skip native-module post-install (e.g. better-sqlite3).
+# better-sqlite3 is a dev-only dep loaded behind D1_LOCAL_PATH; production
+# uses the Cloudflare D1 REST API and never imports it. Avoids node-gyp,
+# which would otherwise fail in this image (no Python toolchain, and Bun
+# is not supported by prebuild-install).
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # --- Stage 2: Build ---
 FROM oven/bun:1 AS builder
