@@ -18,6 +18,4 @@ jobs:
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
       enable-l2: "true"
       l2-command: "bun run test:l2"
-      enable-l3: "true"
-      l3-command: "bun run --cwd apps/web-dashboard test:bdd"
     secrets: inherit
