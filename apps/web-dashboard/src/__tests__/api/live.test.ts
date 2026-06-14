@@ -4,7 +4,30 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 // /api/live route handler tests (surety standard)
 // Mock globalThis.fetch (same pattern as data-queries.test.ts) to avoid
 // mock.module leak across test files.
+//
+// `better-sqlite3` is mocked so this unit suite never loads the native
+// addon — CI runs with `ignore-scripts: true`, so the addon is absent and
+// the dynamic import inside src/lib/d1.ts would otherwise throw.
 // ---------------------------------------------------------------------------
+
+vi.mock("better-sqlite3", () => {
+  class FakeStatement {
+    all() {
+      return [{ probe: 1 }];
+    }
+    run() {
+      return { changes: 0, lastInsertRowid: 0 };
+    }
+  }
+  class FakeDatabase {
+    prepare() {
+      return new FakeStatement();
+    }
+    pragma() {}
+    close() {}
+  }
+  return { default: FakeDatabase };
+});
 
 const originalFetch = globalThis.fetch;
 
