@@ -3,7 +3,7 @@
 // No auth, no cache.
 
 import { APP_VERSION } from "@/lib/version";
-import { getD1Config, query } from "@/lib/d1";
+import { getD1Config, isLocalMode, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ async function probeDatabase(): Promise<{
 }> {
   try {
     const cfg = getD1Config();
-    if (!cfg.accountId || !cfg.apiToken || !cfg.databaseId) {
+    if (!isLocalMode() && (!cfg.accountId || !cfg.apiToken || !cfg.databaseId)) {
       return { connected: false, error: "database not configured" };
     }
     await query("SELECT 1 AS probe");

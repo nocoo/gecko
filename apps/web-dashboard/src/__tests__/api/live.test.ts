@@ -116,6 +116,7 @@ describe("/api/live (surety standard)", () => {
     delete process.env.CF_ACCOUNT_ID;
     delete process.env.CF_API_TOKEN;
     delete process.env.CF_D1_DATABASE_ID;
+    delete process.env.D1_LOCAL_PATH;
 
     const res = await callGET();
     expect(res.status).toBe(503);
@@ -123,6 +124,25 @@ describe("/api/live (surety standard)", () => {
     const data = await res.json();
     expect(data.database.connected).toBe(false);
     expect(data.database.error).toContain("not configured");
+  });
+
+  test("treats local SQLite as configured even without CF_ envs", async () => {
+    delete process.env.CF_ACCOUNT_ID;
+    delete process.env.CF_API_TOKEN;
+    delete process.env.CF_D1_DATABASE_ID;
+    process.env.D1_LOCAL_PATH = ":memory:";
+    try {
+      const res = await callGET();
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.status).toBe("ok");
+      expect(data.database).toEqual({ connected: true });
+    } finally {
+      const { closeLocal } = await import("../../lib/d1");
+      closeLocal();
+      delete process.env.D1_LOCAL_PATH;
+    }
   });
 
   // --- Error sanitisation ---
