@@ -30,7 +30,7 @@ export default defineConfig({
 
   webServer: {
     command:
-      "bun run db:init && E2E_SKIP_AUTH=true D1_LOCAL_PATH=.local/gecko-test.db bunx vinext dev --port 27018",
+      "bun run db:init && E2E_SKIP_AUTH=true AUTH_SECRET=e2e-test-secret D1_LOCAL_PATH=.local/gecko-test.db bunx vinext dev --port 27018",
     port: 27018,
     timeout: 60_000,
     stdout: "pipe",

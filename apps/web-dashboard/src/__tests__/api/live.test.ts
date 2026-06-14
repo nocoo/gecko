@@ -4,7 +4,30 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 // /api/live route handler tests (surety standard)
 // Mock globalThis.fetch (same pattern as data-queries.test.ts) to avoid
 // mock.module leak across test files.
+//
+// `better-sqlite3` is mocked so this unit suite never loads the native
+// addon — CI runs with `ignore-scripts: true`, so the addon is absent and
+// the dynamic import inside src/lib/d1.ts would otherwise throw.
 // ---------------------------------------------------------------------------
+
+vi.mock("better-sqlite3", () => {
+  class FakeStatement {
+    all() {
+      return [{ probe: 1 }];
+    }
+    run() {
+      return { changes: 0, lastInsertRowid: 0 };
+    }
+  }
+  class FakeDatabase {
+    prepare() {
+      return new FakeStatement();
+    }
+    pragma() {}
+    close() {}
+  }
+  return { default: FakeDatabase };
+});
 
 const originalFetch = globalThis.fetch;
 
@@ -116,6 +139,7 @@ describe("/api/live (surety standard)", () => {
     delete process.env.CF_ACCOUNT_ID;
     delete process.env.CF_API_TOKEN;
     delete process.env.CF_D1_DATABASE_ID;
+    delete process.env.D1_LOCAL_PATH;
 
     const res = await callGET();
     expect(res.status).toBe(503);
@@ -123,6 +147,25 @@ describe("/api/live (surety standard)", () => {
     const data = await res.json();
     expect(data.database.connected).toBe(false);
     expect(data.database.error).toContain("not configured");
+  });
+
+  test("treats local SQLite as configured even without CF_ envs", async () => {
+    delete process.env.CF_ACCOUNT_ID;
+    delete process.env.CF_API_TOKEN;
+    delete process.env.CF_D1_DATABASE_ID;
+    process.env.D1_LOCAL_PATH = ":memory:";
+    try {
+      const res = await callGET();
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.status).toBe("ok");
+      expect(data.database).toEqual({ connected: true });
+    } finally {
+      const { closeLocal } = await import("../../lib/d1");
+      closeLocal();
+      delete process.env.D1_LOCAL_PATH;
+    }
   });
 
   // --- Error sanitisation ---
