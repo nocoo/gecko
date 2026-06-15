@@ -47,7 +47,7 @@
     "@ai-sdk/openai": "^3.0.71",
     "@hono/node-server": "^2.0.4",
     "@nocoo/next-ai": "^0.2.1",
-    "ai": "^6.0.204",
+    "ai": "^6.0.205",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "^8.5.2",
