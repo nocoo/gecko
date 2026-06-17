@@ -43,7 +43,7 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.84",
+    "@ai-sdk/anthropic": "^3.0.85",
     "@ai-sdk/openai": "^3.0.71",
     "@hono/node-server": "^2.0.5",
     "@nocoo/next-ai": "^0.2.1",
