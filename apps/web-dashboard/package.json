@@ -45,7 +45,7 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.85",
     "@ai-sdk/openai": "^3.0.74",
-    "@hono/node-server": "^2.0.5",
+    "@hono/node-server": "^2.0.6",
     "@nocoo/next-ai": "^0.2.1",
     "ai": "^6.0.208",
     "class-variance-authority": "^0.7.1",
@@ -68,7 +68,7 @@
   },
   "overrides": {
     "hono": "^4.12.14",
-    "@hono/node-server": "^2.0.5",
+    "@hono/node-server": "^2.0.6",
     "express-rate-limit": "^8.2.2",
     "ip-address": "^10.1.1",
     "postcss": "^8.5.10",
