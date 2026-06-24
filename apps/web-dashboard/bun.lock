@@ -9,11 +9,11 @@
         "@ai-sdk/openai": "^3.0.74",
         "@hono/node-server": "^2.0.6",
         "@nocoo/next-ai": "^0.2.1",
-        "ai": "6.0.209",
+        "ai": "^6.0.209",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
         "express-rate-limit": "^8.5.2",
-        "hono": "^4.12.26",
+        "hono": "^4.12.27",
         "lucide-react": "^1.21.0",
         "next": "16.2.9",
         "next-auth": "^5.0.0-beta.30",
@@ -58,7 +58,7 @@
     "esbuild": "^0.28.1",
     "express-rate-limit": "^8.2.2",
     "flatted": "^3.4.0",
-    "hono": "^4.12.14",
+    "hono": "^4.12.27",
     "ip-address": "^10.1.1",
     "js-yaml": "^4.2.0",
     "path-to-regexp": "^8.4.0",
@@ -1018,7 +1018,7 @@
 
     "hex-rgb": ["hex-rgb@4.3.0", "", {}, "sha512-Ox1pJVrDCyGHMG9CFg1tmrRUMRPRsAWYc/PinY0XzJU4K7y7vjNoLKIQ7BR5UJMCxNN8EM1MNDmHWA/B3aZUuw=="],
 
-    "hono": ["hono@4.12.26", "", {}, "sha512-uyZtpnYxM9CmQ7QsQknM4zN8EftNqhON1qYeIKM0Se67CCEe2c44xyGURwB0axX2fBDu1dqHrHAc1hmNT8ITkw=="],
+    "hono": ["hono@4.12.27", "", {}, "sha512-1yrb/+w6HWQJrUCLkJ2IF5jNIPvvFkblV5RNOYl6bV+OA6p9GLcMpHFFGTosSvHvcAUibuUukRqhlYI4z32C7Q=="],
 
     "html-escaper": ["html-escaper@2.0.2", "", {}, "sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg=="],
 
