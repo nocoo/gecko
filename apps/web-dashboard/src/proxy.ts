@@ -33,9 +33,19 @@ const authHandler = auth((req) => {
   const isLoginPage = req.nextUrl.pathname === "/login";
   const isAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
   const isLiveRoute = req.nextUrl.pathname === "/api/live";
+  // API-key authenticated requests (Mac client → /api/sync, /api/v1/*) carry
+  // a Bearer token instead of a session cookie. They have no session, so the
+  // redirect-to-/login branch below would 307 them into /login (a Page), and
+  // vinext returns 405 for non-GET requests to a Page route. Let these
+  // through so the route handler's requireApiKey() can do the real check
+  // (and return a proper 401 on bad tokens).
+  const hasBearerToken = req.headers
+    .get("authorization")
+    ?.toLowerCase()
+    .startsWith("bearer ");
 
-  // Allow auth routes and health check through
-  if (isAuthRoute || isLiveRoute) {
+  // Allow auth routes, health check, and Bearer-authenticated API requests through
+  if (isAuthRoute || isLiveRoute || hasBearerToken) {
     return NextResponse.next();
   }
 
