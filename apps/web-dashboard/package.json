@@ -43,11 +43,11 @@
     "vitest": "^4.1.9"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.86",
-    "@ai-sdk/openai": "^3.0.74",
+    "@ai-sdk/anthropic": "^4.0.0",
+    "@ai-sdk/openai": "^4.0.0",
     "@hono/node-server": "^2.0.6",
-    "@nocoo/next-ai": "^0.2.1",
-    "ai": "^6.0.209",
+    "@nocoo/next-ai": "^0.3.0",
+    "ai": "^7.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "^8.5.2",
