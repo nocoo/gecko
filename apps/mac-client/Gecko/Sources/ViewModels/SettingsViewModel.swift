@@ -203,23 +203,32 @@ final class SettingsViewModel: ObservableObject {
     }
 
     /// Reset sync settings to defaults.
-    func resetSyncSettings() {
+    ///
+    /// Order matters: we ask SyncService to clear the per-row synced_at state
+    /// first. If a cycle is in flight it refuses (returns false) and we bail
+    /// without touching settings — leaving the user's API key / URL intact so
+    /// they can retry once the cycle finishes. Without this guard the UI
+    /// button being disabled by `canResetSyncSettings` is the only thing
+    /// stopping us from desyncing settings vs DB state.
+    @discardableResult
+    func resetSyncSettings() -> Bool {
+        if let syncService {
+            guard syncService.resetSyncState() else { return false }
+        } else {
+            // No SyncService wired (e.g. unit tests). Fall back to the
+            // legacy settings-only reset; callers in this path are
+            // responsible for any DB-level cleanup.
+            settingsManager.resetSyncState()
+        }
+
         settingsManager.apiKey = ""
         settingsManager.syncServerUrl = SettingsManager.defaultSyncServerUrl
         settingsManager.syncEnabled = false
-        // Clear per-row synced_at across all sessions (plus the legacy
-        // watermark). Falls back to the SettingsManager-only reset when no
-        // SyncService is wired up — e.g. unit tests that only verify the
-        // settings reset, not the DB side effect.
-        if let syncService {
-            syncService.resetSyncState()
-        } else {
-            settingsManager.resetSyncState()
-        }
 
         editingApiKey = ""
         editingSyncServerUrl = SettingsManager.defaultSyncServerUrl
         syncEnabled = false
+        return true
     }
 
     /// Trigger an immediate sync.
@@ -230,6 +239,17 @@ final class SettingsViewModel: ObservableObject {
     /// Whether the sync now button should be enabled.
     var canSyncNow: Bool {
         settingsManager.isSyncConfigured && syncStatus != .syncing
+    }
+
+    /// Whether the Reset Sync Settings button should be enabled.
+    ///
+    /// Disabled mid-sync because resetSyncState would clear synced_at on every
+    /// row, but an in-flight drainBatches that has already fetched a batch
+    /// would still mark those ids back to synced after the reset — leaving
+    /// those rows skipped instead of re-uploaded. Waiting until the cycle
+    /// finishes avoids the race entirely.
+    var canResetSyncSettings: Bool {
+        syncStatus != .syncing
     }
 
     /// Whether sync save button should be enabled.

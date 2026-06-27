@@ -250,12 +250,53 @@ final class SyncServiceTests: XCTestCase {
 
         let syncService = SyncService(db: mockDB, settings: settings,
                                       session: makeURLSession(), syncInterval: 999)
-        syncService.resetSyncState()
+        let ok = syncService.resetSyncState()
 
+        XCTAssertTrue(ok)
         XCTAssertEqual(mockDB.clearSyncedStateCalls, 1)
         XCTAssertNil(mockDB.sessions[0].syncedAt)
         XCTAssertNil(mockDB.sessions[1].syncedAt)
         XCTAssertEqual(settings.lastSyncedStartTime, 0)
+    }
+
+    /// Regression: a Reset that lands mid-cycle would clear synced_at on every
+    /// row, then drainBatches' next markSynced would set the in-flight batch
+    /// back to synced — silently skipping those rows in the re-upload. Refuse
+    /// the reset while .syncing instead.
+    func testResetSyncStateRefusedDuringActiveCycle() async {
+        settings.syncEnabled = true
+        settings.apiKey = "gk_test"
+        settings.syncServerUrl = "https://test.example.com"
+        mockDB.sessions = [makeSession(id: "s", startTime: 1, duration: 1)]
+
+        // Block the upload so we can observe transient .syncing state.
+        let blocker = AsyncBlocker()
+        MockURLProtocol.handler = { _ in
+            blocker.wait()
+            return jsonResponse(statusCode: 202, body: ["accepted": 1, "sync_id": "x"])
+        }
+
+        let syncService = SyncService(db: mockDB, settings: settings,
+                                      session: makeURLSession(), syncInterval: 999)
+
+        // Start the sync but don't await it.
+        let syncTask = Task { await syncService.syncNow() }
+
+        // Spin until the status flips to .syncing.
+        for _ in 0..<100 {
+            if syncService.status == .syncing { break }
+            try? await Task.sleep(nanoseconds: 1_000_000)
+        }
+        XCTAssertEqual(syncService.status, .syncing)
+
+        // The reset must refuse and leave nothing changed.
+        let ok = syncService.resetSyncState()
+        XCTAssertFalse(ok)
+        XCTAssertEqual(mockDB.clearSyncedStateCalls, 0)
+
+        // Let the upload finish and the cycle complete.
+        blocker.release()
+        await syncTask.value
     }
 
     // MARK: - Resumable Sync
@@ -552,4 +593,14 @@ private extension InputStream {
         }
         return data
     }
+}
+
+// MARK: - AsyncBlocker
+
+/// A tiny semaphore wrapper for blocking the sync MockURLProtocol mid-flight
+/// until the test calls `release()`. Used to observe transient .syncing state.
+private final class AsyncBlocker: @unchecked Sendable {
+    private let semaphore = DispatchSemaphore(value: 0)
+    func wait() { semaphore.wait() }
+    func release() { semaphore.signal() }
 }

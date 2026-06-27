@@ -1,3 +1,4 @@
+// swiftlint:disable file_length type_body_length
 import XCTest
 @testable import Gecko
 
@@ -407,4 +408,98 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertFalse(viewModel.canSyncNow)
     }
+
+    // MARK: - canResetSyncSettings
+
+    func testCanResetSyncSettingsTrueWhenIdle() {
+        let manager = makeSettingsManager()
+        let viewModel = SettingsViewModel(settingsManager: manager)
+
+        // Default syncStatus is .idle — reset is allowed.
+        XCTAssertTrue(viewModel.canResetSyncSettings)
+    }
+
+    /// Regression: SettingsViewModel.resetSyncSettings used to clobber
+    /// apiKey/url/syncEnabled before calling SyncService.resetSyncState.
+    /// When the service refused (mid-cycle), settings ended up wiped while
+    /// the DB still held synced_at — pure desync. Verify the call now
+    /// short-circuits cleanly when the service signals refusal.
+    func testResetSyncSettingsBailsWhenSyncServiceRefuses() async throws {
+        let manager = makeSettingsManager()
+        manager.syncEnabled = true
+        manager.apiKey = "gk_keep_me"
+        manager.syncServerUrl = "https://keep.example.com"
+
+        let db = try DatabaseManager.makeInMemory()
+
+        // Drive SyncService into .syncing via a URLSession that blocks
+        // until the test releases the gate.
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [BlockingURLProtocol.self]
+        let urlSession = URLSession(configuration: config)
+        let blocker = TestBlocker()
+        BlockingURLProtocol.gate = blocker
+
+        try db.insert(FocusSession(
+            id: "row-1", appName: "App", bundleId: nil, windowTitle: "Win",
+            url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+            isFullScreen: false, isMinimized: false,
+            startTime: 1, endTime: 2, duration: 1,
+            syncedAt: nil
+        ))
+
+        let syncService = SyncService(db: db, settings: manager,
+                                      session: urlSession, syncInterval: 999)
+        let viewModel = SettingsViewModel(settingsManager: manager, syncService: syncService)
+
+        let syncTask = Task { await syncService.syncNow() }
+        for _ in 0..<100 {
+            if syncService.status == .syncing { break }
+            try? await Task.sleep(nanoseconds: 1_000_000)
+        }
+        XCTAssertEqual(syncService.status, .syncing)
+
+        let ok = viewModel.resetSyncSettings()
+
+        XCTAssertFalse(ok)
+        XCTAssertEqual(manager.apiKey, "gk_keep_me")
+        XCTAssertEqual(manager.syncServerUrl, "https://keep.example.com")
+        XCTAssertTrue(manager.syncEnabled)
+        XCTAssertNotNil(try db.fetch(id: "row-1"))
+
+        blocker.release()
+        await syncTask.value
+        BlockingURLProtocol.gate = nil
+    }
+}
+// swiftlint:enable type_body_length
+
+// MARK: - Test helpers
+
+/// Blocks a URLSession request until `release()` is called. Used to hold
+/// SyncService in `.syncing` long enough for an assertion.
+private final class TestBlocker: @unchecked Sendable {
+    private let semaphore = DispatchSemaphore(value: 0)
+    func wait() { semaphore.wait() }
+    func release() { semaphore.signal() }
+}
+
+private final class BlockingURLProtocol: URLProtocol {
+    nonisolated(unsafe) static var gate: TestBlocker?
+
+    override static func canInit(with request: URLRequest) -> Bool { true }
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        Self.gate?.wait()
+        let url = request.url ?? URL(fileURLWithPath: "/")
+        // swiftlint:disable:next force_unwrapping
+        let response = HTTPURLResponse(url: url, statusCode: 202, httpVersion: nil, headerFields: nil)!
+        let body = Data(#"{"accepted":1,"sync_id":"x"}"#.utf8)
+        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: body)
+        client?.urlProtocolDidFinishLoading(self)
+    }
+
+    override func stopLoading() {}
 }

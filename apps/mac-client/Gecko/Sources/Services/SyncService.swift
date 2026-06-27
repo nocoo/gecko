@@ -222,13 +222,24 @@ final class SyncService: ObservableObject {
     /// Clear all per-row sync state and the legacy watermark — Settings
     /// "Reset sync state". Next cycle re-uploads everything; server's
     /// INSERT OR IGNORE keeps it safe.
-    func resetSyncState() {
+    ///
+    /// Refuses mid-cycle: drainBatches has already fetched its batch in
+    /// memory, and a markSynced after the reset would silently skip those
+    /// rows in the re-upload. Returns false so callers can surface that the
+    /// reset was deferred. The UI also disables the button in `.syncing`.
+    @discardableResult
+    func resetSyncState() -> Bool {
+        guard status != .syncing else {
+            logger.warning("resetSyncState refused: sync cycle in progress")
+            return false
+        }
         do {
             try db.clearSyncedState()
         } catch {
             logger.error("clearSyncedState failed: \(error.localizedDescription)")
         }
         settings.lastSyncedStartTime = 0
+        return true
     }
 
     // MARK: - Sync Execution

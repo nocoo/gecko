@@ -202,6 +202,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
+                .disabled(!viewModel.canResetSyncSettings)
                 .accessibilityLabel("Reset sync settings")
             }
         }
