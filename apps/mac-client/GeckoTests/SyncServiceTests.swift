@@ -52,8 +52,12 @@ private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
         }
     }
 
+    var clearSyncedStateError: Error?
     func clearSyncedState() throws {
         clearSyncedStateCalls += 1
+        if let clearSyncedStateError {
+            throw clearSyncedStateError
+        }
         for index in sessions.indices {
             sessions[index].syncedAt = nil
         }
@@ -130,6 +134,7 @@ private func jsonResponse(statusCode: Int, body: [String: Any]) -> (Data, HTTPUR
 // MARK: - Tests
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class SyncServiceTests: XCTestCase {
 
     private var mockDB: MockDatabaseService! // swiftlint:disable:this implicitly_unwrapped_optional
@@ -263,6 +268,28 @@ final class SyncServiceTests: XCTestCase {
     /// row, then drainBatches' next markSynced would set the in-flight batch
     /// back to synced — silently skipping those rows in the re-upload. Refuse
     /// the reset while .syncing instead.
+    /// Regression: if clearSyncedState throws, the DB still holds synced_at
+    /// on every row. Returning true and zeroing the watermark anyway would
+    /// leave callers (the ViewModel) clearing apiKey/url/syncEnabled and
+    /// drifting into a settings-vs-DB desync. Refuse and leave the watermark
+    /// alone instead.
+    func testResetSyncStateRefusedWhenClearSyncedStateThrows() {
+        struct ClearError: Error {}
+        settings.lastSyncedStartTime = 9999
+        mockDB.sessions = [makeSession(id: "stuck", startTime: 1, duration: 1)]
+        mockDB.sessions[0].syncedAt = 5000
+        mockDB.clearSyncedStateError = ClearError()
+
+        let syncService = SyncService(db: mockDB, settings: settings,
+                                      session: makeURLSession(), syncInterval: 999)
+        let ok = syncService.resetSyncState()
+
+        XCTAssertFalse(ok)
+        XCTAssertEqual(mockDB.clearSyncedStateCalls, 1)
+        XCTAssertEqual(mockDB.sessions[0].syncedAt, 5000)
+        XCTAssertEqual(settings.lastSyncedStartTime, 9999)
+    }
+
     func testResetSyncStateRefusedDuringActiveCycle() async {
         settings.syncEnabled = true
         settings.apiKey = "gk_test"
