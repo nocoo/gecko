@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.1] - 2026-06-27
+
+### Fixed
+- **sidebar**: align collapsed-view logo padding with expanded view to stop jitter
+- **image**: mark logo PNGs as unoptimized to bypass vinext srcset bug
+- **proxy**: let Bearer-authenticated API requests bypass session redirect
+- **web-dashboard**: make local E2E self-contained
+- **docker**: skip lifecycle scripts in bun install to avoid better-sqlite3 native build
+
+### CI
+- enable L3 BDD in CI via base-ci
+- enable L3 Playwright BDD tests in CI
+
+### Maintenance
+- **deps**: bump ai 6 -> 7, @ai-sdk/openai 3 -> 4, @ai-sdk/anthropic 3 -> 4
+- **deps**: bump @ai-sdk/anthropic 3.0.85 -> 3.0.86 (patch, #140)
+- **deps**: bump vite 8.0.16 -> 8.1.0 (minor, #138)
+- **deps**: bump vinext 0.1.7 -> 0.1.8 (patch, #137)
+- **deps**: bump recharts 3.8.1 -> 3.9.0 (minor, #136)
+- **deps**: bump hono 4.12.26 -> 4.12.27 (patch, #135)
+- **deps**: bump ai 6.0.208 -> 6.0.209 (patch, #134)
+- **deps**: bump @vitejs/plugin-react 6.0.2 -> 6.0.3 (patch, #133)
+- **deps**: bump @playwright/test 1.61.0 -> 1.61.1 (patch, #132)
+- **deps**: bump vinext 0.1.6 -> 0.1.7 (patch, #130)
+- **deps**: bump typescript-eslint 8.61.1 -> 8.62.0 (minor, #129)
+- **deps**: bump @hono/node-server 2.0.5 -> 2.0.6 (patch, #128)
+- **deps**: bump @ai-sdk/openai 3.0.73 -> 3.0.74 (patch, #127)
+- **deps**: bump lint-staged 17.0.7 -> 17.0.8 (patch, #125)
+- **deps**: bump lucide-react 1.20.0 -> 1.21.0 (minor, #120)
+- **deps**: bump hono 4.12.25 -> 4.12.26 (patch, #119)
+- **deps**: bump vinext 0.1.4 -> 0.1.6 (patch, #123)
+- **ci**: pin base-ci reusable workflow to v2026.5 SHA
+- **deps**: batch dependency upgrade (2 packages, #116-#117)
+- **deps**: bump vinext 0.1.3 -> 0.1.4 (patch, #114)
+- **deps**: bump lucide-react 1.18.0 -> 1.20.0 (minor, #113)
+- **deps**: bump ai 6.0.206 -> 6.0.207 (patch, #112)
+- **deps**: bump @ai-sdk/openai 3.0.71 -> 3.0.72 (patch, #111)
+- **deps**: bump @ai-sdk/anthropic 3.0.84 -> 3.0.85 (patch, #110)
+- **deps**: bump vinext 0.1.2 -> 0.1.3 (patch, #106)
+- **deps**: bump typescript-eslint 8.61.0 -> 8.61.1 (patch, #105)
+- **deps**: bump radix-ui 1.5.0 -> 1.6.0 (minor, #104)
+- **deps**: bump better-sqlite3 12.10.1 -> 12.11.1 (minor, #102)
+- **deps**: bump ai 6.0.205 -> 6.0.206 (patch, #101)
+- **deps**: bump vitest & @vitest/coverage-v8 4.1.8 -> 4.1.9 (patch, #108 #100)
+- **deps**: bump @playwright/test 1.60.0 -> 1.61.0 (minor, #99)
+- **deps**: bump @hono/node-server 2.0.4 -> 2.0.5 (patch, #98)
+- **deps**: pin vite >=8.0.16 via override to drop vulnerable 7.3.3 (security GHSA-fx2h-pf6j-xcff, #107)
+- **deps**: bump @babel/core 7.29.0 -> 7.29.7 via override (security GHSA, #97)
+- **deps**: bump js-yaml 4.1.1 -> 4.2.0 via override (security GHSA, #103)
+- **deps**: bump ai 6.0.204 -> 6.0.205 (patch)
+- **deps**: bump better-sqlite3 12.10.0 -> 12.10.1 (patch)
+- **deps**: bump @ai-sdk/anthropic 3.0.83 -> 3.0.84 (patch)
+- **deps**: bump @ai-sdk/openai 3.0.70 -> 3.0.71 (patch)
+- **deps**: bump ai 6.0.202 -> 6.0.204 (patch)
+- **deps**: bump eslint 10.4.1 -> 10.5.0 (minor)
+- **deps**: bump lucide-react 1.17.0 -> 1.18.0 (minor)
+- **deps**: bump tailwindcss & @tailwindcss/postcss 4.3.0 -> 4.3.1 (patch)
+- **deps**: bump vinext 0.1.1 -> 0.1.2 (patch)
+- **deps**: bump ai 6.0.200 -> 6.0.202 (patch)
+- **deps**: bump @ai-sdk/openai 3.0.69 -> 3.0.70 (patch)
+- **deps**: bump @ai-sdk/anthropic 3.0.82 -> 3.0.83 (patch)
+- **deps**: bump @vitejs/plugin-react 5.2.0 -> 6.0.2 (major)
+- **deps**: bump ai 6.0.199 -> 6.0.200 (patch)
+
+### Tests
+- **web-dashboard**: mock better-sqlite3 in live.test so CI without native addon passes
+- **l3**: rewrite dashboard spec to BDD style
+- **l3**: remove unstable BDD specs, keep dashboard smoke test
+
 ## [1.10.0] - 2026-06-10
 
 ### Fixed
