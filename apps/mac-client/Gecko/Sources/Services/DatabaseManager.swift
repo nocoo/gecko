@@ -12,7 +12,8 @@ protocol DatabaseService: Sendable {
     func save(_ session: FocusSession) throws
     func fetchRecent(limit: Int) throws -> [FocusSession]
     func fetch(id: String) throws -> FocusSession?
-    func fetchUnsynced(since startTime: Double, limit: Int) throws -> [FocusSession]
+    func fetchUnsynced(limit: Int) throws -> [FocusSession]
+    func markSynced(ids: [String], at timestamp: Double) throws
     func count() throws -> Int
     func deleteAll() throws
 }
@@ -132,6 +133,25 @@ final class DatabaseManager: DatabaseService {
             }
         }
 
+        // v3: per-row sync tracking. NULL = not yet uploaded; a unix timestamp
+        // means the row was 202-Accepted by the server. Replaces the global
+        // start_time watermark, which couldn't survive a timeout: if a batch's
+        // 202 was lost the watermark stayed put and the same 250 sessions kept
+        // retrying forever. Marking each row individually means timeouts simply
+        // leave the row's synced_at NULL — the next sync picks it up again.
+        // The server's INSERT OR IGNORE on session.id keeps duplicates harmless.
+        migrator.registerMigration("v3_per_row_sync_state") { db in
+            try db.alter(table: "focus_sessions") { t in
+                t.add(column: "synced_at", .double)
+            }
+            try db.create(
+                index: "idx_focus_sessions_unsynced",
+                on: "focus_sessions",
+                columns: ["start_time"],
+                condition: Column("synced_at") == nil
+            )
+        }
+
         try migrator.migrate(dbQueue)
     }
 
@@ -191,18 +211,61 @@ final class DatabaseManager: DatabaseService {
         }
     }
 
-    /// Fetch finalized sessions with start_time after the given watermark, ordered ascending.
+    /// Fetch finalized sessions that have not yet been uploaded to the server,
+    /// ordered ascending by `start_time`.
     ///
-    /// Used by SyncService to find sessions that haven't been synced yet.
-    /// Only returns completed sessions (duration > 0).
-    func fetchUnsynced(since startTime: Double, limit: Int = 1000) throws -> [FocusSession] {
+    /// "Unsynced" means `synced_at IS NULL`. Sessions are only returned once
+    /// `duration > 0` (i.e. finalized).
+    func fetchUnsynced(limit: Int = 250) throws -> [FocusSession] {
         try dbQueue.read { db in
             try FocusSession
-                .filter(FocusSession.Columns.startTime > startTime)
+                .filter(FocusSession.Columns.syncedAt == nil)
                 .filter(FocusSession.Columns.duration > 0)
                 .order(FocusSession.Columns.startTime.asc)
                 .limit(limit)
                 .fetchAll(db)
+        }
+    }
+
+    /// Mark the given session ids as successfully synced at `timestamp`.
+    ///
+    /// Idempotent — re-marking already-synced rows just refreshes `synced_at`.
+    /// No-op when `ids` is empty.
+    func markSynced(ids: [String], at timestamp: Double = Date().timeIntervalSince1970) throws {
+        guard !ids.isEmpty else { return }
+        try dbQueue.write { db in
+            let placeholders = databaseQuestionMarks(count: ids.count)
+            let sql = "UPDATE focus_sessions SET synced_at = ? WHERE id IN (\(placeholders))"
+            var args: [DatabaseValueConvertible] = [timestamp]
+            args.append(contentsOf: ids)
+            try db.execute(sql: sql, arguments: StatementArguments(args))
+        }
+    }
+
+    /// Backfill `synced_at` for rows whose `start_time` is at or before
+    /// `throughStartTime`, but only when no row has been individually marked
+    /// yet. Used once after upgrading from the watermark-based scheme to
+    /// per-row tracking — avoids retransmitting tens of thousands of rows
+    /// that the server already has. Returns the number of rows updated.
+    @discardableResult
+    func backfillSyncedFromWatermark(throughStartTime: Double, at timestamp: Double) throws -> Int {
+        try dbQueue.write { db in
+            // Skip when any row already carries individual state; that means
+            // the new scheme is already authoritative.
+            let alreadyTracked = try Int.fetchOne(
+                db,
+                sql: "SELECT COUNT(*) FROM focus_sessions WHERE synced_at IS NOT NULL"
+            ) ?? 0
+            if alreadyTracked > 0 { return 0 }
+            try db.execute(
+                sql: """
+                UPDATE focus_sessions
+                   SET synced_at = ?
+                 WHERE synced_at IS NULL AND start_time <= ?
+                """,
+                arguments: [timestamp, throughStartTime]
+            )
+            return db.changesCount
         }
     }
 }

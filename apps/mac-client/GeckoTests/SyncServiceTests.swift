@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import XCTest
 @testable import Gecko
 
@@ -6,6 +7,7 @@ import XCTest
 /// A mock DatabaseService that stores sessions in-memory for sync tests.
 private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
     var sessions: [FocusSession] = []
+    var markSyncedCalls: [(ids: [String], at: Double)] = []
 
     func insert(_ session: FocusSession) throws {
         sessions.append(session)
@@ -33,12 +35,20 @@ private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
         sessions.first { $0.id == id }
     }
 
-    func fetchUnsynced(since startTime: Double, limit: Int) throws -> [FocusSession] {
+    func fetchUnsynced(limit: Int) throws -> [FocusSession] {
         sessions
-            .filter { $0.startTime > startTime && $0.duration > 0 }
+            .filter { $0.syncedAt == nil && $0.duration > 0 }
             .sorted { $0.startTime < $1.startTime }
             .prefix(limit)
             .map { $0 }
+    }
+
+    func markSynced(ids: [String], at timestamp: Double) throws {
+        markSyncedCalls.append((ids: ids, at: timestamp))
+        let set = Set(ids)
+        for index in sessions.indices where set.contains(sessions[index].id) {
+            sessions[index].syncedAt = timestamp
+        }
     }
 
     func count() throws -> Int {
@@ -90,7 +100,8 @@ private func makeSession(id: String, startTime: Double, duration: Double) -> Foc
         id: id, appName: "TestApp", bundleId: "com.test.app", windowTitle: "TestWindow",
         url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
         isFullScreen: false, isMinimized: false,
-        startTime: startTime, endTime: startTime + duration, duration: duration
+        startTime: startTime, endTime: startTime + duration, duration: duration,
+        syncedAt: nil
     )
 }
 
@@ -157,7 +168,8 @@ final class SyncServiceTests: XCTestCase {
             windowTitle: "GitHub", url: "https://github.com", tabTitle: "GitHub",
             tabCount: 5, documentPath: nil,
             isFullScreen: true, isMinimized: false,
-            startTime: 2000.0, endTime: 2120.0, duration: 120.0
+            startTime: 2000.0, endTime: 2120.0, duration: 120.0,
+            syncedAt: nil
         )
 
         let dto = SyncSessionDTO(from: session)
@@ -217,9 +229,49 @@ final class SyncServiceTests: XCTestCase {
         XCTAssertEqual(syncService.status, .disabled)
     }
 
+    // MARK: - Resumable Sync
+
+    /// Regression: when batch N fails, only batches 1..N-1 should be marked
+    /// synced. The failed batch must remain pending so the next cycle retries
+    /// exactly those rows — no data loss, no full restart.
+    func testFailedBatchLeavesItsRowsUnsynced() async {
+        settings.syncEnabled = true
+        settings.apiKey = "gk_test"
+        settings.syncServerUrl = "https://test.example.com"
+
+        // Two full batches' worth of sessions (using a tiny batch size means
+        // we'd need too many rows; rely on the production batchSize=250 by
+        // crafting 251 sessions so drainBatches loops at least twice).
+        var rows: [FocusSession] = []
+        for i in 0..<251 {
+            rows.append(makeSession(id: "r\(i)", startTime: 1000.0 + Double(i), duration: 1.0))
+        }
+        mockDB.sessions = rows
+
+        var callIndex = 0
+        MockURLProtocol.handler = { _ in
+            callIndex += 1
+            if callIndex == 1 {
+                return jsonResponse(statusCode: 202, body: ["accepted": 250, "sync_id": "ok"])
+            }
+            return jsonResponse(statusCode: 500, body: ["error": "boom"])
+        }
+
+        let syncService = SyncService(db: mockDB, settings: settings,
+                                      session: makeURLSession(), syncInterval: 999)
+
+        await syncService.syncNow()
+
+        // Batch 1 succeeded → 250 ids marked. Batch 2 failed → r250 still unsynced.
+        XCTAssertEqual(mockDB.markSyncedCalls.count, 1)
+        XCTAssertEqual(mockDB.markSyncedCalls[0].ids.count, 250)
+        XCTAssertNil(mockDB.sessions.first { $0.id == "r250" }?.syncedAt)
+        XCTAssertNotNil(mockDB.sessions.first { $0.id == "r0" }?.syncedAt)
+    }
+
     // MARK: - Successful Sync
 
-    func testSuccessfulSyncAdvancesWatermark() async {
+    func testSuccessfulSyncMarksSessionsSynced() async {
         // GIVEN: configured sync and pending sessions
         settings.syncEnabled = true
         settings.apiKey = "gk_test_key"
@@ -243,7 +295,11 @@ final class SyncServiceTests: XCTestCase {
         // WHEN: syncing
         await syncService.syncNow()
 
-        // THEN: watermark advanced to last session's start_time
+        // THEN: all uploaded ids marked synced; legacy watermark also advances for diagnostics
+        XCTAssertEqual(mockDB.markSyncedCalls.count, 1)
+        XCTAssertEqual(Set(mockDB.markSyncedCalls[0].ids), ["s1", "s2"])
+        XCTAssertNotNil(mockDB.sessions.first { $0.id == "s1" }?.syncedAt)
+        XCTAssertNotNil(mockDB.sessions.first { $0.id == "s2" }?.syncedAt)
         XCTAssertEqual(settings.lastSyncedStartTime, 1100.0)
         XCTAssertEqual(syncService.status, .idle)
         XCTAssertEqual(syncService.lastSyncCount, 2)
@@ -323,8 +379,9 @@ final class SyncServiceTests: XCTestCase {
         } else {
             XCTFail("Expected error status, got \(syncService.status)")
         }
-        // Watermark should NOT advance
-        XCTAssertEqual(settings.lastSyncedStartTime, 0)
+        // No rows should be marked synced — the same batch must retry next cycle
+        XCTAssertTrue(mockDB.markSyncedCalls.isEmpty)
+        XCTAssertNil(mockDB.sessions.first { $0.id == "s1" }?.syncedAt)
     }
 
     // MARK: - Request Format

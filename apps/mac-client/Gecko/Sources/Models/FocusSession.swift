@@ -45,6 +45,11 @@ struct FocusSession: Codable, Identifiable, Equatable {
     /// Duration of the session in seconds (endTime - startTime).
     var duration: Double
 
+    /// Unix timestamp when this session was successfully uploaded to the server.
+    /// `nil` until the server returns 202 for a batch containing this id.
+    /// Used to drive incremental, resumable sync.
+    var syncedAt: Double? = nil  // swiftlint:disable:this redundant_optional_initialization
+
     /// Whether this session is still active (focus has not switched away yet).
     var isActive: Bool {
         duration == 0 && endTime == startTime
@@ -71,6 +76,7 @@ extension FocusSession: FetchableRecord, PersistableRecord, TableRecord {
         case startTime = "start_time"
         case endTime = "end_time"
         case duration
+        case syncedAt = "synced_at"
     }
 
     /// Map Swift property names to database column names.
@@ -88,6 +94,7 @@ extension FocusSession: FetchableRecord, PersistableRecord, TableRecord {
         case startTime = "start_time"
         case endTime = "end_time"
         case duration
+        case syncedAt = "synced_at"
     }
 }
 
@@ -120,7 +127,8 @@ extension FocusSession {
             isMinimized: isMinimized,
             startTime: now,
             endTime: now,
-            duration: 0
+            duration: 0,
+            syncedAt: nil
         )
     }
 

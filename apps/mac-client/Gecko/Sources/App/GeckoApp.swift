@@ -22,6 +22,20 @@ struct GeckoApp: App {
         let settings = SettingsManager()
         let tab = TabSelection()
 
+        // One-time backfill for users upgrading from the watermark-based scheme
+        // (pre-v3 migration). Mark every row at or before lastSyncedStartTime as
+        // already synced so per-row resumable sync doesn't retransmit them. The
+        // method itself is idempotent — it bails when any row already carries
+        // synced_at, so fresh installs and subsequent launches are no-ops.
+        if settings.lastSyncedStartTime > 0 {
+            let now = Date().timeIntervalSince1970
+            let watermark = settings.lastSyncedStartTime
+            _ = try? DatabaseManager.shared.backfillSyncedFromWatermark(
+                throughStartTime: watermark,
+                at: now
+            )
+        }
+
         let sync = SyncService(db: DatabaseManager.shared, settings: settings)
 
         _permissionManager = StateObject(wrappedValue: permission)

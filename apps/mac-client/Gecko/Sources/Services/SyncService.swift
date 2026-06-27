@@ -35,12 +35,10 @@ final class SyncSessionDelegate: NSObject, URLSessionDelegate {
 
 /// Periodically syncs finalized focus sessions to the cloud via POST /api/sync.
 ///
-/// **Architecture:**
-/// 1. Timer-based: fires every 5 minutes (configurable for testing).
-/// 2. Watermark strategy: tracks `lastSyncedStartTime` — only fetches sessions
-///    with `start_time` after the watermark and `duration > 0`.
-/// 3. Batch upload: sends up to `batchSize` sessions per request, loops until drained.
-/// 4. Error handling: 401 stops syncing (invalid key), 5xx retries next tick.
+/// Per-row state: each `focus_sessions` row carries a `synced_at` column
+/// (NULL until the server 202s a batch containing its id). Successful batches
+/// mark only their own ids — a timeout or 5xx leaves the rows in the queue
+/// for the next 5-minute tick. 401 stops syncing (invalid key).
 @MainActor
 final class SyncService: ObservableObject {
 
@@ -121,13 +119,11 @@ final class SyncService: ObservableObject {
             self.session = session
             self.sessionDelegate = nil
         } else {
-            // Bump request/resource timeouts well above URLSession's 60 s default.
-            // The /api/sync handler does a D1 SELECT for API key validation, and
-            // when Cloudflare's D1 REST API is slow that round trip can eat the
-            // whole 60 s before the 202 lands — leaving a backlog wedged.
+            // Bump request/resource timeouts well above URLSession's 60 s default
+            // so one slow D1 round trip (API-key validation) doesn't kill a cycle.
             let config = URLSessionConfiguration.default
-            config.timeoutIntervalForRequest = 120  // single request
-            config.timeoutIntervalForResource = 180 // whole transfer incl. retries
+            config.timeoutIntervalForRequest = 120
+            config.timeoutIntervalForResource = 180
 
             #if DEBUG
             let delegate = SyncSessionDelegate()
@@ -284,14 +280,13 @@ final class SyncService: ObservableObject {
 
             // Fetch unsynced sessions on a background thread to avoid
             // blocking MainActor with synchronous SQLite reads.
-            let watermark = settings.lastSyncedStartTime
             let sessions: [FocusSession] = try await Task.detached(priority: .userInitiated) {
-                try database.fetchUnsynced(since: watermark, limit: batchSize)
+                try database.fetchUnsynced(limit: batchSize)
             }.value
 
             if sessions.isEmpty {
                 if batchNumber == 1 {
-                    logger.debug("No sessions to sync (watermark up-to-date)")
+                    logger.debug("No sessions to sync")
                 }
                 break
             }
@@ -315,14 +310,19 @@ final class SyncService: ObservableObject {
 
             totalSynced += result.accepted
 
-            // Advance watermark to the last session's start_time
-            if let lastSession = sessions.last {
-                let oldWatermark = settings.lastSyncedStartTime
+            // Mark only this batch synced. A timeout or 5xx above would have
+            // thrown and skipped this — the rows stay unsynced for the next
+            // cycle to retry. The server's INSERT OR IGNORE on session.id
+            // keeps any incidental duplicates harmless.
+            let ids = sessions.map(\.id)
+            let now = Date().timeIntervalSince1970
+            try await Task.detached(priority: .userInitiated) {
+                try database.markSynced(ids: ids, at: now)
+            }.value
+            // Keep the legacy watermark current for UI/diagnostics.
+            if let lastSession = sessions.last,
+               lastSession.startTime > settings.lastSyncedStartTime {
                 settings.lastSyncedStartTime = lastSession.startTime
-                logger.debug("""
-                    Watermark advanced: \(oldWatermark, format: .fixed(precision: 3)) → \
-                    \(lastSession.startTime, format: .fixed(precision: 3))
-                    """)
             }
 
             // If we got fewer than the batch size, we're done
