@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.4] - 2026-06-27
+
+### Fixed
+- **sync**: resetSyncState returns false when clearSyncedState throws
+- **sync**: block Reset mid-cycle to avoid stomping in-flight markSynced
+- **sync**: Reset sync state must also clear per-row synced_at
+
 ## [1.10.3] - 2026-06-27
 
 ### Added
