@@ -101,6 +101,7 @@ function LoginContent() {
                   alt="Gecko"
                   width={16}
                   height={16}
+                  unoptimized
                 />
                 <span className="text-sm font-semibold text-primary-foreground">
                   Gecko
@@ -130,6 +131,7 @@ function LoginContent() {
                 alt="Gecko"
                 width={80}
                 height={80}
+                unoptimized
                 className="h-full w-full object-contain"
               />
             </div>

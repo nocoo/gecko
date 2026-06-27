@@ -206,6 +206,7 @@ export function Sidebar() {
                 alt="Gecko"
                 width={24}
                 height={24}
+                unoptimized
                 className="shrink-0"
               />
             </div>
@@ -300,6 +301,7 @@ export function Sidebar() {
                     alt="Gecko"
                     width={24}
                     height={24}
+                    unoptimized
                     className="shrink-0"
                   />
                   <span className="text-lg font-bold tracking-tighter">
