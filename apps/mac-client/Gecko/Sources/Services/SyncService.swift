@@ -39,7 +39,7 @@ final class SyncSessionDelegate: NSObject, URLSessionDelegate {
 /// 1. Timer-based: fires every 5 minutes (configurable for testing).
 /// 2. Watermark strategy: tracks `lastSyncedStartTime` — only fetches sessions
 ///    with `start_time` after the watermark and `duration > 0`.
-/// 3. Batch upload: sends up to 1000 sessions per request, loops until drained.
+/// 3. Batch upload: sends up to `batchSize` sessions per request, loops until drained.
 /// 4. Error handling: 401 stops syncing (invalid key), 5xx retries next tick.
 @MainActor
 final class SyncService: ObservableObject {
@@ -67,8 +67,14 @@ final class SyncService: ObservableObject {
         case disabled
     }
 
-    // MARK: - Dependencies
+    // MARK: - Constants
 
+    /// Sessions per upload batch. Smaller batches keep the request body small
+    /// (~80 KB) so a slow D1 round trip on the server (api_key validation)
+    /// can't exhaust URLSession's request timeout before the 202 lands.
+    private static let batchSize = 250
+
+    // MARK: - Dependencies
     private let db: any DatabaseService
     private let settings: SettingsManager
     private let session: URLSession
@@ -115,17 +121,25 @@ final class SyncService: ObservableObject {
             self.session = session
             self.sessionDelegate = nil
         } else {
+            // Bump request/resource timeouts well above URLSession's 60 s default.
+            // The /api/sync handler does a D1 SELECT for API key validation, and
+            // when Cloudflare's D1 REST API is slow that round trip can eat the
+            // whole 60 s before the 202 lands — leaving a backlog wedged.
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 120  // single request
+            config.timeoutIntervalForResource = 180 // whole transfer incl. retries
+
             #if DEBUG
             let delegate = SyncSessionDelegate()
             self.sessionDelegate = delegate
             self.session = URLSession(
-                configuration: .default,
+                configuration: config,
                 delegate: delegate,
                 delegateQueue: nil
             )
             #else
-            self.session = .shared
             self.sessionDelegate = nil
+            self.session = URLSession(configuration: config)
             #endif
         }
 
@@ -257,12 +271,13 @@ final class SyncService: ObservableObject {
         }
     }
 
-    /// Upload sessions in batches of 1000 until all pending sessions are drained.
+    /// Upload sessions in batches of `batchSize` until all pending sessions are drained.
     /// Returns (totalSynced, batchCount).
     private func drainBatches() async throws -> (Int, Int) {
         var totalSynced = 0
         var batchNumber = 0
         let database = db
+        let batchSize = Self.batchSize
 
         while true {
             batchNumber += 1
@@ -271,7 +286,7 @@ final class SyncService: ObservableObject {
             // blocking MainActor with synchronous SQLite reads.
             let watermark = settings.lastSyncedStartTime
             let sessions: [FocusSession] = try await Task.detached(priority: .userInitiated) {
-                try database.fetchUnsynced(since: watermark, limit: 1000)
+                try database.fetchUnsynced(since: watermark, limit: batchSize)
             }.value
 
             if sessions.isEmpty {
@@ -310,8 +325,8 @@ final class SyncService: ObservableObject {
                     """)
             }
 
-            // If we got fewer than 1000, we're done
-            if sessions.count < 1000 {
+            // If we got fewer than the batch size, we're done
+            if sessions.count < batchSize {
                 break
             }
         }
