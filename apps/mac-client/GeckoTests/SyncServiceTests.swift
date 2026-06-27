@@ -8,6 +8,7 @@ import XCTest
 private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
     var sessions: [FocusSession] = []
     var markSyncedCalls: [(ids: [String], at: Double)] = []
+    var clearSyncedStateCalls = 0
 
     func insert(_ session: FocusSession) throws {
         sessions.append(session)
@@ -48,6 +49,13 @@ private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
         let set = Set(ids)
         for index in sessions.indices where set.contains(sessions[index].id) {
             sessions[index].syncedAt = timestamp
+        }
+    }
+
+    func clearSyncedState() throws {
+        clearSyncedStateCalls += 1
+        for index in sessions.indices {
+            sessions[index].syncedAt = nil
         }
     }
 
@@ -227,6 +235,27 @@ final class SyncServiceTests: XCTestCase {
 
         // THEN: status is disabled, no HTTP call made
         XCTAssertEqual(syncService.status, .disabled)
+    }
+
+    // MARK: - Reset Sync State
+
+    func testResetSyncStateClearsSyncedAtAndWatermark() {
+        settings.lastSyncedStartTime = 12345
+        mockDB.sessions = [
+            makeSession(id: "a", startTime: 100, duration: 1),
+            makeSession(id: "b", startTime: 200, duration: 1)
+        ]
+        mockDB.sessions[0].syncedAt = 9999
+        mockDB.sessions[1].syncedAt = 9999
+
+        let syncService = SyncService(db: mockDB, settings: settings,
+                                      session: makeURLSession(), syncInterval: 999)
+        syncService.resetSyncState()
+
+        XCTAssertEqual(mockDB.clearSyncedStateCalls, 1)
+        XCTAssertNil(mockDB.sessions[0].syncedAt)
+        XCTAssertNil(mockDB.sessions[1].syncedAt)
+        XCTAssertEqual(settings.lastSyncedStartTime, 0)
     }
 
     // MARK: - Resumable Sync

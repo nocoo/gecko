@@ -346,6 +346,35 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(manager.lastSyncedStartTime, 0)
     }
 
+    /// Regression: with the per-row sync scheme, resetting must also clear
+    /// every `synced_at` so the next cycle re-uploads from scratch. Without
+    /// this, "Reset sync state" silently became a settings-only reset.
+    func testResetSyncSettingsClearsRowSyncStateWhenSyncServiceWired() throws {
+        let manager = makeSettingsManager()
+        manager.syncEnabled = true
+        manager.apiKey = "gk_to_reset"
+        manager.lastSyncedStartTime = 9999.0
+
+        let db = try DatabaseManager.makeInMemory()
+        let session = FocusSession(
+            id: "r-1", appName: "App", bundleId: nil, windowTitle: "Win",
+            url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+            isFullScreen: false, isMinimized: false,
+            startTime: 1000, endTime: 1010, duration: 10,
+            syncedAt: nil
+        )
+        try db.insert(session)
+        try db.markSynced(ids: ["r-1"], at: 8000)
+        XCTAssertNotNil(try db.fetch(id: "r-1")?.syncedAt)
+
+        let syncService = SyncService(db: db, settings: manager, syncInterval: 999)
+        let viewModel = SettingsViewModel(settingsManager: manager, syncService: syncService)
+        viewModel.resetSyncSettings()
+
+        XCTAssertNil(try db.fetch(id: "r-1")?.syncedAt)
+        XCTAssertEqual(manager.lastSyncedStartTime, 0)
+    }
+
     // MARK: - Sync Enable Toggle
 
     func testSyncEnableToggleUpdatesManager() {

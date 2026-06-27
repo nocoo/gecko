@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import Foundation
 import Combine
 import Network
@@ -214,6 +215,20 @@ final class SyncService: ObservableObject {
     /// Stop the network monitor.
     private func stopNetworkMonitor() {
         networkMonitor.cancel()
+    }
+
+    // MARK: - Reset
+
+    /// Clear all per-row sync state and the legacy watermark — Settings
+    /// "Reset sync state". Next cycle re-uploads everything; server's
+    /// INSERT OR IGNORE keeps it safe.
+    func resetSyncState() {
+        do {
+            try db.clearSyncedState()
+        } catch {
+            logger.error("clearSyncedState failed: \(error.localizedDescription)")
+        }
+        settings.lastSyncedStartTime = 0
     }
 
     // MARK: - Sync Execution

@@ -1,3 +1,4 @@
+// swiftlint:disable file_length
 import XCTest
 import GRDB
 @testable import Gecko
@@ -444,6 +445,33 @@ final class DatabaseManagerTests: XCTestCase {
     func testMarkSyncedEmptyIsNoOp() throws {
         // No rows; should not throw.
         XCTAssertNoThrow(try db.markSynced(ids: [], at: 0))
+    }
+
+    // MARK: - ClearSyncedState
+
+    func testClearSyncedStateResetsEveryRow() throws {
+        for i in 0..<3 {
+            let session = FocusSession(
+                id: "c-\(i)", appName: "App", bundleId: nil, windowTitle: "Win",
+                url: nil, tabTitle: nil, tabCount: nil, documentPath: nil,
+                isFullScreen: false, isMinimized: false,
+                startTime: Double(1000 + i), endTime: Double(1010 + i), duration: 10.0,
+                syncedAt: nil
+            )
+            try db.insert(session)
+        }
+        try db.markSynced(ids: ["c-0", "c-1", "c-2"], at: 50000)
+
+        try db.clearSyncedState()
+
+        XCTAssertNil(try db.fetch(id: "c-0")?.syncedAt)
+        XCTAssertNil(try db.fetch(id: "c-1")?.syncedAt)
+        XCTAssertNil(try db.fetch(id: "c-2")?.syncedAt)
+        XCTAssertEqual(try db.fetchUnsynced(limit: 100).count, 3)
+    }
+
+    func testClearSyncedStateOnEmptyTableIsNoOp() throws {
+        XCTAssertNoThrow(try db.clearSyncedState())
     }
 
     // MARK: - Backfill

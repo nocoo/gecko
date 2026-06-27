@@ -14,6 +14,7 @@ protocol DatabaseService: Sendable {
     func fetch(id: String) throws -> FocusSession?
     func fetchUnsynced(limit: Int) throws -> [FocusSession]
     func markSynced(ids: [String], at timestamp: Double) throws
+    func clearSyncedState() throws
     func count() throws -> Int
     func deleteAll() throws
 }
@@ -239,6 +240,15 @@ final class DatabaseManager: DatabaseService {
             var args: [DatabaseValueConvertible] = [timestamp]
             args.append(contentsOf: ids)
             try db.execute(sql: sql, arguments: StatementArguments(args))
+        }
+    }
+
+    /// Clear `synced_at` on every row so the next sync cycle re-uploads
+    /// everything from scratch. Backs the "Reset sync state" Settings action.
+    /// The server's INSERT OR IGNORE on session.id keeps the re-upload safe.
+    func clearSyncedState() throws {
+        try dbQueue.write { db in
+            try db.execute(sql: "UPDATE focus_sessions SET synced_at = NULL")
         }
     }
 

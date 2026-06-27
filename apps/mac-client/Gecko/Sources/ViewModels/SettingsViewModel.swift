@@ -207,7 +207,15 @@ final class SettingsViewModel: ObservableObject {
         settingsManager.apiKey = ""
         settingsManager.syncServerUrl = SettingsManager.defaultSyncServerUrl
         settingsManager.syncEnabled = false
-        settingsManager.resetSyncState()
+        // Clear per-row synced_at across all sessions (plus the legacy
+        // watermark). Falls back to the SettingsManager-only reset when no
+        // SyncService is wired up — e.g. unit tests that only verify the
+        // settings reset, not the DB side effect.
+        if let syncService {
+            syncService.resetSyncState()
+        } else {
+            settingsManager.resetSyncState()
+        }
 
         editingApiKey = ""
         editingSyncServerUrl = SettingsManager.defaultSyncServerUrl

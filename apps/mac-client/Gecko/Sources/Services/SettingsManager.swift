@@ -233,7 +233,10 @@ final class SettingsManager: ObservableObject {
         syncEnabled && !apiKey.isEmpty && !syncServerUrl.isEmpty
     }
 
-    /// Reset sync watermark to re-sync all data from the beginning.
+    /// Reset only the legacy `lastSyncedStartTime` watermark. Kept for
+    /// diagnostic UI/tests and as a fallback; the authoritative reset is
+    /// `SyncService.resetSyncState()`, which also clears `synced_at` on
+    /// every row so the next cycle re-uploads everything.
     func resetSyncState() {
         lastSyncedStartTime = 0
     }
