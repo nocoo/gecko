@@ -13,6 +13,7 @@ protocol DatabaseService: Sendable {
     func fetchRecent(limit: Int) throws -> [FocusSession]
     func fetch(id: String) throws -> FocusSession?
     func fetchUnsynced(limit: Int) throws -> [FocusSession]
+    func fetchUnsynced(limit: Int, offset: Int) throws -> [FocusSession]
     func markSynced(ids: [String], at timestamp: Double) throws
     func clearSyncedState() throws
     func unsyncedCount() throws -> Int
@@ -219,12 +220,19 @@ final class DatabaseManager: DatabaseService {
     /// "Unsynced" means `synced_at IS NULL`. Sessions are only returned once
     /// `duration > 0` (i.e. finalized).
     func fetchUnsynced(limit: Int = 250) throws -> [FocusSession] {
+        try fetchUnsynced(limit: limit, offset: 0)
+    }
+
+    /// Same as `fetchUnsynced(limit:)` but with a paging offset. Used by the
+    /// sync drain loop to walk past a wedged batch and keep uploading what it
+    /// can, so one bad row/batch doesn't block the whole backlog.
+    func fetchUnsynced(limit: Int, offset: Int) throws -> [FocusSession] {
         try dbQueue.read { db in
             try FocusSession
                 .filter(FocusSession.Columns.syncedAt == nil)
                 .filter(FocusSession.Columns.duration > 0)
                 .order(FocusSession.Columns.startTime.asc)
-                .limit(limit)
+                .limit(limit, offset: offset)
                 .fetchAll(db)
         }
     }

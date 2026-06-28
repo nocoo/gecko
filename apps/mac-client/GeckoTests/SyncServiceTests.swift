@@ -37,11 +37,17 @@ private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
     }
 
     func fetchUnsynced(limit: Int) throws -> [FocusSession] {
-        sessions
-            .filter { $0.syncedAt == nil && $0.duration > 0 }
-            .sorted { $0.startTime < $1.startTime }
-            .prefix(limit)
-            .map { $0 }
+        try fetchUnsynced(limit: limit, offset: 0)
+    }
+
+    func fetchUnsynced(limit: Int, offset: Int) throws -> [FocusSession] {
+        Array(
+            sessions
+                .filter { $0.syncedAt == nil && $0.duration > 0 }
+                .sorted { $0.startTime < $1.startTime }
+                .dropFirst(offset)
+                .prefix(limit)
+        )
     }
 
     func markSynced(ids: [String], at timestamp: Double) throws {
@@ -339,11 +345,9 @@ final class SyncServiceTests: XCTestCase {
         settings.apiKey = "gk_test"
         settings.syncServerUrl = "https://test.example.com"
 
-        // Two full batches' worth of sessions (using a tiny batch size means
-        // we'd need too many rows; rely on the production batchSize=250 by
-        // crafting 251 sessions so drainBatches loops at least twice).
+        // 26 sessions = 2 batches at the production batchSize of 25.
         var rows: [FocusSession] = []
-        for i in 0..<251 {
+        for i in 0..<26 {
             rows.append(makeSession(id: "r\(i)", startTime: 1000.0 + Double(i), duration: 1.0))
         }
         mockDB.sessions = rows
@@ -352,7 +356,7 @@ final class SyncServiceTests: XCTestCase {
         MockURLProtocol.handler = { _ in
             callIndex += 1
             if callIndex == 1 {
-                return jsonResponse(statusCode: 202, body: ["accepted": 250, "sync_id": "ok"])
+                return jsonResponse(statusCode: 202, body: ["accepted": 25, "sync_id": "ok"])
             }
             return jsonResponse(statusCode: 500, body: ["error": "boom"])
         }
@@ -362,10 +366,10 @@ final class SyncServiceTests: XCTestCase {
 
         await syncService.syncNow()
 
-        // Batch 1 succeeded → 250 ids marked. Batch 2 failed → r250 still unsynced.
+        // Batch 1 succeeded → 25 ids marked. Batch 2 failed → r25 still unsynced.
         XCTAssertEqual(mockDB.markSyncedCalls.count, 1)
-        XCTAssertEqual(mockDB.markSyncedCalls[0].ids.count, 250)
-        XCTAssertNil(mockDB.sessions.first { $0.id == "r250" }?.syncedAt)
+        XCTAssertEqual(mockDB.markSyncedCalls[0].ids.count, 25)
+        XCTAssertNil(mockDB.sessions.first { $0.id == "r25" }?.syncedAt)
         XCTAssertNotNil(mockDB.sessions.first { $0.id == "r0" }?.syncedAt)
     }
 
