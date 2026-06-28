@@ -63,6 +63,10 @@ private final class MockDatabaseService: @unchecked Sendable, DatabaseService {
         }
     }
 
+    func unsyncedCount() throws -> Int {
+        sessions.filter { $0.syncedAt == nil && $0.duration > 0 }.count
+    }
+
     func count() throws -> Int {
         sessions.count
     }
@@ -134,7 +138,6 @@ private func jsonResponse(statusCode: Int, body: [String: Any]) -> (Data, HTTPUR
 // MARK: - Tests
 
 @MainActor
-// swiftlint:disable:next type_body_length
 final class SyncServiceTests: XCTestCase {
 
     private var mockDB: MockDatabaseService! // swiftlint:disable:this implicitly_unwrapped_optional
@@ -392,12 +395,11 @@ final class SyncServiceTests: XCTestCase {
         // WHEN: syncing
         await syncService.syncNow()
 
-        // THEN: all uploaded ids marked synced; legacy watermark also advances for diagnostics
+        // THEN: all uploaded ids marked synced.
         XCTAssertEqual(mockDB.markSyncedCalls.count, 1)
         XCTAssertEqual(Set(mockDB.markSyncedCalls[0].ids), ["s1", "s2"])
         XCTAssertNotNil(mockDB.sessions.first { $0.id == "s1" }?.syncedAt)
         XCTAssertNotNil(mockDB.sessions.first { $0.id == "s2" }?.syncedAt)
-        XCTAssertEqual(settings.lastSyncedStartTime, 1100.0)
         XCTAssertEqual(syncService.status, .idle)
         XCTAssertEqual(syncService.lastSyncCount, 2)
         XCTAssertNotNil(syncService.lastSyncTime)
@@ -452,7 +454,7 @@ final class SyncServiceTests: XCTestCase {
 
     // MARK: - 500 Server Error
 
-    func testServerErrorSetsErrorStatus() async {
+    func testServerErrorLeavesRowsUnsyncedAndReportsRetry() async {
         // GIVEN: configured sync
         settings.syncEnabled = true
         settings.apiKey = "gk_test"
@@ -470,13 +472,10 @@ final class SyncServiceTests: XCTestCase {
         // WHEN: syncing
         await syncService.syncNow()
 
-        // THEN: error status
-        if case .error(let message) = syncService.status {
-            XCTAssertTrue(message.contains("500"))
-        } else {
-            XCTFail("Expected error status, got \(syncService.status)")
-        }
-        // No rows should be marked synced — the same batch must retry next cycle
+        // THEN: cycle returns to .idle (so the 5-min timer keeps running),
+        // lastError surfaces the failure count, and no rows are marked synced.
+        XCTAssertEqual(syncService.status, .idle)
+        XCTAssertEqual(syncService.lastError, "1 batch(es) failed — will retry")
         XCTAssertTrue(mockDB.markSyncedCalls.isEmpty)
         XCTAssertNil(mockDB.sessions.first { $0.id == "s1" }?.syncedAt)
     }
@@ -564,11 +563,11 @@ final class SyncServiceTests: XCTestCase {
 
         await syncService.syncNow()
 
-        if case .error(let message) = syncService.status {
-            XCTAssertTrue(message.contains("Missing required field"))
-        } else {
-            XCTFail("Expected error status")
-        }
+        // 400 is per-batch transient under the new policy: cycle ends idle
+        // and surfaces the failed-batches count in lastError. Per-batch detail
+        // (the specific 400 message) is captured in the logs.
+        XCTAssertEqual(syncService.status, .idle)
+        XCTAssertEqual(syncService.lastError, "1 batch(es) failed — will retry")
     }
 
     // MARK: - Accepted Count
