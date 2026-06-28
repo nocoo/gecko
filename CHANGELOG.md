@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.6] - 2026-06-28
+
+### Fixed
+- **sync**: force HTTP/2 over TCP, drop HTTP/3 (QUIC) for upload
+
 ## [1.10.5] - 2026-06-27
 
 ### Maintenance
