@@ -120,23 +120,23 @@ final class SyncService: ObservableObject {
             self.session = session
             self.sessionDelegate = nil
         } else {
-            // Bump request/resource timeouts well above URLSession's 60 s default
-            // so one slow D1 round trip (API-key validation) doesn't kill a cycle.
-            let config = URLSessionConfiguration.default
-            config.timeoutIntervalForRequest = 120
-            config.timeoutIntervalForResource = 180
-
             #if DEBUG
             let delegate = SyncSessionDelegate()
             self.sessionDelegate = delegate
             self.session = URLSession(
-                configuration: config,
+                configuration: .default,
                 delegate: delegate,
                 delegateQueue: nil
             )
             #else
+            // Release: use the global shared session. The custom URLSession
+            // variants we tried in 1.10.2…1.10.8 (timeouts, ephemeral, default,
+            // pipelining off) all reproduced a TCP data-stall at ~3 s on the
+            // user's prod machine, while a shell `swift` script with the same
+            // config returned <1 s. URLSession.shared shares scheduling with
+            // Network.framework's modern loader and never reproduced the stall.
             self.sessionDelegate = nil
-            self.session = URLSession(configuration: config)
+            self.session = .shared
             #endif
         }
 
