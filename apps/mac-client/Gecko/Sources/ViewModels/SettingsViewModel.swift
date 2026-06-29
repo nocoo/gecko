@@ -77,12 +77,6 @@ final class SettingsViewModel: ObservableObject {
     /// Number of sessions synced in last batch.
     @Published private(set) var syncLastCount: Int = 0
 
-    /// Pending (un-uploaded) sessions in the local DB.
-    @Published private(set) var syncPendingCount: Int = 0
-
-    /// Sessions uploaded in the current cycle (resets at cycle start).
-    @Published private(set) var syncCycleProgress: Int = 0
-
     // MARK: - Dependencies
 
     private let settingsManager: SettingsManager
@@ -131,14 +125,6 @@ final class SettingsViewModel: ObservableObject {
         syncService.$lastSyncCount
             .receive(on: DispatchQueue.main)
             .assign(to: &$syncLastCount)
-
-        syncService.$pendingCount
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$syncPendingCount)
-
-        syncService.$cycleProgress
-            .receive(on: DispatchQueue.main)
-            .assign(to: &$syncCycleProgress)
     }
 
     /// Update the sync service reference (called after GeckoApp creates it).

@@ -15,7 +15,6 @@ protocol DatabaseService: Sendable {
     func fetchUnsynced(limit: Int) throws -> [FocusSession]
     func markSynced(ids: [String], at timestamp: Double) throws
     func clearSyncedState() throws
-    func unsyncedCount() throws -> Int
     func count() throws -> Int
     func deleteAll() throws
 }
@@ -226,17 +225,6 @@ final class DatabaseManager: DatabaseService {
                 .order(FocusSession.Columns.startTime.asc)
                 .limit(limit)
                 .fetchAll(db)
-        }
-    }
-
-    /// Count rows still pending upload (`synced_at IS NULL`, finalized).
-    /// Powers the Settings UI progress display.
-    func unsyncedCount() throws -> Int {
-        try dbQueue.read { db in
-            try Int.fetchOne(
-                db,
-                sql: "SELECT COUNT(*) FROM focus_sessions WHERE synced_at IS NULL AND duration > 0"
-            ) ?? 0
         }
     }
 

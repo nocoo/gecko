@@ -244,14 +244,9 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var syncStatusText: some View {
-        let pending = viewModel.syncPendingCount
-        let progress = viewModel.syncCycleProgress
         switch viewModel.syncStatus {
         case .idle:
-            if pending > 0 {
-                Text("\(pending) pending — next cycle in <5 min")
-                    .foregroundStyle(.secondary)
-            } else if let lastTime = viewModel.syncLastTime {
+            if let lastTime = viewModel.syncLastTime {
                 Text("Last synced: \(lastTime, style: .relative) ago (\(viewModel.syncLastCount) sessions)")
                     .foregroundStyle(.secondary)
             } else {
@@ -259,21 +254,11 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
         case .syncing:
-            if pending + progress > 0 {
-                Text("Syncing… \(progress) of \(progress + pending)")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Syncing…")
-                    .foregroundStyle(.secondary)
-            }
+            Text("Syncing...")
+                .foregroundStyle(.secondary)
         case .error(let message):
-            if pending > 0 {
-                Text("\(message) — \(pending) still pending")
-                    .foregroundStyle(.red)
-            } else {
-                Text(message)
-                    .foregroundStyle(.red)
-            }
+            Text(message)
+                .foregroundStyle(.red)
         case .disabled:
             Text("Sync disabled")
                 .foregroundStyle(.secondary)
