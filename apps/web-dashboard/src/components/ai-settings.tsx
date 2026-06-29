@@ -105,11 +105,19 @@ export function AiSettingsSection() {
       if (apiKeyChanged) {
         body.apiKey = apiKeyInput;
       }
-      // Include custom provider fields
+      // Custom-provider fields: when the user is on custom, send the
+      // current values; otherwise send empty strings so any stale value
+      // left over from a previous custom config gets cleared in DB.
+      // (Built-in providers don't read these, but stale rows can leak
+      // into other call sites later.)
       if (isCustomProvider) {
         body.baseURL = settings.baseURL;
         body.sdkType = settings.sdkType;
         body.authType = settings.authType;
+      } else {
+        body.baseURL = "";
+        body.sdkType = "";
+        body.authType = "";
       }
       const res = await fetch("/api/settings/ai", {
         method: "PUT",
