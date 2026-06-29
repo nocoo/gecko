@@ -253,21 +253,17 @@ final class SyncService: ObservableObject {
     /// Trigger a sync cycle immediately. Loops until all pending sessions are uploaded.
     func syncNow() async {
         guard settings.isSyncConfigured else {
-            logger.info("""
-                syncNow skipped: not configured \
-                (enabled=\(self.settings.syncEnabled, privacy: .public), \
-                apiKey.empty=\(self.settings.apiKey.isEmpty, privacy: .public))
-                """)
+            logger.debug("Sync skipped — not configured")
             return
         }
 
         guard isNetworkAvailable else {
-            logger.info("syncNow skipped: network unavailable")
+            logger.debug("Sync skipped — no network")
             return
         }
 
         guard status != .syncing else {
-            logger.info("syncNow skipped: already in progress")
+            logger.debug("Sync skipped — already in progress")
             return
         }
 
@@ -276,8 +272,8 @@ final class SyncService: ObservableObject {
 
         let cycleStart = Date()
         logger.info("""
-            Sync cycle started — server: \(self.settings.syncServerUrl, privacy: .public), \
-            watermark: \(self.settings.lastSyncedStartTime, format: .fixed(precision: 3), privacy: .public)
+            Sync cycle started — server: \(self.settings.syncServerUrl), \
+            watermark: \(self.settings.lastSyncedStartTime, format: .fixed(precision: 3))
             """)
 
         do {
@@ -286,23 +282,20 @@ final class SyncService: ObservableObject {
             lastSyncTime = Date()
             lastSyncCount = totalSynced
             status = .idle
-            logger.info("""
-                Sync cycle complete: \(totalSynced, privacy: .public) sessions in \
-                \(batchCount, privacy: .public) batch(es), \
-                took \(totalElapsed, format: .fixed(precision: 2), privacy: .public)s
-                """)
+            if totalSynced > 0 {
+                logger.info("""
+                    Sync cycle complete: \(totalSynced) sessions in \(batchCount) batch(es), \
+                    took \(totalElapsed, format: .fixed(precision: 2))s
+                    """)
+            } else {
+                logger.debug("Sync cycle complete: nothing to sync")
+            }
         } catch let error as SyncError {
             handleSyncError(error)
         } catch {
-            let nsError = error as NSError
-            let elapsed = Date().timeIntervalSince(cycleStart)
             lastError = error.localizedDescription
             status = .error(error.localizedDescription)
-            logger.error("""
-                Sync failed after \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
-                domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \
-                desc=\(error.localizedDescription, privacy: .public)
-                """)
+            logger.error("Sync failed: \(error.localizedDescription)")
         }
     }
 
@@ -325,7 +318,7 @@ final class SyncService: ObservableObject {
 
             if sessions.isEmpty {
                 if batchNumber == 1 {
-                    logger.info("drainBatches: nothing to sync (no rows with synced_at IS NULL)")
+                    logger.debug("No sessions to sync")
                 }
                 break
             }
@@ -333,9 +326,9 @@ final class SyncService: ObservableObject {
             let firstTime = sessions.first?.startTime ?? 0
             let lastTime = sessions.last?.startTime ?? 0
             logger.info("""
-                Batch \(batchNumber, privacy: .public): \(sessions.count, privacy: .public) sessions \
-                [startTime \(firstTime, format: .fixed(precision: 3), privacy: .public)…\
-                \(lastTime, format: .fixed(precision: 3), privacy: .public)]
+                Batch \(batchNumber): \(sessions.count) sessions \
+                [startTime \(firstTime, format: .fixed(precision: 3))…\
+                \(lastTime, format: .fixed(precision: 3))]
                 """)
 
             let batchStart = Date()
@@ -343,10 +336,8 @@ final class SyncService: ObservableObject {
             let elapsed = Date().timeIntervalSince(batchStart)
 
             logger.info("""
-                Batch \(batchNumber, privacy: .public) done in \
-                \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
-                accepted: \(result.accepted, privacy: .public), \
-                syncId: \(result.syncId, privacy: .public)
+                Batch \(batchNumber) done in \(elapsed, format: .fixed(precision: 2))s — \
+                accepted: \(result.accepted), syncId: \(result.syncId)
                 """)
 
             totalSynced += result.accepted
@@ -360,7 +351,6 @@ final class SyncService: ObservableObject {
             try await Task.detached(priority: .userInitiated) {
                 try database.markSynced(ids: ids, at: now)
             }.value
-            logger.info("Batch \(batchNumber, privacy: .public) markSynced succeeded for \(ids.count, privacy: .public) ids")
             // Keep the legacy watermark current for UI/diagnostics.
             if let lastSession = sessions.last,
                lastSession.startTime > settings.lastSyncedStartTime {
@@ -380,9 +370,8 @@ final class SyncService: ObservableObject {
 
     /// Upload a batch of sessions to the sync endpoint.
     private func uploadBatch(_ sessions: [FocusSession]) async throws -> SyncResponse {
-        // swiftlint:disable:previous function_body_length
         guard let url = URL(string: "\(settings.syncServerUrl)/api/sync") else {
-            logger.error("Invalid sync URL: \(self.settings.syncServerUrl, privacy: .public)")
+            logger.error("Invalid sync URL: \(self.settings.syncServerUrl)")
             throw SyncError.badRequest("Invalid server URL: \(settings.syncServerUrl)")
         }
         var request = URLRequest(url: url)
@@ -395,41 +384,18 @@ final class SyncService: ObservableObject {
         request.httpBody = body
 
         let bodyKB = Double(body.count) / 1024.0
-        logger.info("""
-            POST \(url.absoluteString, privacy: .public) — \
-            \(sessions.count, privacy: .public) sessions, \
-            \(bodyKB, format: .fixed(precision: 1), privacy: .public) KB
-            """)
+        logger.debug("POST \(url.absoluteString) (\(bodyKB, format: .fixed(precision: 1)) KB)")
 
-        let uploadStart = Date()
-        let data: Data
-        let response: URLResponse
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            let nsError = error as NSError
-            let elapsed = Date().timeIntervalSince(uploadStart)
-            logger.error("""
-                uploadBatch network failure after \
-                \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
-                domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \
-                desc=\(error.localizedDescription, privacy: .public)
-                """)
-            throw error
-        }
-        let netElapsed = Date().timeIntervalSince(uploadStart)
+        let (data, response) = try await session.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            logger.error("uploadBatch: response is not HTTPURLResponse (type=\(type(of: response), privacy: .public))")
             throw SyncError.invalidResponse
         }
 
         let statusCode = httpResponse.statusCode
-        logger.info("""
-            uploadBatch received HTTP \(statusCode, privacy: .public) in \
-            \(netElapsed, format: .fixed(precision: 2), privacy: .public)s, \
-            body \(data.count, privacy: .public) bytes
-            """)
+        if statusCode != 202 {
+            logger.warning("Server returned HTTP \(statusCode), body: \(data.count) bytes")
+        }
 
         switch statusCode {
         case 200, 202:
