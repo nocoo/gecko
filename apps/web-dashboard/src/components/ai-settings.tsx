@@ -11,6 +11,7 @@ import {
   BUILTIN_PROVIDERS,
   CUSTOM_PROVIDER_INFO,
   type BuiltinProvider,
+  type AuthType,
   type SdkType,
 } from "@nocoo/next-ai";
 import {
@@ -32,6 +33,7 @@ interface AiSettings {
   model: string;
   baseURL: string;
   sdkType: SdkType | "";
+  authType: AuthType | "";
 }
 
 type TestStatus = "idle" | "testing" | "success" | "error";
@@ -47,6 +49,7 @@ export function AiSettingsSection() {
     model: "",
     baseURL: "",
     sdkType: "",
+    authType: "",
   });
   const [apiKeyInput, setApiKeyInput] = useState("");
   const [apiKeyChanged, setApiKeyChanged] = useState(false);
@@ -106,6 +109,7 @@ export function AiSettingsSection() {
       if (isCustomProvider) {
         body.baseURL = settings.baseURL;
         body.sdkType = settings.sdkType;
+        body.authType = settings.authType;
       }
       const res = await fetch("/api/settings/ai", {
         method: "PUT",
@@ -156,7 +160,7 @@ export function AiSettingsSection() {
     setCustomModelInput("");
 
     if (!provider) {
-      setSettings((s) => ({ ...s, provider: "", model: "", baseURL: "", sdkType: "" }));
+      setSettings((s) => ({ ...s, provider: "", model: "", baseURL: "", sdkType: "", authType: "" }));
       return;
     }
 
@@ -166,6 +170,7 @@ export function AiSettingsSection() {
         provider: "custom",
         model: "",
         sdkType: s.sdkType || "openai",
+        authType: s.authType || "apiKey",
       }));
       return;
     }
@@ -175,6 +180,7 @@ export function AiSettingsSection() {
       ...s,
       provider,
       model: info?.defaultModel ?? "",
+      authType: "",
     }));
   }, []);
 
@@ -352,6 +358,27 @@ export function AiSettingsSection() {
             >
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
+            </Select>
+          </div>
+        )}
+
+        {/* Custom provider: Auth Type — for LLM gateways like manifest.build
+            that require Authorization: Bearer instead of x-api-key. */}
+        {isCustomProvider && (
+          <div>
+            <Label className="text-sm">Auth Header</Label>
+            <Select
+              value={settings.authType || "apiKey"}
+              onChange={(e) =>
+                setSettings((s) => ({
+                  ...s,
+                  authType: e.target.value as AuthType | "",
+                }))
+              }
+              className="mt-1 h-9"
+            >
+              <option value="apiKey">Default (x-api-key / Bearer)</option>
+              <option value="bearer">Force Bearer</option>
             </Select>
           </div>
         )}

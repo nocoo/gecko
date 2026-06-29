@@ -76,6 +76,7 @@ export interface AiSettings {
   model: string;
   baseURL: string;
   sdkType: string;
+  authType: string;
   promptSection1: string;
   promptSection2: string;
   promptSection3: string;
@@ -124,6 +125,7 @@ export async function loadAiSettings(userId: string): Promise<AiSettings> {
     model: map.get("ai.model") ?? "",
     baseURL: map.get("ai.baseURL") ?? "",
     sdkType: map.get("ai.sdkType") ?? "",
+    authType: map.get("ai.authType") ?? "",
     promptSection1: map.get("ai.prompt.section1") ?? "",
     promptSection2: map.get("ai.prompt.section2") ?? "",
     promptSection3: map.get("ai.prompt.section3") ?? "",
@@ -396,6 +398,10 @@ export async function runAnalysis(
       model: settings.model,
       baseURL: settings.baseURL || undefined,
       sdkType: settings.sdkType ? (settings.sdkType as "anthropic" | "openai") : undefined,
+      authType:
+        settings.authType === "bearer" || settings.authType === "apiKey"
+          ? settings.authType
+          : undefined,
     };
     config = resolveAiConfig(input);
   } catch (err) {

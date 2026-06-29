@@ -27,6 +27,7 @@ export async function POST(): Promise<Response> {
   const model = map.get("ai.model") ?? "";
   const baseURL = map.get("ai.baseURL") ?? "";
   const sdkType = map.get("ai.sdkType") ?? "";
+  const authType = map.get("ai.authType") ?? "";
 
   if (!provider || !apiKey) {
     return jsonError("AI provider and API key must be configured first", 400);
@@ -39,6 +40,8 @@ export async function POST(): Promise<Response> {
       model,
       baseURL: baseURL || undefined,
       sdkType: sdkType ? (sdkType as "anthropic" | "openai") : undefined,
+      authType:
+        authType === "bearer" || authType === "apiKey" ? authType : undefined,
     };
 
     const config = resolveAiConfig(settings);

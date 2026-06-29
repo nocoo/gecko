@@ -5,7 +5,12 @@
 
 import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
 import { settingsRepo } from "@/lib/settings-repo";
-import { isValidProvider, type AiProvider, type SdkType } from "@nocoo/next-ai";
+import {
+  isValidProvider,
+  type AiProvider,
+  type AuthType,
+  type SdkType,
+} from "@nocoo/next-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +18,9 @@ export const dynamic = "force-dynamic";
 async function readAiSettings(userId: string) {
   const all = await settingsRepo.findByUserId(userId);
   const map = new Map(all.map((s) => [s.key, s.value]));
+  const rawAuth = map.get("ai.authType") ?? "";
+  const authType: AuthType | "" =
+    rawAuth === "bearer" || rawAuth === "apiKey" ? rawAuth : "";
   return {
     provider: (map.get("ai.provider") ?? "") as AiProvider | "",
     apiKey: map.get("ai.apiKey") ?? "",
@@ -20,6 +28,7 @@ async function readAiSettings(userId: string) {
     autoSummarize: map.get("ai.autoSummarize") === "true",
     baseURL: map.get("ai.baseURL") ?? "",
     sdkType: (map.get("ai.sdkType") ?? "") as SdkType | "",
+    authType,
     promptSection1: map.get("ai.prompt.section1") ?? "",
     promptSection2: map.get("ai.prompt.section2") ?? "",
     promptSection3: map.get("ai.prompt.section3") ?? "",
@@ -55,6 +64,7 @@ export async function PUT(request: Request): Promise<Response> {
     autoSummarize?: boolean;
     baseURL?: string;
     sdkType?: string;
+    authType?: string;
     promptSection1?: string;
     promptSection2?: string;
     promptSection3?: string;
@@ -80,6 +90,13 @@ export async function PUT(request: Request): Promise<Response> {
     }
   }
 
+  // Validate authType if provided
+  if (body.authType !== undefined && body.authType !== "") {
+    if (body.authType !== "apiKey" && body.authType !== "bearer") {
+      return jsonError(`Invalid auth type: ${body.authType}`, 400);
+    }
+  }
+
   // Save each field
   if (body.provider !== undefined) {
     await settingsRepo.upsert(user.userId, "ai.provider", body.provider);
@@ -98,6 +115,9 @@ export async function PUT(request: Request): Promise<Response> {
   }
   if (body.sdkType !== undefined) {
     await settingsRepo.upsert(user.userId, "ai.sdkType", body.sdkType);
+  }
+  if (body.authType !== undefined) {
+    await settingsRepo.upsert(user.userId, "ai.authType", body.authType);
   }
 
   // Prompt template sections — empty string means "use default"
