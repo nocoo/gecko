@@ -47,13 +47,23 @@ export async function POST(req: Request): Promise<Response> {
   console.log(`[sync ${reqId}] requireApiKey done in ${Date.now() - t0}ms, error=${!!error}`);
   if (error) return error;
 
+  // Read raw body as text first to isolate stream-reading from JSON parsing.
+  let bodyText: string;
+  try {
+    bodyText = await req.text();
+  } catch (e) {
+    console.log(`[sync ${reqId}] req.text() FAILED at ${Date.now() - t0}ms: ${String(e)}`);
+    return jsonError("Failed to read request body", 400);
+  }
+  console.log(`[sync ${reqId}] req.text() done in ${Date.now() - t0}ms, length=${bodyText.length}`);
+
   let body: { sessions?: SyncSession[] };
   try {
-    body = await req.json();
+    body = JSON.parse(bodyText);
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
-  console.log(`[sync ${reqId}] body parsed in ${Date.now() - t0}ms, sessions=${body.sessions?.length ?? 0}`);
+  console.log(`[sync ${reqId}] JSON.parse done in ${Date.now() - t0}ms, sessions=${body.sessions?.length ?? 0}`);
 
   const { sessions } = body;
 
