@@ -64,6 +64,21 @@ const authHandler = auth((req) => {
 
 // Export as named 'proxy' function for Next.js 16
 export function proxy(request: NextRequest) {
+  // Skip the auth() wrapper entirely for Bearer-authenticated requests.
+  // Calling auth() always spread-destructures the request via vinext's
+  // NextRequest constructor; for POSTs with a large body that drains the
+  // ReadableStream once on the proxy side, and the downstream route
+  // handler's req.text() / req.json() then hangs waiting for the
+  // already-consumed body. Mac client sync POSTs trip exactly this path.
+  // Bearer-auth means we never look at session cookies anyway, so the
+  // route handler's requireApiKey() does the real authentication.
+  const hasBearerToken = request.headers
+    .get("authorization")
+    ?.toLowerCase()
+    .startsWith("bearer ");
+  if (hasBearerToken) {
+    return NextResponse.next();
+  }
   return authHandler(exposeOwnAccessorsSync(request), {} as never);
 }
 
