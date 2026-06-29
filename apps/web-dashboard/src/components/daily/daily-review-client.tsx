@@ -13,7 +13,8 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import * as React from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Markdown from "react-markdown";
 import { AppShell } from "@/components/layout";
@@ -35,7 +36,14 @@ import {
   FileText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DayPicker } from "react-day-picker";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { CalendarDay } from "react-day-picker";
 import type { DailyStats } from "@/services/daily-stats";
 import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
 
@@ -123,6 +131,80 @@ function objToDateStr(d: Date): string {
 // Date Picker component
 // ---------------------------------------------------------------------------
 
+interface DayBadge {
+  /** Cached AI score (0-100), or null when no analysis exists. */
+  score: number | null;
+  /** True only when a real (non-placeholder) AI result is cached. */
+  hasAi: boolean;
+}
+
+interface SummariesResponse {
+  summaries: Array<{ date: string; score: number | null; hasAi: boolean }>;
+}
+
+function formatYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function scoreColorClass(score: number): string {
+  if (score >= 80) return "text-success";
+  if (score >= 60) return "text-warning";
+  return "text-destructive";
+}
+
+/**
+ * Circular progress ring rendered behind a day cell.
+ * `score` is 0–100, mapped to fraction of the circle filled clockwise from 12 o'clock.
+ * Color follows the same thresholds as the score number used to.
+ */
+function ScoreRing({
+  score,
+  selected,
+}: {
+  score: number;
+  selected?: boolean;
+}) {
+  const size = 56;
+  const stroke = 4;
+  const r = (size - stroke) / 2;
+  const c = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, score));
+  const dashOffset = c * (1 - clamped / 100);
+  return (
+    <svg
+      className={cn(
+        "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-11",
+        selected ? "text-primary-foreground" : scoreColorClass(score),
+      )}
+      viewBox={`0 0 ${size} ${size}`}
+      aria-hidden
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        className={
+          selected ? "stroke-primary-foreground/30" : "stroke-muted-foreground/15"
+        }
+        strokeWidth={stroke}
+      />
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={r}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={c}
+        strokeDashoffset={dashOffset}
+        transform={`rotate(-90 ${size / 2} ${size / 2})`}
+      />
+    </svg>
+  );
+}
+
 function DateNavigator({
   date,
   timezone,
@@ -132,18 +214,78 @@ function DateNavigator({
   timezone: string;
   onChange: (d: string) => void;
 }) {
-  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [badges, setBadges] = useState<Map<string, DayBadge>>(new Map());
+  const fetchedMonthsRef = useRef<Set<string>>(new Set());
   const today = todayStr(timezone);
   const canGoForward = addDays(date, 1) <= today;
 
+  // Fetch summaries for the visible month (plus a small buffer so the
+  // outside-day cells from adjacent months also get badges if relevant).
+  const fetchMonth = useCallback(async (monthDate: Date) => {
+    const monthKey = `${monthDate.getFullYear()}-${monthDate.getMonth()}`;
+    if (fetchedMonthsRef.current.has(monthKey)) return;
+    fetchedMonthsRef.current.add(monthKey);
+
+    const from = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+    const to = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+    const fromStr = formatYMD(from);
+    const toStr = formatYMD(to);
+
+    try {
+      const res = await fetch(
+        `/api/daily/summaries?from=${fromStr}&to=${toStr}`,
+      );
+      if (!res.ok) return;
+      const body = (await res.json()) as SummariesResponse;
+      setBadges((prev) => {
+        const next = new Map(prev);
+        for (const s of body.summaries) {
+          next.set(s.date, { score: s.score, hasAi: s.hasAi });
+        }
+        return next;
+      });
+    } catch {
+      // Non-critical — calendar still works without badges
+      fetchedMonthsRef.current.delete(monthKey);
+    }
+  }, []);
+
+  // Pre-fetch the selected date's month when the popover first opens.
   useEffect(() => {
-    if (!calendarOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setCalendarOpen(false);
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [calendarOpen]);
+    if (!open) return;
+    fetchMonth(dateToObj(date));
+  }, [open, date, fetchMonth]);
+
+  const DayButtonWithBadges = useCallback(
+    ({
+      day,
+      modifiers,
+      className,
+      children,
+      ...buttonProps
+    }: React.ComponentProps<"button"> & {
+      day: CalendarDay;
+      modifiers: Record<string, boolean>;
+    }) => {
+      const ymd = day.isoDate;
+      const badge = badges.get(ymd);
+      const isOutside = modifiers.outside;
+      const isSelected = modifiers.selected;
+      return (
+        <button
+          {...buttonProps}
+          className={cn(className, "relative")}
+        >
+          {!isOutside && badge?.hasAi && badge.score != null && (
+            <ScoreRing score={badge.score} selected={isSelected} />
+          )}
+          {children}
+        </button>
+      );
+    },
+    [badges],
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -156,42 +298,38 @@ function DateNavigator({
         <ChevronLeft className="size-4" />
       </Button>
 
-      <div className="relative">
-        <button
-          onClick={() => setCalendarOpen(!calendarOpen)}
-          className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-accent transition-colors"
-        >
-          <Calendar className="size-4 text-muted-foreground" />
-          <span>{formatDateDisplay(date)}</span>
-        </button>
-
-        {calendarOpen && (
-          <>
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 z-40"
-              onClick={() => setCalendarOpen(false)}
-            />
-            {/* Calendar dropdown */}
-            <div className="absolute top-full left-0 z-50 mt-1 rounded-xl border bg-popover p-3 shadow-lg">
-              <DayPicker
-                mode="single"
-                selected={dateToObj(date)}
-                onSelect={(d) => {
-                  if (d) {
-                    onChange(objToDateStr(d));
-                    setCalendarOpen(false);
-                  }
-                }}
-                disabled={[
-                  { from: dateToObj(addDays(today, 1)), to: new Date(2099, 11, 31) },
-                ]}
-                defaultMonth={dateToObj(date)}
-              />
-            </div>
-          </>
-        )}
-      </div>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="font-medium"
+          >
+            <Calendar className="size-4 text-muted-foreground" />
+            <span>{formatDateDisplay(date)}</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent align="end" alignOffset={-40} className="w-auto p-0">
+          <CalendarPicker
+            mode="single"
+            selected={dateToObj(date)}
+            onSelect={(d) => {
+              if (d) {
+                onChange(objToDateStr(d));
+                setOpen(false);
+              }
+            }}
+            disabled={[
+              { from: dateToObj(addDays(today, 1)), to: new Date(2099, 11, 31) },
+            ]}
+            defaultMonth={dateToObj(date)}
+            onMonthChange={fetchMonth}
+            components={{
+              DayButton: DayButtonWithBadges,
+            }}
+          />
+        </PopoverContent>
+      </Popover>
 
       <Button
         variant="ghost"

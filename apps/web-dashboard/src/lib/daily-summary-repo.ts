@@ -29,6 +29,13 @@ export interface DailySummaryRow {
 // Repository
 // ---------------------------------------------------------------------------
 
+export interface DailySummaryRangeRow {
+  date: string;
+  ai_score: number | null;
+  /** 0/1 from SQLite — true when a real AI result is cached (not a placeholder claim). */
+  has_ai_result: number;
+}
+
 export const dailySummaryRepo = {
   /** Find a cached summary for a given user + date. */
   async findByUserAndDate(
@@ -43,6 +50,32 @@ export const dailySummaryRepo = {
       [userId, date],
     );
     return rows[0] ?? null;
+  },
+
+  /**
+   * List cached summaries for a user within an inclusive date range.
+   *
+   * Returns only the columns needed for calendar badges. `__analyzing__`
+   * placeholder rows (from {@link claimForAnalysis}) report `has_ai_result = 0`
+   * so the UI doesn't paint an AI badge for an in-flight analysis.
+   */
+  async listByUserAndDateRange(
+    userId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<DailySummaryRangeRow[]> {
+    return query<DailySummaryRangeRow>(
+      `SELECT date,
+              ai_score,
+              CASE
+                WHEN ai_result_json IS NOT NULL AND ai_model != '__analyzing__'
+                  THEN 1 ELSE 0
+              END AS has_ai_result
+       FROM daily_summaries
+       WHERE user_id = ? AND date >= ? AND date <= ?
+       ORDER BY date ASC`,
+      [userId, fromDate, toDate],
+    );
   },
 
   /** Update the AI analysis result for an existing summary. */
