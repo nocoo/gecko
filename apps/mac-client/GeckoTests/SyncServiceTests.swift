@@ -345,9 +345,9 @@ final class SyncServiceTests: XCTestCase {
         settings.apiKey = "gk_test"
         settings.syncServerUrl = "https://test.example.com"
 
-        // 251 sessions = 2 batches at the production batchSize of 250.
+        // 26 sessions = 2 batches at the production batchSize of 25.
         var rows: [FocusSession] = []
-        for i in 0..<251 {
+        for i in 0..<26 {
             rows.append(makeSession(id: "r\(i)", startTime: 1000.0 + Double(i), duration: 1.0))
         }
         mockDB.sessions = rows
@@ -356,7 +356,7 @@ final class SyncServiceTests: XCTestCase {
         MockURLProtocol.handler = { _ in
             callIndex += 1
             if callIndex == 1 {
-                return jsonResponse(statusCode: 202, body: ["accepted": 250, "sync_id": "ok"])
+                return jsonResponse(statusCode: 202, body: ["accepted": 25, "sync_id": "ok"])
             }
             return jsonResponse(statusCode: 500, body: ["error": "boom"])
         }
@@ -366,10 +366,10 @@ final class SyncServiceTests: XCTestCase {
 
         await syncService.syncNow()
 
-        // Batch 1 succeeded → 250 ids marked. Batch 2 failed → r250 still unsynced.
+        // Batch 1 succeeded → 25 ids marked. Batch 2 failed → r25 still unsynced.
         XCTAssertEqual(mockDB.markSyncedCalls.count, 1)
-        XCTAssertEqual(mockDB.markSyncedCalls[0].ids.count, 250)
-        XCTAssertNil(mockDB.sessions.first { $0.id == "r250" }?.syncedAt)
+        XCTAssertEqual(mockDB.markSyncedCalls[0].ids.count, 25)
+        XCTAssertNil(mockDB.sessions.first { $0.id == "r25" }?.syncedAt)
         XCTAssertNotNil(mockDB.sessions.first { $0.id == "r0" }?.syncedAt)
     }
 

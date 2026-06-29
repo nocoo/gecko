@@ -77,9 +77,10 @@ final class SyncService: ObservableObject {
 
     // MARK: - Constants
 
-    /// Sessions per upload batch. Matches the server-side MAX_BATCH_SIZE; the
-    /// drain loop pages through the unsynced rows in chunks this size.
-    private static let batchSize = 250
+    /// Sessions per upload batch. Smaller batches keep the request body small
+    /// so a slow D1 round trip on the server (api_key validation) can't
+    /// exhaust URLSession's request timeout before the 202 lands.
+    private static let batchSize = 25
 
     // MARK: - Dependencies
     private let db: any DatabaseService
@@ -128,25 +129,32 @@ final class SyncService: ObservableObject {
             self.session = session
             self.sessionDelegate = nil
         } else {
+            // Per-request timeout shorter than the default 60 s so a wedged
+            // batch fails fast and we retry on the next 5-min tick instead
+            // of burning two minutes on one batch.
+            //
+            // Use `.default` (not `.ephemeral`) so the system's cached path
+            // MTU and TCP receive-window state can be reused across cycles.
+            // Ephemeral sessions were observed to negotiate larger TLS
+            // records that triggered data stalls on the user's path.
+            let config = URLSessionConfiguration.default
+            config.timeoutIntervalForRequest = 30
+            config.timeoutIntervalForResource = 60
+            config.httpShouldUsePipelining = false
+            config.httpMaximumConnectionsPerHost = 2
+            config.waitsForConnectivity = false
+
             #if DEBUG
-            // DEBUG: trust local CAs (mkcert) via a delegate.
             let delegate = SyncSessionDelegate()
             self.sessionDelegate = delegate
             self.session = URLSession(
-                configuration: .default,
+                configuration: config,
                 delegate: delegate,
                 delegateQueue: nil
             )
             #else
-            // RELEASE: use the global shared session. v1.10.2…v1.10.8 created
-            // a custom URLSession to tweak timeouts/pipelining/etc.; on some
-            // setups every POST data-stalled at ~3 s and timed out at 30 s
-            // while the EXACT same config in a shell `swift` script returned
-            // <1 s. `URLSession.shared` shares NSURLSessionTask scheduling
-            // with the rest of the system (Network.framework "modern loader")
-            // and never reproduced the stall. Stick with it.
             self.sessionDelegate = nil
-            self.session = .shared
+            self.session = URLSession(configuration: config)
             #endif
         }
 
