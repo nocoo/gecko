@@ -130,10 +130,10 @@ export function AiSettingsSection() {
   }, [settings, apiKeyInput, apiKeyChanged, isCustomProvider]);
 
   const handleTest = useCallback(async () => {
-    // Save first if there are pending changes
-    if (apiKeyChanged || !settings.hasApiKey) {
-      await handleSave();
-    }
+    // Always save first so the test route reads the latest provider,
+    // model, baseURL, sdkType, and authType — not just whichever apiKey
+    // the user typed. PUT is idempotent so this is cheap.
+    await handleSave();
     setTestStatus("testing");
     setTestError("");
     try {
@@ -150,7 +150,7 @@ export function AiSettingsSection() {
       setTestError("Network error");
     }
     setTimeout(() => setTestStatus("idle"), 4000);
-  }, [apiKeyChanged, settings.hasApiKey, handleSave]);
+  }, [handleSave]);
 
   /** Handle provider change — reset model to first preset or empty. */
   const handleProviderChange = useCallback((value: string) => {
