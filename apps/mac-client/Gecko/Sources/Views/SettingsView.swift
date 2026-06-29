@@ -224,17 +224,9 @@ struct SettingsView: View {
     private var syncStatusIcon: some View {
         switch viewModel.syncStatus {
         case .idle:
-            if let lastErr = viewModel.syncLastError, !lastErr.isEmpty {
-                // Cycle finished but a batch failed — red icon mirrors the
-                // red text below.
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .accessibilityLabel("Last sync had failures")
-            } else {
-                Image(systemName: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .accessibilityLabel("Sync idle")
-            }
+            Image(systemName: "checkmark.circle")
+                .foregroundStyle(.green)
+                .accessibilityLabel("Sync idle")
         case .syncing:
             ProgressView()
                 .controlSize(.small)
@@ -254,16 +246,9 @@ struct SettingsView: View {
     private var syncStatusText: some View {
         let pending = viewModel.syncPendingCount
         let progress = viewModel.syncCycleProgress
-        let lastErr = viewModel.syncLastError
         switch viewModel.syncStatus {
         case .idle:
-            if let lastErr, !lastErr.isEmpty {
-                // Cycle finished but a batch failed — surface it in red so the
-                // user doesn't see a misleading "pending — next cycle" message
-                // when in fact nothing made it through.
-                Text("\(lastErr) — \(pending) still pending")
-                    .foregroundStyle(.red)
-            } else if pending > 0 {
+            if pending > 0 {
                 Text("\(pending) pending — next cycle in <5 min")
                     .foregroundStyle(.secondary)
             } else if let lastTime = viewModel.syncLastTime {

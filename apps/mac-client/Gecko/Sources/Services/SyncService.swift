@@ -78,9 +78,9 @@ final class SyncService: ObservableObject {
     // MARK: - Constants
 
     /// Sessions per upload batch. Smaller batches keep the request body small
-    /// so a slow D1 round trip on the server (api_key validation) can't
-    /// exhaust URLSession's request timeout before the 202 lands.
-    private static let batchSize = 25
+    /// (~80 KB) so a slow D1 round trip on the server (api_key validation)
+    /// can't exhaust URLSession's request timeout before the 202 lands.
+    private static let batchSize = 250
 
     // MARK: - Dependencies
     private let db: any DatabaseService
@@ -129,20 +129,13 @@ final class SyncService: ObservableObject {
             self.session = session
             self.sessionDelegate = nil
         } else {
-            // Per-request timeout shorter than the default 60 s so a wedged
-            // batch fails fast and we retry on the next 5-min tick instead
-            // of burning two minutes on one batch.
-            //
-            // Use `.default` (not `.ephemeral`) so the system's cached path
-            // MTU and TCP receive-window state can be reused across cycles.
-            // Ephemeral sessions were observed to negotiate larger TLS
-            // records that triggered data stalls on the user's path.
-            let config = URLSessionConfiguration.default
+            // Per-batch network timeout shorter than the default 60 s. If a
+            // batch wedges (e.g. HTTP/3 racing on a flaky path), we want to
+            // fail fast and retry the same rows on the next 5-min tick rather
+            // than burning two minutes on one batch.
+            let config = URLSessionConfiguration.ephemeral
             config.timeoutIntervalForRequest = 30
             config.timeoutIntervalForResource = 60
-            config.httpShouldUsePipelining = false
-            config.httpMaximumConnectionsPerHost = 2
-            config.waitsForConnectivity = false
 
             #if DEBUG
             let delegate = SyncSessionDelegate()
@@ -310,10 +303,6 @@ final class SyncService: ObservableObject {
             status = .idle
             if result.failed > 0 {
                 lastError = "\(result.failed) batch(es) failed — will retry"
-            } else {
-                // Clear any stale failure from the prior cycle so the UI flips
-                // back to green once the network recovers.
-                lastError = nil
             }
             logger.info("""
                 Sync cycle complete: \(result.synced, privacy: .public) synced, \
@@ -353,27 +342,24 @@ final class SyncService: ObservableObject {
     }
 
     /// Upload sessions in batches of `batchSize` until all pending sessions are
-    /// drained or the cycle is told to stop. A 401 still bubbles up (kills the
-    /// timer); other transient batch failures get logged and we walk past them
-    /// via an offset so one bad/wedged batch doesn't block the whole backlog.
-    /// We cap failed batches per cycle so a totally broken network doesn't
-    /// burn 28 × 30 s = 14 minutes on a single timer tick.
+    /// drained or a batch fails. A 401 still bubbles up (kills the timer); any
+    /// other transient failure (timeout, 5xx, decoding error) just stops this
+    /// cycle so the same rows retry on the next 5-min tick. We don't keep
+    /// retrying inside the same cycle — that would just burn the timeout
+    /// budget on whatever's wedged.
     private func drainBatches() async throws -> DrainResult {
         // swiftlint:disable:previous function_body_length
         var totalSynced = 0
         var batchNumber = 0
         var failed = 0
-        var offset = 0
         let database = db
         let batchSize = Self.batchSize
-        let maxFailedBatchesPerCycle = 3
 
         while true {
             batchNumber += 1
 
-            let currentOffset = offset
             let sessions: [FocusSession] = try await Task.detached(priority: .userInitiated) {
-                try database.fetchUnsynced(limit: batchSize, offset: currentOffset)
+                try database.fetchUnsynced(limit: batchSize)
             }.value
 
             if sessions.isEmpty {
@@ -385,8 +371,8 @@ final class SyncService: ObservableObject {
             }
 
             logger.info("""
-                Batch \(batchNumber, privacy: .public) (offset \(offset, privacy: .public)): \
-                uploading \(sessions.count, privacy: .public) sessions
+                Batch \(batchNumber, privacy: .public): uploading \
+                \(sessions.count, privacy: .public) sessions
                 """)
 
             let batchStart = Date()
@@ -405,21 +391,10 @@ final class SyncService: ObservableObject {
                     domain=\(nsError.domain, privacy: .public) \
                     code=\(nsError.code, privacy: .public) \
                     desc=\(error.localizedDescription, privacy: .public). \
-                    Skipping past it.
+                    Will retry on next cycle.
                     """)
                 failed += 1
-                // Walk past this batch's rows so the next iteration tries the
-                // NEXT 250, not the same 250 again. The skipped rows stay
-                // unsynced and will be re-attempted on the next cycle.
-                offset += sessions.count
-                if failed >= maxFailedBatchesPerCycle {
-                    logger.warning("""
-                        Cycle aborted: \(failed, privacy: .public) batches failed in a row, \
-                        bailing to next tick
-                        """)
-                    break
-                }
-                continue
+                break
             }
             let elapsed = Date().timeIntervalSince(batchStart)
 
@@ -434,9 +409,6 @@ final class SyncService: ObservableObject {
             totalSynced += result.accepted
             cycleProgress += result.accepted
             await refreshPendingCount()
-            // Successful batch removed `sessions.count` rows from the unsynced
-            // queue, so the next fetch with the SAME offset already starts
-            // past any skipped rows ahead. Keep offset where it is.
             logger.info("""
                 Batch \(batchNumber, privacy: .public) done in \
                 \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
