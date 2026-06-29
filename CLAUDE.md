@@ -78,3 +78,10 @@ This project includes both a **web dashboard** and a **Mac app** — both are ve
 - **Fix**: `bun install --force` to rebuild native addons against the current Node.js ABI.
 - **Lesson**: After any Node.js version change (fnm switch, brew upgrade, etc.), always `bun install --force` to rebuild native addons. The error is invisible until runtime — the server starts, routes register, but every DB query throws `ERR_DLOPEN_FAILED`.
 
+### 2026-06-29: bun runtime hangs vinext's `req.json()` on large POST bodies
+- **Problem**: Mac client `/api/sync` POSTs (250 sessions, ~85 KB body) hung for the full URLSession timeout in prod. Bogus API key returned 401 in <1 s; valid API key entered the handler, completed `requireApiKey()`, then `req.json()` never resolved. Spent two days chasing client-side URLSession config (ephemeral / HTTP/3 / pipelining / batch size) — every variant reproduced; same config in a shell `swift` script returned <1 s.
+- **Root cause**: Dockerfile ran the runtime stage on `oven/bun:1`. `bun node_modules/vinext/dist/cli.js start` reproduces the hang locally even with vinext 0.1.8 and Node-style ReadableStream. `node node_modules/vinext/dist/cli.js start` against the *same* compiled `dist/` returns 202 in <500 ms. Bun 1.x's IncomingMessage→Web ReadableStream conversion (or its interaction with vinext's `readNodeStream` impl) drops larger bodies somewhere between auth and route-handler entry.
+- **Fix**: Dockerfile runtime stage switched from `FROM oven/bun:1` to `FROM node:22-slim`; CMD switched from `bun …` to `node …`. Bun stays in the deps + build stages (it's fine for `vinext build`).
+- **Lesson**: When a request hangs *inside* the handler with no error and the same code/payload works in a shell, suspect the runtime, not the code. Build-time tools (bun) and runtime (node) are two distinct decisions in a Dockerfile — keep them separate so a bug in one can be swapped without affecting the other. Repro locally by running prod build under each candidate runtime against real D1 REST before chasing client-side fixes.
+
+

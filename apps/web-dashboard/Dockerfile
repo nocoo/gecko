@@ -17,7 +17,13 @@ COPY . .
 RUN bun run build
 
 # --- Stage 3: Runtime ---
-FROM oven/bun:1 AS runner
+# IMPORTANT: bun runtime hangs vinext's `req.json()` on POST bodies > ~80 KB.
+# Reproduced 2026-06-29 locally: same vinext, same code, same env, same payload
+# — `bun node_modules/vinext/dist/cli.js start` hangs forever after auth;
+# `node node_modules/vinext/dist/cli.js start` returns 202 in <500 ms. The
+# Mac client's /api/sync batches (250 sessions, ~85 KB) hit this every time.
+# Node 22 LTS on a slim image is the right runtime; bun stays for install/build.
+FROM node:22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -32,4 +38,4 @@ COPY --from=builder /app/vite.config.ts ./
 
 EXPOSE 7018
 
-CMD ["bun", "node_modules/vinext/dist/cli.js", "start", "--port", "7018"]
+CMD ["node", "node_modules/vinext/dist/cli.js", "start", "--port", "7018"]
