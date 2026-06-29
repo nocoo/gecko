@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.11] - 2026-06-29
+
+### Added
+- **ai**: support Bearer auth header for custom LLM gateways
+
+### Fixed
+- **ai-test**: surface upstream provider errors instead of generic 502
+
 ## [1.10.10] - 2026-06-29
 
 ### Added
