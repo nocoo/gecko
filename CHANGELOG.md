@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.10] - 2026-06-29
+
+### Added
+- **sync**: per-batch resilience + UI progress display
+
+### Fixed
+- **docker**: runtime on node:22, not bun — bun hangs vinext's req.json on >80KB POSTs
+- **proxy**: skip auth() wrapper for Bearer-auth POSTs so body stream survives
+
+### Maintenance
+- **sync**: URLSession.shared in release builds — recover pre-1.10.2 plumbing
+
+### Other
+- **sync**: split body read from JSON parse to isolate hang
+- **sync**: instrument server route to find where real-key reqs hang
+
 ## [1.10.9] - 2026-06-29
 
 ### Maintenance
