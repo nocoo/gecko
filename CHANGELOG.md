@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.12] - 2026-06-29
+
+### Added
+- **daily**: redesign date navigator with score ring calendar
+
+### Fixed
+- **analyze**: harden JSON output prompt and surface raw text in UI
+- **analyze**: raise AI timeout 55s -> 120s for large-day prompts
+
 ## [1.10.11] - 2026-06-29
 
 ### Added

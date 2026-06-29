@@ -1,6 +1,6 @@
 {
   "name": "gecko",
-  "version": "1.10.11",
+  "version": "1.10.12",
   "private": true,
   "scripts": {
     "dev": "bun run --cwd apps/web-dashboard dev",
