@@ -473,10 +473,15 @@ export async function runAnalysis(
     result = parseAiResponse(text);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const preview = text.slice(0, 400).replace(/\s+/g, " ").trim();
     console.error(
       `[analyze-core] Failed to parse AI response: ${message}. Raw text (first 500 chars): ${text.slice(0, 500)}`,
     );
-    return { ok: false, reason: "parse_error", message: `Failed to parse AI response: ${message}` };
+    return {
+      ok: false,
+      reason: "parse_error",
+      message: `Failed to parse AI response: ${message}\n\nModel returned (first 400 chars): ${preview}`,
+    };
   }
 
   // 7. Cache result (non-fatal)

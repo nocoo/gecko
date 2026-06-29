@@ -66,7 +66,13 @@ export const DEFAULT_PROMPT_SECTION_4 =
   - description: 该时段的简要描述（中文，1-2句话）
 - summary: 综合总结（Markdown 格式，中文，300-500字，包含对工作内容和浏览内容的深度分析）
 
-只返回 JSON，不要包含其他内容。不要使用 markdown 代码块包裹。`;
+### JSON 严格语法要求（重要）
+- **只**返回 JSON，不要包含任何前后缀、解释、Markdown 代码块包裹。
+- 所有结构性符号必须使用 **ASCII 半角**：逗号 \`,\`、冒号 \`:\`、引号 \`"\`、方括号 \`[ ]\`、花括号 \`{ }\`。
+- **禁止**使用中文/全角标点作为 JSON 分隔符：\`，\`、\`、\`、\`：\`、\`"\`、\`"\`、\`【\`、\`】\` 都不能出现在字符串之外。
+- 字段名必须用 ASCII 双引号包裹。
+- 不要在数组或对象最后一个元素后保留尾随逗号（trailing comma）。
+- 字符串内部的中文标点可以正常使用，但**字符串外**的所有语法符号必须是 ASCII。`;
 
 /** All template variables available for Section 2 with descriptions and examples. */
 export const PROMPT_TEMPLATE_VARIABLES = [

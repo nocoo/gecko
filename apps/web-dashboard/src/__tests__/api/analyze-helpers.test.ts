@@ -709,7 +709,7 @@ describe("buildPrompt", () => {
     const custom = { section4: "Return a simple text summary." };
     const result = buildPrompt("2026-02-27", makeStats(), new Map(), "Asia/Shanghai", custom);
     expect(result).toContain("Return a simple text summary.");
-    expect(result).not.toContain("只返回 JSON");
+    expect(result).not.toContain("**只**返回 JSON");
   });
 
   test("mixes custom and default sections", () => {
@@ -720,7 +720,7 @@ describe("buildPrompt", () => {
     expect(result).toContain("Custom rules.");
     // Default sections (section2 and section4 should remain default)
     expect(result).toContain("60 分钟"); // default section2 expanded
-    expect(result).toContain("只返回 JSON"); // default section4
+    expect(result).toContain("**只**返回 JSON"); // default section4
   });
 
   test("falls back to defaults when custom sections are empty strings", () => {
@@ -746,6 +746,6 @@ describe("buildPrompt", () => {
   test("uses default when custom is undefined", () => {
     const result = buildPrompt("2026-02-27", makeStats(), new Map(), "Asia/Shanghai", undefined);
     expect(result).toContain("你是一位专业的生产力分析师");
-    expect(result).toContain("只返回 JSON");
+    expect(result).toContain("**只**返回 JSON");
   });
 });

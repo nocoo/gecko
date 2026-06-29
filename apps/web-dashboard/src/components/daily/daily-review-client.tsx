@@ -373,7 +373,9 @@ function AiAnalysisPanel({
               Analysis failed
             </h3>
           </div>
-          <p className="text-sm text-muted-foreground">{error}</p>
+          <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-72 overflow-auto font-mono leading-relaxed">
+            {error}
+          </pre>
           <Button
             variant="outline"
             size="sm"
