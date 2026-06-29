@@ -57,7 +57,35 @@ export async function POST(): Promise<Response> {
       provider: config.provider,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return jsonError(message, 502);
+    // Surface upstream provider errors with their original status + message
+    // so the UI can show "401 Authentication failed with upstream provider"
+    // instead of a generic 502. ai-sdk attaches `statusCode` and a structured
+    // `responseBody` for HTTP errors; AbortError, network errors, validation
+    // errors all surface as the plain Error.message.
+    type UpstreamError = Error & { statusCode?: number; responseBody?: string; url?: string };
+    const e = err as UpstreamError;
+    const statusCode = typeof e.statusCode === "number" ? e.statusCode : 502;
+    const baseMessage = e.message ?? "Unknown error";
+    // Try to lift the upstream's own message out of responseBody for clarity.
+    let detail = baseMessage;
+    if (e.responseBody) {
+      try {
+        const parsed = JSON.parse(e.responseBody) as {
+          error?: { message?: string } | string;
+          message?: string;
+        };
+        const inner =
+          typeof parsed.error === "string"
+            ? parsed.error
+            : parsed.error?.message ?? parsed.message;
+        if (inner) detail = inner;
+      } catch {
+        // responseBody not JSON — keep baseMessage
+      }
+    }
+    return jsonError(
+      e.url ? `${detail} (upstream: ${e.url})` : detail,
+      statusCode,
+    );
   }
 }
