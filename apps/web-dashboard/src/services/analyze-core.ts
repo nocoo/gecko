@@ -431,7 +431,7 @@ export async function runAnalysis(
     Object.keys(customSections).length > 0 ? customSections : undefined,
   );
 
-  // 5. Call AI provider (55s timeout)
+  // 5. Call AI provider (120s timeout — large days can hit 60s+ inference)
   let text: string;
   let usage: { promptTokens?: number; completionTokens?: number; totalTokens?: number } | undefined;
   let durationMs: number;
@@ -439,11 +439,14 @@ export async function runAnalysis(
   try {
     const aiModel = createAiModel(config);
     const startMs = Date.now();
+    console.log(
+      `[analyze-core] AI call starting: provider=${config.provider} model=${config.model} promptChars=${prompt.length} sessions=${stats.sessions.length}`,
+    );
     const response = await generateText({
       model: aiModel,
       prompt,
       maxOutputTokens: 4096,
-      abortSignal: AbortSignal.timeout(55_000),
+      abortSignal: AbortSignal.timeout(120_000),
     });
     text = response.text;
     usage = response.usage;
@@ -455,7 +458,7 @@ export async function runAnalysis(
     const message = err instanceof Error ? err.message : String(err);
     const isTimeout = err instanceof DOMException && err.name === "TimeoutError";
     console.error(
-      `[analyze-core] AI provider error: provider=${config.provider} model=${config.model} timeout=${isTimeout} error=${message}`,
+      `[analyze-core] AI provider error: provider=${config.provider} model=${config.model} timeout=${isTimeout} promptChars=${prompt.length} sessions=${stats.sessions.length} error=${message}`,
     );
     return {
       ok: false,
