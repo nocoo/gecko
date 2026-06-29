@@ -124,9 +124,11 @@ final class SyncService: ObservableObject {
 
         // In DEBUG builds, create a URLSession with a delegate that trusts local CAs
         // (e.g. mkcert). In RELEASE builds or when a session is injected (tests), skip.
+        let initLogger = Logger(subsystem: "ai.hexly.gecko", category: "SyncService")
         if let session {
             self.session = session
             self.sessionDelegate = nil
+            initLogger.info("SyncService init: using injected URLSession")
         } else {
             #if DEBUG
             // DEBUG: trust local CAs (mkcert) via a delegate.
@@ -137,6 +139,7 @@ final class SyncService: ObservableObject {
                 delegate: delegate,
                 delegateQueue: nil
             )
+            initLogger.info("SyncService init: DEBUG custom URLSession with local-CA delegate")
             #else
             // RELEASE: use the global shared session. v1.10.2…v1.10.8 created
             // a custom URLSession to tweak timeouts/pipelining/etc.; on some
@@ -147,6 +150,7 @@ final class SyncService: ObservableObject {
             // and never reproduced the stall. Stick with it.
             self.sessionDelegate = nil
             self.session = .shared
+            initLogger.info("SyncService init: RELEASE URLSession.shared")
             #endif
         }
 
@@ -288,8 +292,8 @@ final class SyncService: ObservableObject {
         await refreshPendingCount()
 
         let cycleStart = Date()
-        logger.info("""
-            Sync cycle started — \(self.pendingCount, privacy: .public) pending, \
+        logger.notice("""
+            Sync cycle START — \(self.pendingCount, privacy: .public) pending, \
             server: \(self.settings.syncServerUrl, privacy: .public)
             """)
 
@@ -307,8 +311,8 @@ final class SyncService: ObservableObject {
                 // back to green once the network recovers.
                 lastError = nil
             }
-            logger.info("""
-                Sync cycle complete: \(result.synced, privacy: .public) synced, \
+            logger.notice("""
+                Sync cycle END: \(result.synced, privacy: .public) synced, \
                 \(result.failed, privacy: .public) batches failed, \
                 \(result.batches, privacy: .public) total batches, \
                 took \(totalElapsed, format: .fixed(precision: 2), privacy: .public)s
@@ -376,7 +380,7 @@ final class SyncService: ObservableObject {
                 break
             }
 
-            logger.info("""
+            logger.notice("""
                 Batch \(batchNumber, privacy: .public) (offset \(offset, privacy: .public)): \
                 uploading \(sessions.count, privacy: .public) sessions
                 """)
@@ -429,8 +433,8 @@ final class SyncService: ObservableObject {
             // Successful batch removed `sessions.count` rows from the unsynced
             // queue, so the next fetch with the SAME offset already starts
             // past any skipped rows ahead. Keep offset where it is.
-            logger.info("""
-                Batch \(batchNumber, privacy: .public) done in \
+            logger.notice("""
+                Batch \(batchNumber, privacy: .public) DONE in \
                 \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
                 accepted: \(result.accepted, privacy: .public), \
                 cycle progress: \(self.cycleProgress, privacy: .public), \
@@ -459,16 +463,22 @@ final class SyncService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
+        // Force a fresh TCP connection for every batch. If a connection-reuse
+        // bug is what wedges the second/third batch in a cycle (we observed
+        // `reused=1` on every failed batch in v1.10.8), `Connection: close`
+        // breaks the reuse path and we always start clean.
+        request.setValue("close", forHTTPHeaderField: "Connection")
 
         let payload = SyncPayload(sessions: sessions.map(SyncSessionDTO.init))
         let body = try JSONEncoder().encode(payload)
         request.httpBody = body
 
         let bodyKB = Double(body.count) / 1024.0
-        logger.info("""
+        logger.notice("""
             POST \(url.absoluteString, privacy: .public) — \
             \(sessions.count, privacy: .public) sessions, \
-            \(bodyKB, format: .fixed(precision: 1), privacy: .public) KB
+            \(bodyKB, format: .fixed(precision: 1), privacy: .public) KB, \
+            api-key suffix=\(String(self.settings.apiKey.suffix(4)), privacy: .public)
             """)
 
         let uploadStart = Date()
@@ -495,8 +505,8 @@ final class SyncService: ObservableObject {
         }
 
         let statusCode = httpResponse.statusCode
-        logger.info("""
-            uploadBatch received HTTP \(statusCode, privacy: .public) in \
+        logger.notice("""
+            uploadBatch RESP HTTP \(statusCode, privacy: .public) in \
             \(netElapsed, format: .fixed(precision: 2), privacy: .public)s, \
             body \(data.count, privacy: .public) bytes
             """)
