@@ -39,12 +39,7 @@ interface SyncSession {
 
 /** POST /api/sync — Validate + enqueue, return 202 Accepted. */
 export async function POST(req: Request): Promise<Response> {
-  const t0 = Date.now();
-  const reqId = randomUUID().slice(0, 8);
-  console.log(`[sync ${reqId}] handler entered, content-length=${req.headers.get("content-length")}`);
-
   const { user, error } = await requireApiKey(req);
-  console.log(`[sync ${reqId}] requireApiKey done in ${Date.now() - t0}ms, error=${!!error}`);
   if (error) return error;
 
   let body: { sessions?: SyncSession[] };
@@ -53,7 +48,6 @@ export async function POST(req: Request): Promise<Response> {
   } catch {
     return jsonError("Invalid JSON body", 400);
   }
-  console.log(`[sync ${reqId}] body parsed in ${Date.now() - t0}ms, sessions=${body.sessions?.length ?? 0}`);
 
   const { sessions } = body;
 
@@ -108,7 +102,6 @@ export async function POST(req: Request): Promise<Response> {
   // Enqueue — no D1 calls in the request path
   const queue = getSyncQueue();
   const accepted = queue.enqueue(queuedSessions);
-  console.log(`[sync ${reqId}] enqueued ${accepted}, returning 202 after ${Date.now() - t0}ms`);
 
   return jsonOk(
     {
