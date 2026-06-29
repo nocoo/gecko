@@ -41,6 +41,7 @@ final class SyncSessionDelegate: NSObject, URLSessionDelegate {
 /// mark only their own ids — a timeout or 5xx leaves the rows in the queue
 /// for the next 5-minute tick. 401 stops syncing (invalid key).
 @MainActor
+// swiftlint:disable:next type_body_length
 final class SyncService: ObservableObject {
 
     // MARK: - Published State
@@ -56,6 +57,14 @@ final class SyncService: ObservableObject {
 
     /// Number of sessions synced in the last batch.
     @Published private(set) var lastSyncCount: Int = 0
+
+    /// Number of unsynced rows in the local DB (UI progress display).
+    /// Refreshed at the start of each sync cycle and after each batch.
+    @Published private(set) var pendingCount: Int = 0
+
+    /// Per-cycle progress: count of sessions successfully uploaded since the
+    /// current cycle began. Resets to 0 on every cycle start.
+    @Published private(set) var cycleProgress: Int = 0
 
     // MARK: - Status Enum
 
@@ -250,7 +259,9 @@ final class SyncService: ObservableObject {
 
     // MARK: - Sync Execution
 
-    /// Trigger a sync cycle immediately. Loops until all pending sessions are uploaded.
+    /// Trigger a sync cycle immediately. Loops until all pending sessions are
+    /// uploaded, skipping past individual batches that fail (so one wedged
+    /// batch can't block the whole backlog).
     func syncNow() async {
         guard settings.isSyncConfigured else {
             logger.debug("Sync skipped — not configured")
@@ -269,27 +280,33 @@ final class SyncService: ObservableObject {
 
         status = .syncing
         lastError = nil
+        cycleProgress = 0
+        await refreshPendingCount()
 
         let cycleStart = Date()
         logger.info("""
-            Sync cycle started — server: \(self.settings.syncServerUrl), \
-            watermark: \(self.settings.lastSyncedStartTime, format: .fixed(precision: 3))
+            Sync cycle started — \(self.pendingCount, privacy: .public) pending, \
+            server: \(self.settings.syncServerUrl, privacy: .public)
             """)
 
         do {
-            let (totalSynced, batchCount) = try await drainBatches()
+            let result = try await drainBatches()
             let totalElapsed = Date().timeIntervalSince(cycleStart)
+            await refreshPendingCount()
             lastSyncTime = Date()
-            lastSyncCount = totalSynced
+            lastSyncCount = result.synced
             status = .idle
-            if totalSynced > 0 {
-                logger.info("""
-                    Sync cycle complete: \(totalSynced) sessions in \(batchCount) batch(es), \
-                    took \(totalElapsed, format: .fixed(precision: 2))s
-                    """)
+            if result.failed > 0 {
+                lastError = "\(result.failed) batch(es) failed — will retry"
             } else {
-                logger.debug("Sync cycle complete: nothing to sync")
+                lastError = nil
             }
+            logger.info("""
+                Sync cycle complete: \(result.synced, privacy: .public) synced, \
+                \(result.failed, privacy: .public) batches failed, \
+                \(result.batches, privacy: .public) total batches, \
+                took \(totalElapsed, format: .fixed(precision: 2), privacy: .public)s
+                """)
         } catch let error as SyncError {
             handleSyncError(error)
         } catch {
@@ -299,59 +316,117 @@ final class SyncService: ObservableObject {
         }
     }
 
-    /// Upload sessions in batches of `batchSize` until all pending sessions are drained.
-    /// Returns (totalSynced, batchCount).
-    private func drainBatches() async throws -> (Int, Int) {
+    /// Refresh `pendingCount` from the database. Runs the SQLite read on a
+    /// background queue to keep the MainActor responsive.
+    private func refreshPendingCount() async {
+        let database = db
+        let count = (try? await Task.detached(priority: .utility) {
+            try database.unsyncedCount()
+        }.value) ?? pendingCount
+        pendingCount = count
+    }
+
+    /// Aggregate result of a sync cycle's batch loop.
+    private struct DrainResult {
+        let synced: Int
+        let batches: Int
+        let failed: Int
+    }
+
+    /// Upload sessions in batches of `batchSize` until all pending sessions are
+    /// drained or the cycle's fail budget is exhausted. A 401 still bubbles up
+    /// (kills the timer); other transient batch failures get logged and we
+    /// walk past them via a paging offset so one bad/wedged batch doesn't
+    /// block the whole backlog. We cap failed batches per cycle so a totally
+    /// broken network doesn't burn 30 s × N batches on a single timer tick.
+    private func drainBatches() async throws -> DrainResult {
+        // swiftlint:disable:previous function_body_length
         var totalSynced = 0
         var batchNumber = 0
+        var failed = 0
+        var offset = 0
         let database = db
         let batchSize = Self.batchSize
+        let maxFailedBatchesPerCycle = 3
 
         while true {
             batchNumber += 1
 
-            // Fetch unsynced sessions on a background thread to avoid
-            // blocking MainActor with synchronous SQLite reads.
+            let currentOffset = offset
             let sessions: [FocusSession] = try await Task.detached(priority: .userInitiated) {
-                try database.fetchUnsynced(limit: batchSize)
+                try database.fetchUnsynced(limit: batchSize, offset: currentOffset)
             }.value
 
             if sessions.isEmpty {
                 if batchNumber == 1 {
-                    logger.debug("No sessions to sync")
+                    logger.info("drainBatches: nothing to sync")
                 }
+                batchNumber -= 1 // we didn't actually run this batch
                 break
             }
 
             let firstTime = sessions.first?.startTime ?? 0
             let lastTime = sessions.last?.startTime ?? 0
             logger.info("""
-                Batch \(batchNumber): \(sessions.count) sessions \
-                [startTime \(firstTime, format: .fixed(precision: 3))…\
-                \(lastTime, format: .fixed(precision: 3))]
+                Batch \(batchNumber, privacy: .public) (offset \(offset, privacy: .public)): \
+                \(sessions.count, privacy: .public) sessions \
+                [\(firstTime, format: .fixed(precision: 0), privacy: .public)…\
+                \(lastTime, format: .fixed(precision: 0), privacy: .public)]
                 """)
 
             let batchStart = Date()
-            let result = try await uploadBatch(sessions)
+            let result: SyncResponse
+            do {
+                result = try await uploadBatch(sessions)
+            } catch SyncError.unauthorized {
+                // Bubble up — handleSyncError stops the timer.
+                throw SyncError.unauthorized
+            } catch {
+                let elapsed = Date().timeIntervalSince(batchStart)
+                let nsError = error as NSError
+                logger.warning("""
+                    Batch \(batchNumber, privacy: .public) failed after \
+                    \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
+                    domain=\(nsError.domain, privacy: .public) \
+                    code=\(nsError.code, privacy: .public). Skipping past it.
+                    """)
+                failed += 1
+                // Walk past this batch's rows so the next iteration tries the
+                // NEXT chunk, not the same rows again. The skipped rows stay
+                // unsynced and will be re-attempted on the next cycle.
+                offset += sessions.count
+                if failed >= maxFailedBatchesPerCycle {
+                    logger.warning("""
+                        Cycle aborted: \(failed, privacy: .public) batches failed in a row, \
+                        bailing to next tick
+                        """)
+                    break
+                }
+                continue
+            }
             let elapsed = Date().timeIntervalSince(batchStart)
 
-            logger.info("""
-                Batch \(batchNumber) done in \(elapsed, format: .fixed(precision: 2))s — \
-                accepted: \(result.accepted), syncId: \(result.syncId)
-                """)
-
-            totalSynced += result.accepted
-
-            // Mark only this batch synced. A timeout or 5xx above would have
-            // thrown and skipped this — the rows stay unsynced for the next
-            // cycle to retry. The server's INSERT OR IGNORE on session.id
-            // keeps any incidental duplicates harmless.
+            // Mark only this batch's ids synced. The server's INSERT OR IGNORE
+            // on session.id makes any duplicate re-send harmless.
             let ids = sessions.map(\.id)
             let now = Date().timeIntervalSince1970
             try await Task.detached(priority: .userInitiated) {
                 try database.markSynced(ids: ids, at: now)
             }.value
-            // Keep the legacy watermark current for UI/diagnostics.
+
+            totalSynced += result.accepted
+            cycleProgress += result.accepted
+            await refreshPendingCount()
+            // Successful batch removed `sessions.count` rows from the unsynced
+            // queue, so the next fetch with the SAME offset already starts
+            // past any skipped rows ahead. Keep offset where it is.
+            logger.info("""
+                Batch \(batchNumber, privacy: .public) done in \
+                \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
+                accepted: \(result.accepted, privacy: .public), \
+                progress \(self.cycleProgress, privacy: .public)/pending \(self.pendingCount, privacy: .public)
+                """)
+            // Keep the legacy watermark current for diagnostics.
             if let lastSession = sessions.last,
                lastSession.startTime > settings.lastSyncedStartTime {
                 settings.lastSyncedStartTime = lastSession.startTime
@@ -363,7 +438,7 @@ final class SyncService: ObservableObject {
             }
         }
 
-        return (totalSynced, batchNumber)
+        return DrainResult(synced: totalSynced, batches: batchNumber, failed: failed)
     }
 
     // MARK: - HTTP Upload
