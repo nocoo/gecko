@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.10.9] - 2026-06-29
+
+### Maintenance
+- **sync**: upgrade key log lines to .notice + Connection: close + init log
+
+### Other
+- **sync**: URLSession.shared + 250-row batches — match pre-6/27 behaviour
+
 ## [1.10.8] - 2026-06-28
 
 ### Fixed
