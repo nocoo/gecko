@@ -122,14 +122,7 @@ final class SyncService: ObservableObject {
         } else {
             // Bump request/resource timeouts well above URLSession's 60 s default
             // so one slow D1 round trip (API-key validation) doesn't kill a cycle.
-            //
-            // `.ephemeral` so no Alt-Svc records persist between launches —
-            // critical because cached HTTP/3 (QUIC) records can pin future
-            // requests to UDP/443, which is silently dropped by some
-            // split-tunnel VPNs and restrictive proxies. Combined with the
-            // per-request `assumesHTTP3Capable = false` in uploadBatch, this
-            // keeps sync traffic on HTTP/2 over TCP where shell curl works.
-            let config = URLSessionConfiguration.ephemeral
+            let config = URLSessionConfiguration.default
             config.timeoutIntervalForRequest = 120
             config.timeoutIntervalForResource = 180
 
@@ -396,8 +389,6 @@ final class SyncService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(settings.apiKey)", forHTTPHeaderField: "Authorization")
-        // Stick to HTTP/2 over TCP — see init() comment on `.ephemeral` config.
-        request.assumesHTTP3Capable = false
 
         let payload = SyncPayload(sessions: sessions.map(SyncSessionDTO.init))
         let body = try JSONEncoder().encode(payload)
