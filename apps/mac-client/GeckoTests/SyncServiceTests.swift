@@ -144,6 +144,7 @@ private func jsonResponse(statusCode: Int, body: [String: Any]) -> (Data, HTTPUR
 // MARK: - Tests
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class SyncServiceTests: XCTestCase {
 
     private var mockDB: MockDatabaseService! // swiftlint:disable:this implicitly_unwrapped_optional
@@ -573,11 +574,14 @@ final class SyncServiceTests: XCTestCase {
 
         await syncService.syncNow()
 
-        // 400 is per-batch transient under the new policy: cycle ends idle
-        // and surfaces the failed-batches count in lastError. Per-batch detail
-        // (the specific 400 message) is captured in the logs.
+        // 400 is a deterministic client error: the batch is marked synced
+        // locally so it doesn't wedge the queue, and the failed-batches count
+        // surfaces in lastError. Per-batch detail (the 400 message) is in logs.
         XCTAssertEqual(syncService.status, .idle)
         XCTAssertEqual(syncService.lastError, "1 batch(es) failed — will retry")
+        XCTAssertEqual(mockDB.markSyncedCalls.count, 1,
+                       "400-rejected batch should be marked synced once to prevent infinite retry")
+        XCTAssertEqual(mockDB.markSyncedCalls.first?.ids, ["s1"])
     }
 
     // MARK: - Accepted Count

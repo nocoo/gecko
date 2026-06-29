@@ -381,6 +381,38 @@ final class SyncService: ObservableObject {
             } catch SyncError.unauthorized {
                 // Bubble up — handleSyncError stops the timer.
                 throw SyncError.unauthorized
+            } catch let syncError as SyncError where syncError.isDeterministicClientError {
+                // 400/413 are deterministic: this exact payload will never be
+                // accepted, so retrying the same rows forever just wedges the
+                // queue. Mark them synced locally to drop them off the queue.
+                // The server-side INSERT OR IGNORE means a re-send would be
+                // harmless anyway; the cost of "losing" these rows is bounded
+                // to whatever schema mismatch produced the 400 in the first
+                // place.
+                let elapsed = Date().timeIntervalSince(batchStart)
+                let ids = sessions.map(\.id)
+                let firstID = sessions.first?.id ?? "?"
+                logger.error("""
+                    Batch \(batchNumber, privacy: .public) rejected by server after \
+                    \(elapsed, format: .fixed(precision: 2), privacy: .public)s — \
+                    \(syncError.userMessage, privacy: .public) \
+                    [first id=\(firstID, privacy: .public), count=\(sessions.count, privacy: .public)]. \
+                    Marking batch as synced locally to prevent infinite retry.
+                    """)
+                let now = Date().timeIntervalSince1970
+                try await Task.detached(priority: .userInitiated) {
+                    try database.markSynced(ids: ids, at: now)
+                }.value
+                failed += 1
+                await refreshPendingCount()
+                if failed >= maxFailedBatchesPerCycle {
+                    logger.warning("""
+                        Cycle aborted: \(failed, privacy: .public) batches failed in a row, \
+                        bailing to next tick
+                        """)
+                    break
+                }
+                continue
             } catch {
                 let elapsed = Date().timeIntervalSince(batchStart)
                 let nsError = error as NSError
@@ -531,6 +563,17 @@ enum SyncError: Error, Equatable {
             return "Server error (\(code)). Will retry."
         case .invalidResponse:
             return "Invalid server response."
+        }
+    }
+
+    /// True for errors where the same payload will be rejected on every retry
+    /// (schema mismatch, oversized body). Retrying these wedges the queue.
+    var isDeterministicClientError: Bool {
+        switch self {
+        case .badRequest, .batchTooLarge:
+            return true
+        case .unauthorized, .serverError, .invalidResponse:
+            return false
         }
     }
 }
