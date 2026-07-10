@@ -8,7 +8,13 @@ PID_WEB=$!
 (
   if [ -d apps/mac-client ]; then
     if command -v swiftlint >/dev/null 2>&1 && xcrun --find xcodebuild >/dev/null 2>&1; then
-      cd apps/mac-client && swiftlint --strict && xcodebuild test -project Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests -quiet
+      cd apps/mac-client && swiftlint --strict || exit $?
+      if security find-identity -v -p codesigning 2>/dev/null | grep -q '0 valid identities found'; then
+        echo "⚠️  no codesigning identity available, running mac-client tests unsigned"
+        xcodebuild test -project Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="" -quiet
+      else
+        xcodebuild test -project Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests -quiet
+      fi
     else
       echo "⚠️  swiftlint or xcodebuild not available, skipping mac-client checks"
     fi
