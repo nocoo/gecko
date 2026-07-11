@@ -32,7 +32,7 @@
     "@vitejs/plugin-rsc": "^0.5.27",
     "@vitest/coverage-v8": "4.1.10",
     "better-sqlite3": "^12.11.1",
-    "eslint": "^10.6.0",
+    "eslint": "^10.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "shadcn": "^4.13.0",
@@ -43,15 +43,15 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.11",
+    "@ai-sdk/anthropic": "4.0.12",
     "@ai-sdk/openai": "4.0.11",
     "@hono/node-server": "^2.0.8",
     "@nocoo/next-ai": "^0.4.0",
-    "ai": "7.0.19",
+    "ai": "7.0.22",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "^8.5.2",
-    "hono": "4.12.28",
+    "hono": "4.12.29",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
     "next-auth": "^5.0.0-beta.30",
@@ -67,7 +67,7 @@
     "vinext": "1.0.0-beta.0"
   },
   "overrides": {
-    "hono": "^4.12.28",
+    "hono": "^4.12.29",
     "@hono/node-server": "^2.0.8",
     "express-rate-limit": "^8.2.2",
     "ip-address": "^10.1.1",
