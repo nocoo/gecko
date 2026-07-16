@@ -43,11 +43,11 @@
     "vitest": "4.1.10"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.14",
-    "@ai-sdk/openai": "4.0.13",
-    "@hono/node-server": "^2.0.8",
+    "@ai-sdk/anthropic": "4.0.15",
+    "@ai-sdk/openai": "4.0.15",
+    "@hono/node-server": "^2.0.10",
     "@nocoo/next-ai": "^0.4.0",
-    "ai": "7.0.26",
+    "ai": "7.0.29",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "^8.5.2",
@@ -68,7 +68,7 @@
   },
   "overrides": {
     "hono": "^4.12.30",
-    "@hono/node-server": "^2.0.8",
+    "@hono/node-server": "^2.0.10",
     "express-rate-limit": "^8.2.2",
     "ip-address": "^10.1.1",
     "postcss": "^8.5.10",
