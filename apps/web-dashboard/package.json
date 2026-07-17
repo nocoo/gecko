@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",
-    "@tailwindcss/postcss": "^4.3.2",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.3.14",
     "@types/react": "^19.2.17",
@@ -36,10 +36,10 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
     "shadcn": "^4.13.0",
-    "tailwindcss": "^4.3.2",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "8.64.0",
-    "vite": "^8.1.4",
+    "vite": "^8.1.5",
     "vitest": "4.1.10"
   },
   "dependencies": {
@@ -47,10 +47,10 @@
     "@ai-sdk/openai": "4.0.15",
     "@hono/node-server": "^2.0.10",
     "@nocoo/next-ai": "^0.4.0",
-    "ai": "7.0.29",
+    "ai": "7.0.30",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "express-rate-limit": "^8.5.2",
+    "express-rate-limit": "^8.6.0",
     "hono": "4.12.30",
     "lucide-react": "^1.24.0",
     "next": "16.2.10",
@@ -82,6 +82,6 @@
     "esbuild": "^0.28.1",
     "js-yaml": "^4.2.0",
     "@babel/core": "^7.29.6",
-    "vite": "^8.1.4"
+    "vite": "^8.1.5"
   }
 }
