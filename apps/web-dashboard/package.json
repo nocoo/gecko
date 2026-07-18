@@ -29,7 +29,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
-    "@vitejs/plugin-rsc": "^0.5.27",
+    "@vitejs/plugin-rsc": "^0.5.28",
     "@vitest/coverage-v8": "4.1.10",
     "better-sqlite3": "^12.11.1",
     "eslint": "^10.7.0",
