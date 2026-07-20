@@ -18,12 +18,15 @@ interface AppShellProps {
 function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
   const isMobile = useIsMobile();
   const { mobileOpen, setMobileOpen } = useSidebar();
-  const _pathname = usePathname();
+  const pathname = usePathname();
 
-  // Close mobile sidebar on route change
+  // Close mobile sidebar on route change. Reference pathname in the body so
+  // Biome useExhaustiveDependencies keeps it as a real dependency (setMobileOpen
+  // alone is stable and would never re-run after navigation).
   useEffect(() => {
+    void pathname;
     setMobileOpen(false);
-  }, [setMobileOpen]);
+  }, [pathname, setMobileOpen]);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
