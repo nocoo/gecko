@@ -1,8 +1,20 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import vinext from "vinext";
 import { defineConfig } from "vite";
 
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
   plugins: [vinext()],
+  resolve: {
+    // Explicit @ alias: TypeScript 7 no longer ships lib/typescript.js that
+    // some Next/vinext path loaders use to read tsconfig.paths. Keep runtime
+    // resolution independent of that path.
+    alias: {
+      "@": path.join(rootDir, "src"),
+    },
+  },
   server: {
     allowedHosts: true,
   },

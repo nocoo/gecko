@@ -39,9 +39,10 @@
     "lint-staged": "^17.1.0",
     "shadcn": "^4.13.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3",
+    "typescript": "7.0.2",
     "vite": "^8.1.5",
-    "vitest": "4.1.10"
+    "vitest": "4.1.10",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.16",
