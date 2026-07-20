@@ -1,5 +1,44 @@
 # Gecko Project Notes
 
+## Quality gates (6DQ)
+
+Gecko follows the personal **六维质量体系 (6DQ)** — not the legacy “four-layer” naming
+(where L2 was lint and API E2E was mislabeled L3).
+
+| Dim | Name | What runs here | When |
+|-----|------|----------------|------|
+| **L1** | Unit / component | `apps/web-dashboard` `test:coverage` (vitest ≥95.5%); mac `xcodebuild test` | pre-commit |
+| **L2** | Integration / API | `test:e2e` — real HTTP against `vinext dev` on **17018**, local SQLite (`D1_LOCAL_PATH`) | pre-push |
+| **L3** | System / browser E2E | `test:bdd` — Playwright on **27018** | CI / on-demand |
+| **G1** | Static analysis | Web: `typecheck` + Biome (`lint` / lint-staged); Mac: `swiftlint --strict` | pre-commit |
+| **G2** | Security | `gate:security` (osv-scanner + gitleaks) | pre-push |
+| **D1** | Test isolation | E2E/BDD use `.local/gecko-test.db` (or `*-test` cloud resources). Dev may use prod D1 for manual debug; automated E2E must not. | always for L2/L3 |
+
+### Root scripts
+
+| Script | 6DQ | Implementation |
+|--------|-----|----------------|
+| `bun run typecheck` / `bun run lint` | G1 | web-dashboard |
+| `bun run test:l1` | L1 | web `test:coverage` |
+| `bun run test:l2` | L2 | web `test:e2e` (not vitest handler unit tests) |
+| `bun run test:l3` / `test:e2e:bdd` | L3 | web `test:bdd` (Playwright) |
+
+### Ports
+
+| Port | Role |
+|------|------|
+| 7018 | Local debug (`https://gecko.dev.hexly.ai` via Caddy) |
+| 17018 | L2 API E2E |
+| 27018 | L3 Playwright BDD |
+
+**vinext single-instance lock:** only one `vinext dev` at a time. Stop 7018 before L2/L3, or suites fail with “Another vinext dev server is already running”.
+
+### Hook map
+
+- **pre-commit:** G1 → L1 (web ∥ mac)
+- **pre-push:** L2 ‖ G2
+- **CI (`base-ci` bun-quality):** L1 coverage + G1 + L2 + L3 (Playwright chromium)
+
 ## Release Process
 
 This project includes both a **web dashboard** and a **Mac app** — both are versioned and released together.

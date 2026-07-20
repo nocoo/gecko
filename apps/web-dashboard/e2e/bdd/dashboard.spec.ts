@@ -1,3 +1,4 @@
+// L3 (6DQ System/E2E) — Playwright; run via `bun run test:bdd` / root `test:l3`.
 import { expect, test } from "@playwright/test";
 
 test.describe("Dashboard — BDD Smoke", () => {

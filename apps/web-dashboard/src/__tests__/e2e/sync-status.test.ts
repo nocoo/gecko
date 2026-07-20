@@ -1,3 +1,4 @@
+// L2 (6DQ Integration/API E2E) — real HTTP on :17018; run via `bun run test:e2e` / root `test:l2`.
 // E2E: Sync status — verify /api/sync/status reports last sync per device.
 //
 // Runs against the dev:e2e server (port 17018, E2E_SKIP_AUTH=true).

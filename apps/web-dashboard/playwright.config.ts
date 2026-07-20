@@ -1,10 +1,11 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * L4: BDD E2E — Playwright browser tests for core user flows.
+ * L3 (6DQ System/E2E): Playwright browser tests for core user flows.
  *
  * Server runs on port 27018 with E2E_SKIP_AUTH=true so we bypass
  * Google OAuth. Tests drive a real Chromium browser.
+ * (API HTTP E2E on 17018 is L2 — `bun run test:e2e`.)
  */
 export default defineConfig({
   testDir: "./e2e/bdd",

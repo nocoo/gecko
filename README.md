@@ -54,8 +54,8 @@ Gecko is a lightweight menu bar app that silently tracks which application and w
 ### 🛠️ Developer Experience
 
 - **Monorepo** — clean separation between macOS client and web dashboard
-- **Four-layer testing** — L1: Unit Tests (608 web + 194 mac), L2: Strict Lint (ESLint + SwiftLint), L3: API E2E, L4: BDD E2E (Playwright)
-- **Husky git hooks** — pre-commit runs UT, pre-push runs UT + Lint + API E2E; BDD E2E available on-demand
+- **6DQ quality gates** — L1 unit/coverage, L2 API E2E (real HTTP), L3 Playwright BDD; G1 typecheck+Biome/SwiftLint; G2 security; D1 isolated test DB
+- **Husky git hooks** — pre-commit: G1 + L1; pre-push: L2 ‖ G2; L3 BDD on-demand / CI
 - **Atomic commits** — Conventional Commits format, one logical change per commit
 
 ## 📋 Requirements
@@ -111,27 +111,30 @@ gecko/
 └── scripts/                              # Git hooks & tooling
 ```
 
-## 🧪 Testing
+## 🧪 Testing (6DQ)
+
+| Dim | Command | Notes |
+|-----|---------|-------|
+| **G1** | `bun run typecheck` · `bun run lint` · mac `swiftlint --strict` | Static analysis |
+| **L1** | `bun run test:l1` (web coverage) · mac `xcodebuild test` | Unit / component |
+| **L2** | `bun run test:l2` (= web `test:e2e`, port **17018**) | Real HTTP + local SQLite |
+| **L3** | `bun run test:l3` (= web `test:bdd`, port **27018**) | Playwright browser |
+| **G2** | `cd apps/web-dashboard && bun run gate:security` | osv-scanner + gitleaks |
 
 ```bash
-# Mac client — unit tests
+# G1 + L1 (also what pre-commit runs for web)
+bun run typecheck && bun run lint && bun run test:l1
+
+# Mac client — L1 + G1
 xcodebuild test -project apps/mac-client/Gecko.xcodeproj \
   -scheme Gecko -destination 'platform=macOS' -quiet
-
-# Mac client — lint (zero tolerance)
 cd apps/mac-client && swiftlint lint --strict
 
-# Web dashboard — unit tests (608 tests, 1879 assertions)
-cd apps/web-dashboard && bun test
+# L2 API E2E — stop other vinext dev (e.g. :7018) first
+bun run test:l2
 
-# Web dashboard — lint
-cd apps/web-dashboard && bun run lint
-
-# Web dashboard — E2E (requires RUN_E2E=true)
-cd apps/web-dashboard && bun run test:e2e
-
-# Web dashboard — BDD E2E (Playwright)
-cd apps/web-dashboard && bun run test:bdd
+# L3 Playwright BDD (CI / on-demand)
+bun run test:l3
 ```
 
 ## 🏗️ Tech Stack
@@ -145,8 +148,8 @@ cd apps/web-dashboard && bun run test:bdd
 | Cloud DB | Cloudflare D1 (SQLite-compatible) |
 | Local DB | SQLite via GRDB (mac) |
 | Charts | Recharts |
-| Testing | Bun test, Playwright, XCTest, SwiftLint, ESLint |
-| CI/Hooks | Husky (pre-commit + pre-push) |
+| Testing | Vitest, Bun test (L2), Playwright (L3), XCTest, SwiftLint, Biome |
+| CI/Hooks | Husky pre-commit (G1+L1) · pre-push (L2‖G2) · base-ci |
 
 ## 📄 License
 

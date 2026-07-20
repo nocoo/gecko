@@ -1,16 +1,39 @@
-# Four-Layer Testing Improvement Plan
+# Testing Improvement Plan (historical) → 6DQ
 
-> Execution plan to align Gecko's test infrastructure with the four-layer testing standard.
-> **Status: COMPLETED** (v1.2.0). All three phases are implemented. This document is retained as a design reference.
+> Originally written against the legacy “four-layer” naming. **Status: COMPLETED** (v1.2.0).
+> Retained as a design reference for what was built. **Canonical naming is 6DQ**
+> (see root `CLAUDE.md` → Quality gates).
 
-## Current Status
+## Canonical map (6DQ)
 
-| Layer | Standard | Status | Notes |
-|-------|----------|--------|-------|
-| L1: Unit Tests | 90%+ coverage, pre-commit gate | **PASS** | 608 web + 194 mac, pre-commit hook |
-| L2: Lint | Strict mode, zero tolerance | **PASS** | ESLint `strict` + SwiftLint `--strict` |
-| L3: API E2E | 100% REST API coverage, pre-push gate | **PASS** | 11 test files on port 17018, pre-push hook |
-| L4: BDD E2E | Playwright browser tests for core flows | **PASS** | 6 spec files on port 27018, on-demand |
+| 6DQ | Meaning | Gecko command / port | Hook |
+|-----|---------|----------------------|------|
+| **L1** | Unit / component | `test:coverage` / mac XCTest | pre-commit |
+| **L2** | Integration / API (real HTTP) | `test:e2e` · **17018** · local SQLite | pre-push |
+| **L3** | System / browser E2E | `test:bdd` · Playwright · **27018** | CI / on-demand |
+| **G1** | Static analysis | typecheck + Biome; SwiftLint `--strict` | pre-commit |
+| **G2** | Security | `gate:security` | pre-push |
+| **D1** | Test isolation | `.local/gecko-test.db` for L2/L3 | always for automated E2E |
+
+### Legacy four-layer → 6DQ rename
+
+| Old (this doc’s original wording) | 6DQ |
+|-----------------------------------|-----|
+| L1 Unit | **L1** |
+| L2 Lint | **G1** (not a test layer) |
+| L3 API E2E | **L2** |
+| L4 BDD E2E | **L3** |
+
+## Status at completion (remapped)
+
+| Dim | Standard | Status | Notes |
+|-----|----------|--------|-------|
+| L1: Unit | ≥90% coverage (now ≥95.5% web) | **PASS** | pre-commit |
+| G1: Static analysis | 0 error / 0 warning | **PASS** | Biome + tsc; SwiftLint `--strict` |
+| L2: API E2E | 100% REST via real HTTP | **PASS** | 11 files on 17018, pre-push |
+| L3: BDD E2E | Core browser flows | **PASS** | Playwright on 27018, CI / on-demand |
+| G2: Security | osv + gitleaks | **PASS** | pre-push |
+| D1: Isolation | No prod DB in automated E2E | **PASS** | `D1_LOCAL_PATH` SQLite file |
 
 ## Phase 1 — Fix Bugs + Lint Upgrade (Critical) ✓
 
@@ -117,7 +140,7 @@ and `bun run gate:security` in parallel. No remote D1 verification needed.
 
 ### 3.3 BDD E2E integration
 
-> **Decision**: BDD E2E was initially added to the pre-push hook but later removed. BDD tests run on-demand via `bun run test:bdd` to keep push times reasonable. API E2E remains in pre-push.
+> **Decision**: L3 BDD was initially added to the pre-push hook but later removed. BDD runs on-demand / CI via `bun run test:bdd` (or root `test:l3`) to keep push times reasonable. **L2** API E2E (`test:e2e`) remains in pre-push.
 
 ### 3.4 Add npm scripts
 

@@ -468,18 +468,20 @@ CREATE TABLE app_tag_mappings (
 
 ## Test Coverage
 
-### Four-Layer Verification
+### 6DQ Verification
 
-| Layer | Tool | Hook | Description |
+| Dim | Tool | Hook | Description |
 |---|---|---|---|
-| **L1: Unit Tests** | `bun test` + `xcodebuild test` | pre-commit | 194 mac + 608 web = 802 total tests |
-| **L2: Lint** | SwiftLint (`--strict`) + ESLint (strict) | pre-push | 0 violations, 0 errors |
-| **L3: API E2E** | `bun run test:e2e` | pre-push | 11 test files against live server on port 17018 |
-| **L4: BDD E2E** | `bun run test:bdd` (Playwright) | on-demand | 6 spec files, 21 browser tests on port 27018 |
+| **L1: Unit** | vitest / `test:coverage` + `xcodebuild test` | pre-commit | Unit + coverage gate (web ≥95.5%) |
+| **G1: Static analysis** | Biome + `tsc`; SwiftLint `--strict` | pre-commit | 0 errors / 0 warnings |
+| **L2: API E2E** | `bun run test:e2e` / root `test:l2` | pre-push | Real HTTP, 11 files on port **17018**, local SQLite |
+| **L3: BDD E2E** | `bun run test:bdd` / root `test:l3` (Playwright) | CI / on-demand | Browser flows on port **27018** |
+| **G2: Security** | `gate:security` | pre-push | osv-scanner + gitleaks |
+| **D1: Isolation** | `D1_LOCAL_PATH=.local/gecko-test.db` | L2/L3 | Automated E2E never uses prod D1 |
 
-### E2E Test Scenarios (L3)
+### API E2E scenarios (L2)
 
-Run via `bun run test:e2e` (sets `RUN_E2E=true`, starts server on port 17018):
+Run via `bun run test:e2e` or root `bun run test:l2` (sets `RUN_E2E=true`, server on port 17018):
 
 **Sync round-trip (`sync-roundtrip.test.ts`):**
 
@@ -519,8 +521,11 @@ cd apps/web-dashboard && bun run lint
 cd apps/mac-client && swiftlint lint --strict
 
 # E2E tests (explicit invocation)
+# L2 API E2E (pre-push)
 cd apps/web-dashboard && bun run test:e2e
+# or from repo root: bun run test:l2
 
-# BDD E2E tests (Playwright, on-demand)
+# L3 BDD E2E (Playwright — CI / on-demand)
 cd apps/web-dashboard && bun run test:bdd
+# or from repo root: bun run test:l3
 ```
