@@ -1,10 +1,12 @@
-# L2: API E2E (local SQLite — no remote D1 needed)
-# G2: Security gate (osv-scanner + gitleaks)
-# L2 & G2 run in parallel
+# pre-push (6DQ): L2 ‖ G2
+#   L2 — API E2E: real HTTP on :17018, local SQLite (D1_LOCAL_PATH). Not browser BDD.
+#   G2 — security: osv-scanner + gitleaks
+# L3 Playwright BDD is CI / on-demand (`bun run test:l3`), not pre-push.
+# Stop any other vinext dev (e.g. :7018) first — vinext is single-instance.
 
 cd apps/web-dashboard
 
-bun run test:e2e &
+bun run test:l2 &
 PID_L2=$!
 
 bun run gate:security &
