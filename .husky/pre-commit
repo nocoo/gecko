@@ -1,8 +1,14 @@
-# Web: G1 (typecheck + lint-staged) → L1 (unit tests + coverage)
+# Web: G1 (typecheck + Biome via lint-staged + full Biome) → L1 (unit tests + coverage)
 # Mac:  G1 (swiftlint --strict) → L1 (xcodebuild test)
-# Run in parallel, fail if either fails
+# Run web and mac gates in parallel; fail if either fails.
+#
+# Ordering on the web side:
+#   1. typecheck (tsc 7.0.2)
+#   2. lint-staged — Biome --write on staged files (auto-format accepted)
+#   3. lint — full-tree `biome check --error-on-warnings` so unstaged/index drift still fails
+#   4. test:coverage — vitest with coverage thresholds
 
-(cd apps/web-dashboard && bun run typecheck && bun run lint:staged && bun run test:coverage) &
+(cd apps/web-dashboard && bun run typecheck && bun run lint:staged && bun run lint && bun run test:coverage) &
 PID_WEB=$!
 
 (
