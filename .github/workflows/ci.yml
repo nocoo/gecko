@@ -11,7 +11,10 @@ jobs:
   quality:
     uses: nocoo/base-ci/.github/workflows/bun-quality.yml@aec4adc1a817c56790d1698329ef9398a15a754a  # v2026.5
     with:
-      ignore-scripts: true
+      # L2 API E2E uses local SQLite via better-sqlite3. Native install scripts
+      # must run; --ignore-scripts leaves the binding missing and every DB
+      # route returns 500 in CI (see v1.11.0 run 29714577292).
+      ignore-scripts: false
       extra-install-dirs: "apps/web-dashboard"
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
