@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.11.0] - 2026-07-20
+
+### Fixed
+- map test:l2 to real API e2e under 6DQ
+- close mobile sidebar on route change
+- route root typecheck through web-dashboard tsc
+- **ai-settings**: clear baseURL/sdkType/authType in DB when switching off custom
+- **ai-settings**: always save before Test so dirty provider fields are tested
+- **sync**: mark 400/413-rejected batches synced so the queue doesn't wedge
+
+### Documentation
+- align quality docs with 6DQ L1/L2/L3 naming
+- note biome exhaustive-deps route-effect footgun
+
+### Maintenance
+- document 6DQ L1/L2/G1/G2 in husky hooks
+- enforce biome in husky pre-commit gates
+- upgrade typescript to 7.0.2
+- replace eslint + typescript-eslint with biome
+- **deps**: bump lint-staged 17.0.8 → 17.1.0 (apps/web-dashboard)
+- **deps**: bump hono 4.12.30 → 4.12.31 (apps/web-dashboard)
+- **deps**: bump shadcn 4.13.0 → 4.13.1 (apps/web-dashboard)
+- **deps**: bump lucide-react 1.24.0 → 1.25.0 (apps/web-dashboard)
+- **deps**: bump ai 7.0.30 → 7.0.31 (apps/web-dashboard)
+- **deps**: bump @vitejs/plugin-rsc 0.5.27 → 0.5.28 (apps/web-dashboard)
+- **deps**: bump @ai-sdk/openai 4.0.15 → 4.0.16 (apps/web-dashboard)
+- **deps**: bump @ai-sdk/anthropic 4.0.15 → 4.0.16 (apps/web-dashboard)
+- **deps**: bump ai 7.0.29 → 7.0.30 (apps/web-dashboard)
+- **deps**: bump vite 8.1.4 → 8.1.5 (apps/web-dashboard)
+- **deps**: bump express-rate-limit 8.5.2 → 8.6.0 (apps/web-dashboard)
+- **deps**: bump tailwindcss + @tailwindcss/postcss 4.3.2 → 4.3.3 (apps/web-dashboard)
+- **deps**: bump ai-sdk patches + @hono/node-server (apps/web-dashboard)
+- **deps**: bump typescript-eslint 8.63.0 → 8.64.0 (apps/web-dashboard)
+- **deps**: bump ai/@ai-sdk patches (apps/web-dashboard)
+- **deps**: hono 4.12.29 → 4.12.30 (apps/web-dashboard)
+- **deps**: batch upgrade hono/eslint/ai/@ai-sdk/anthropic (apps/web-dashboard)
+- **deps**: batch upgrade ai-sdk/anthropic, ai-sdk/openai, ai, lucide-react, vite (apps/web-dashboard) (#213)
+- **deps**: ai 7.0.17 → 7.0.18 (apps/web-dashboard)
+- **deps**: @ai-sdk/openai 4.0.8 → 4.0.9 (apps/web-dashboard)
+- **deps**: @ai-sdk/anthropic 4.0.9 → 4.0.10 (apps/web-dashboard)
+- **deps**: @ai-sdk/anthropic 4.0.8 → 4.0.9 (apps/web-dashboard)
+- **deps**: ai 7.0.16 → 7.0.17 (apps/web-dashboard)
+- **deps**: vitest 4.1.9 → 4.1.10 (apps/web-dashboard)
+- **deps**: typescript-eslint 8.62.1 → 8.63.0 (apps/web-dashboard)
+- **deps**: radix-ui 1.6.1 → 1.6.2 (apps/web-dashboard)
+- **deps**: hono 4.12.27 → 4.12.28 (apps/web-dashboard)
+- **deps**: ai 7.0.15 → 7.0.16 (apps/web-dashboard)
+- **deps**: @vitest/coverage-v8 4.1.9 → 4.1.10 (apps/web-dashboard)
+- **deps**: @ai-sdk/openai 4.0.7 → 4.0.8 (apps/web-dashboard)
+- **deps**: vinext 0.2.1 → 1.0.0-beta.0 (apps/web-dashboard)
+- **deps**: recharts 3.9.1 → 3.9.2 (apps/web-dashboard)
+- **deps**: ai 7.0.3 → 7.0.15 (apps/web-dashboard)
+- **deps**: @ai-sdk/anthropic 4.0.7 → 4.0.8 (apps/web-dashboard)
+- **deps**: shadcn 4.12.0 → 4.13.0 (apps/web-dashboard)
+- **deps**: vinext 0.2.0 → 0.2.1 (apps/web-dashboard)
+- **deps**: upgrade dependencies (batch 2026-07-03)
+- add root .npmrc for supply chain security baseline
+- **deps**: upgrade dependencies (batch 2026-07-02) (#175)
+- **deps**: upgrade dependencies (batch 2026-07-01)
+- **deps**: upgrade dependencies (batch 2026-06-30)
+
+### Tests
+- raise coverage thresholds to 95.5
+
 ## [1.10.12] - 2026-06-29
 
 ### Added
