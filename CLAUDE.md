@@ -84,4 +84,10 @@ This project includes both a **web dashboard** and a **Mac app** — both are ve
 - **Fix**: Dockerfile runtime stage switched from `FROM oven/bun:1` to `FROM node:22-slim`; CMD switched from `bun …` to `node …`. Bun stays in the deps + build stages (it's fine for `vinext build`).
 - **Lesson**: When a request hangs *inside* the handler with no error and the same code/payload works in a shell, suspect the runtime, not the code. Build-time tools (bun) and runtime (node) are two distinct decisions in a Dockerfile — keep them separate so a bug in one can be swapped without affecting the other. Repro locally by running prod build under each candidate runtime against real D1 REST before chasing client-side fixes.
 
+### 2026-07-20: Biome useExhaustiveDependencies can delete intentional effect triggers
+- **Problem**: After eslint→Biome migration, mobile sidebar no longer closed on route change.
+- **Root cause**: Biome `useExhaustiveDependencies` (unsafe autofix / unused-var pressure) renamed `pathname` to `_pathname` and removed it from the effect deps. Only `setMobileOpen` remained; that setter is stable, so `setMobileOpen(false)` never re-ran after navigation.
+- **Fix**: Keep `pathname` in the dependency array and reference it in the effect body (`void pathname`) so the rule treats it as used.
+- **Lesson**: Effects that intentionally re-fire on a value that is not otherwise read (route key, refresh key) must **use** that value in the body. Never “fix” exhaustive-deps by dropping intentional triggers or prefixing with `_`.
+
 
