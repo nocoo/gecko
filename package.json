@@ -8,8 +8,10 @@
     "release": "bun run scripts/release.ts",
     "typecheck": "bun run --cwd apps/web-dashboard typecheck",
     "lint": "bun run --cwd apps/web-dashboard lint",
-    "test:l2": "bun run --cwd apps/web-dashboard vitest run src/__tests__/api/",
-    "test:e2e:bdd": "bun run --cwd apps/web-dashboard test:bdd"
+    "test:l1": "bun run --cwd apps/web-dashboard test:coverage",
+    "test:l2": "bun run --cwd apps/web-dashboard test:e2e",
+    "test:l3": "bun run --cwd apps/web-dashboard test:bdd",
+    "test:e2e:bdd": "bun run test:l3"
   },
   "devDependencies": {
     "husky": "^9.1.7"
