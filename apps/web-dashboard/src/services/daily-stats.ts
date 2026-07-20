@@ -189,10 +189,8 @@ export function computeScores(rows: SessionRow[]): DailyScores {
   let prevWasDevUrl = isDevWorkflowUrl(firstSession.url);
 
   for (let i = 0; i < rest.length; i++) {
-    const s = rest[i];
-    if (!s) {
-      continue;
-    }
+    // Indexed access is defined for i < rest.length; cast avoids non-null `!`.
+    const s = rest[i] as (typeof rest)[number];
 
     const currIsDevUrl = isDevWorkflowUrl(s.url);
 
@@ -210,10 +208,7 @@ export function computeScores(rows: SessionRow[]): DailyScores {
       let prevEnd = s.start_time + s.duration;
 
       for (let j = i + 1; j < rest.length; j++) {
-        const next = rest[j];
-        if (!next) {
-          break;
-        }
+        const next = rest[j] as (typeof rest)[number];
 
         const gap = next.start_time - prevEnd;
         if (gap >= DWELL_GAP_THRESHOLD) break; // Gap too large, stop accumulating
@@ -288,11 +283,7 @@ export function computeDailyStats(date: string, rows: SessionRow[]): DailyStats 
   const totalDuration = sorted.reduce((sum, r) => sum + r.duration, 0);
   const uniqueApps = new Set(sorted.map((r) => r.app_name));
   // rows.length > 0 guarded above, so sorted[0] is defined.
-  const first = sorted[0];
-  if (!first) {
-    throw new Error("unreachable: sorted sessions empty after length guard");
-  }
-  const firstStart = first.start_time;
+  const firstStart = (sorted[0] as (typeof sorted)[number]).start_time;
   const lastEnd = Math.max(...sorted.map((r) => r.start_time + r.duration));
   const activeSpan = lastEnd - firstStart;
 

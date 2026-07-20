@@ -94,8 +94,11 @@ function offsetAtEpoch(epochSec: number, tz: string): number {
     hour12: false,
   });
   const parts = fmt.formatToParts(new Date(ms));
-  // Intl.DateTimeFormat always emits every requested field.
-  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+  // Intl.DateTimeFormat always emits every requested field for our option set.
+  const get = (type: string) => {
+    const value = parts.find((p) => p.type === type)?.value;
+    return parseInt(value as string, 10);
+  };
 
   const lY = get("year"),
     lM = get("month"),
@@ -151,8 +154,11 @@ export function getTimezoneOffsetMinutes(
   });
 
   const parts = fmt.formatToParts(new Date(utcRef));
-  // Intl.DateTimeFormat always emits every requested field.
-  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+  // Intl.DateTimeFormat always emits every requested field for our option set.
+  const get = (type: string) => {
+    const value = parts.find((p) => p.type === type)?.value;
+    return parseInt(value as string, 10);
+  };
 
   const localYear = get("year");
   const localMonth = get("month");

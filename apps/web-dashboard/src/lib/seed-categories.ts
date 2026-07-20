@@ -28,22 +28,16 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   // ── Step 1: Insert the 4 default categories ──
   // D1 limit: 100 params. 4 categories × 6 params = 24 — well within limits.
   const now = new Date().toISOString();
-  const categoryIdBySlug = new Map<string, string>();
+  const seeded = DEFAULT_CATEGORIES.map((cat) => ({
+    id: randomUUID(),
+    title: cat.title,
+    icon: cat.icon,
+    slug: cat.slug,
+  }));
+  const categoryIdBySlug = new Map(seeded.map((cat) => [cat.slug, cat.id]));
 
-  for (const cat of DEFAULT_CATEGORIES) {
-    const id = randomUUID();
-    categoryIdBySlug.set(cat.slug, id);
-  }
-
-  const catPlaceholders = DEFAULT_CATEGORIES.map(() => "(?, ?, ?, ?, 1, ?, ?)").join(", ");
-  const catParams = DEFAULT_CATEGORIES.flatMap((cat) => {
-    // categoryIdBySlug was just populated from DEFAULT_CATEGORIES above.
-    const categoryId = categoryIdBySlug.get(cat.slug);
-    if (!categoryId) {
-      throw new Error(`Missing category id for slug ${cat.slug}`);
-    }
-    return [categoryId, userId, cat.title, cat.icon, cat.slug, now];
-  });
+  const catPlaceholders = seeded.map(() => "(?, ?, ?, ?, 1, ?, ?)").join(", ");
+  const catParams = seeded.flatMap((cat) => [cat.id, userId, cat.title, cat.icon, cat.slug, now]);
 
   await execute(
     `INSERT INTO categories (id, user_id, title, icon, is_default, slug, created_at)
@@ -57,8 +51,8 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   const mappingEntries: Array<{ bundleId: string; categoryId: string }> = [];
   for (const [bundleId, slug] of BUNDLE_ID_MAPPINGS) {
     const categoryId = categoryIdBySlug.get(slug);
-    if (!categoryId) {
-      throw new Error(`Missing category id for mapping slug ${slug}`);
+    if (categoryId === undefined) {
+      continue;
     }
     mappingEntries.push({ bundleId, categoryId });
   }

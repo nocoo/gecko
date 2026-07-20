@@ -38,11 +38,7 @@ const AVATAR_COLORS = [
 /** Get a consistent avatar background color based on name. */
 export function getAvatarColor(name: string): string {
   const hash = hashString(name);
+  // `hash % length` is always a valid index into the non-empty palette.
   const index = hash % AVATAR_COLORS.length;
-  // `index` is `hash % AVATAR_COLORS.length`, always a valid index.
-  const color = AVATAR_COLORS[index];
-  if (color === undefined) {
-    return AVATAR_COLORS[0] ?? "bg-blue-500";
-  }
-  return color;
+  return AVATAR_COLORS[index] as (typeof AVATAR_COLORS)[number];
 }
