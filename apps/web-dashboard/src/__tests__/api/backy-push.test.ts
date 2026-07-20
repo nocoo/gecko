@@ -3,10 +3,10 @@
  * /api/backy/push + /api/backy/history route handlers.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { gunzipSync } from "node:zlib";
-import { executePush } from "@/lib/backy-push";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { BackupEnvelope } from "@/lib/backy";
+import { executePush } from "@/lib/backy-push";
 
 const originalFetch = globalThis.fetch;
 
@@ -112,12 +112,26 @@ describe("executePush", () => {
     const { backyCalls } = mockFetchRouter({
       d1Handler: (sql) => {
         if (sql.includes("focus_sessions")) {
-          return [{
-            id: "s1", user_id: "u1", device_id: "d1", app_name: "Chrome",
-            window_title: "Test", url: null, start_time: 100, end_time: null,
-            duration: 60, bundle_id: null, tab_title: null, tab_count: null,
-            document_path: null, is_full_screen: 0, is_minimized: 0, synced_at: null,
-          }];
+          return [
+            {
+              id: "s1",
+              user_id: "u1",
+              device_id: "d1",
+              app_name: "Chrome",
+              window_title: "Test",
+              url: null,
+              start_time: 100,
+              end_time: null,
+              duration: 60,
+              bundle_id: null,
+              tab_title: null,
+              tab_count: null,
+              document_path: null,
+              is_full_screen: 0,
+              is_minimized: 0,
+              synced_at: null,
+            },
+          ];
         }
         return [];
       },
@@ -170,7 +184,9 @@ describe("executePush", () => {
 
   test("returns error when fetch throws", async () => {
     mockFetchRouter({
-      backyHandler: () => { throw new Error("Network error"); },
+      backyHandler: () => {
+        throw new Error("Network error");
+      },
     });
 
     const result = await executePush("u1", {
@@ -205,7 +221,7 @@ describe("executePush", () => {
     });
 
     const bc0 = backyCalls[0];
-    if (!bc0 || !bc0.body) return;
+    if (!bc0?.body) return;
     const file = bc0.body.get("file") as Blob;
     const buf = Buffer.from(await file.arrayBuffer());
     const envelope = JSON.parse(gunzipSync(buf).toString()) as BackupEnvelope;
@@ -310,7 +326,9 @@ describe("/api/backy/history GET", () => {
         }
         return [];
       },
-      backyHandler: () => { throw new Error("timeout"); },
+      backyHandler: () => {
+        throw new Error("timeout");
+      },
     });
 
     const { GET } = await import("../../app/api/backy/history/route");

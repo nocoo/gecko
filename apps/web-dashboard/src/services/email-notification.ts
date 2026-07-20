@@ -10,7 +10,7 @@
  */
 
 import { settingsRepo } from "@/lib/settings-repo";
-import { fmtDuration, type AiAnalysisResult } from "@/services/analyze-core";
+import { type AiAnalysisResult, fmtDuration } from "@/services/analyze-core";
 import type { DailyStats } from "@/services/daily-stats";
 
 // ---------------------------------------------------------------------------
@@ -57,9 +57,7 @@ export function formatTimeSegments(
  * Silently skips when env vars or user settings are not configured.
  * Never throws — safe to fire-and-forget.
  */
-export async function sendAnalysisEmail(
-  params: SendAnalysisEmailParams,
-): Promise<void> {
+export async function sendAnalysisEmail(params: SendAnalysisEmailParams): Promise<void> {
   try {
     // 1. Check env vars
     const webhookUrl = process.env.DOVE_WEBHOOK_URL;
@@ -83,9 +81,7 @@ export async function sendAnalysisEmail(
     // 3. Build template variables
     const templateSlug = process.env.DOVE_TEMPLATE_SLUG || "daily-analysis";
     const dashboardBaseUrl =
-      params.dashboardBaseUrl ||
-      process.env.NEXTAUTH_URL ||
-      "https://gecko.hexly.ai";
+      params.dashboardBaseUrl || process.env.NEXTAUTH_URL || "https://gecko.hexly.ai";
     const dashboardUrl = `${dashboardBaseUrl}/daily/${params.date}`;
 
     const variables: Record<string, string> = {
@@ -122,13 +118,9 @@ export async function sendAnalysisEmail(
       // the `.catch` is defense-in-depth only.
       /* v8 ignore next */
       const body = await response.text().catch(() => "(unreadable)");
-      console.error(
-        `[email-notification] Dove returned ${response.status}: ${body}`,
-      );
+      console.error(`[email-notification] Dove returned ${response.status}: ${body}`);
     } else {
-      console.log(
-        `[email-notification] Email sent for user ${params.userId} date ${params.date}`,
-      );
+      console.log(`[email-notification] Email sent for user ${params.userId} date ${params.date}`);
     }
   } catch (err) {
     // Never throw — email is a best-effort side effect

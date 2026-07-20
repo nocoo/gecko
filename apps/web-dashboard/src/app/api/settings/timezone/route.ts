@@ -3,7 +3,7 @@
  * PUT  /api/settings/timezone — Save timezone
  */
 
-import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { settingsRepo } from "@/lib/settings-repo";
 import { isValidTimezone } from "@/lib/timezone";
 

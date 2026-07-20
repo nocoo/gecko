@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { query, execute, getD1Config, isLocalMode, closeLocal } from "../../lib/d1";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { closeLocal, execute, getD1Config, isLocalMode, query } from "../../lib/d1";
 
 // ---------------------------------------------------------------------------
 // D1 client tests — unit tests with mocked fetch (remote mode)
@@ -34,9 +34,9 @@ function mockFetch(result: unknown[], success = true, status = 200) {
           result: [{ results: result, success, meta: { changes: 0, last_row_id: 0 } }],
           errors: success ? [] : [{ message: "D1 error" }],
         }),
-        { status }
-      )
-    )
+        { status },
+      ),
+    ),
   ) as unknown as typeof fetch;
 }
 
@@ -75,7 +75,7 @@ describe("d1 client", () => {
       if (!call0) return;
       const [url, options] = call0 as [string, RequestInit];
       expect(url).toBe(
-        "https://api.cloudflare.com/client/v4/accounts/test-account-id/d1/database/test-db-id/query"
+        "https://api.cloudflare.com/client/v4/accounts/test-account-id/d1/database/test-db-id/query",
       );
       expect(options.method).toBe("POST");
       expect(options.headers).toEqual({
@@ -107,9 +107,7 @@ describe("d1 client", () => {
       const fetchMock = globalThis.fetch as unknown as ReturnType<typeof vi.fn>;
       const call0 = fetchMock.mock.calls[0];
       if (!call0) return;
-      const body = JSON.parse(
-        (call0 as [string, RequestInit])[1].body as string
-      );
+      const body = JSON.parse((call0 as [string, RequestInit])[1].body as string);
       expect(body.params).toEqual([]);
     });
 
@@ -127,19 +125,17 @@ describe("d1 client", () => {
               success: false,
               result: [],
             }),
-            { status: 200 }
-          )
-        )
+            { status: 200 },
+          ),
+        ),
       ) as unknown as typeof fetch;
 
-      await expect(query("BAD SQL")).rejects.toThrow(
-        "D1 query failed: Unknown D1 error"
-      );
+      await expect(query("BAD SQL")).rejects.toThrow("D1 query failed: Unknown D1 error");
     });
 
     test("throws on HTTP error (non-200)", async () => {
       globalThis.fetch = vi.fn(() =>
-        Promise.resolve(new Response("Internal Server Error", { status: 500 }))
+        Promise.resolve(new Response("Internal Server Error", { status: 500 })),
       ) as unknown as typeof fetch;
 
       expect(query("SELECT 1")).rejects.toThrow("D1 API error (500)");
@@ -147,7 +143,7 @@ describe("d1 client", () => {
 
     test("throws on network error", async () => {
       globalThis.fetch = vi.fn(() =>
-        Promise.reject(new Error("Network error"))
+        Promise.reject(new Error("Network error")),
       ) as unknown as typeof fetch;
 
       expect(query("SELECT 1")).rejects.toThrow("Network error");
@@ -174,15 +170,12 @@ describe("d1 client", () => {
               ],
               errors: [],
             }),
-            { status: 200 }
-          )
-        )
+            { status: 200 },
+          ),
+        ),
       ) as unknown as typeof fetch;
 
-      const result = await execute("INSERT INTO users VALUES (?, ?)", [
-        "1",
-        "Alice",
-      ]);
+      const result = await execute("INSERT INTO users VALUES (?, ?)", ["1", "Alice"]);
       expect(result.meta.changes).toBe(5);
     });
   });

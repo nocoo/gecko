@@ -1,11 +1,20 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  Globe,
+  Key,
+  Loader2,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -14,18 +23,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Copy,
-  Check,
-  Plus,
-  Trash2,
-  Loader2,
-  AlertTriangle,
-  Key,
-  Globe,
-  Pencil,
-  Play,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 // =============================================================================
 // Types
@@ -62,8 +62,7 @@ function useCopyToClipboard() {
 function EndpointSection() {
   const { copiedId, copy } = useCopyToClipboard();
 
-  const baseUrl =
-    typeof window !== "undefined" ? window.location.origin : "";
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const endpoints = [
     {
@@ -146,7 +145,8 @@ function EndpointSection() {
                     {ep.method}
                   </span>
                   <code className="flex-1 px-3 py-2 text-xs font-mono break-all select-all">
-                    {baseUrl}{ep.path}
+                    {baseUrl}
+                    {ep.path}
                   </code>
                 </div>
                 <Button
@@ -302,8 +302,8 @@ function ApiKeysSection({
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Create and manage API keys for authenticating requests.
-        Keys are shown only once when created — store them securely.
+        Create and manage API keys for authenticating requests. Keys are shown only once when
+        created — store them securely.
       </p>
 
       {error && (
@@ -324,16 +324,8 @@ function ApiKeysSection({
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             disabled={creating}
           />
-          <Button
-            onClick={handleCreate}
-            disabled={creating || !newKeyName.trim()}
-            size="sm"
-          >
-            {creating ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Plus className="size-4" />
-            )}
+          <Button onClick={handleCreate} disabled={creating || !newKeyName.trim()} size="sm">
+            {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             Create
           </Button>
         </div>
@@ -343,10 +335,7 @@ function ApiKeysSection({
       {loading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => (
-            <div
-              key={i}
-              className="h-16 rounded-xl bg-muted animate-pulse"
-            />
+            <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
           ))}
         </div>
       ) : keys.length === 0 ? (
@@ -396,9 +385,7 @@ function ApiKeysSection({
                     <p className="text-xs text-muted-foreground">
                       Created {formatRelativeTime(k.createdAt)}
                       {k.lastUsed && (
-                        <span className="ml-2">
-                          · Last used {formatRelativeTime(k.lastUsed)}
-                        </span>
+                        <span className="ml-2">· Last used {formatRelativeTime(k.lastUsed)}</span>
                       )}
                     </p>
                   </>
@@ -431,10 +418,7 @@ function ApiKeysSection({
       )}
 
       {/* Revealed key dialog (shown once after creation) */}
-      <Dialog
-        open={!!revealedKey}
-        onOpenChange={(open) => !open && setRevealedKey(null)}
-      >
+      <Dialog open={!!revealedKey} onOpenChange={(open) => !open && setRevealedKey(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>API Key Created</DialogTitle>
@@ -450,9 +434,7 @@ function ApiKeysSection({
             <Button
               variant="outline"
               size="icon-sm"
-              onClick={() =>
-                revealedKey && copy(revealedKey, "revealed-key")
-              }
+              onClick={() => revealedKey && copy(revealedKey, "revealed-key")}
             >
               {copiedId === "revealed-key" ? (
                 <Check className="size-3.5" />
@@ -469,10 +451,7 @@ function ApiKeysSection({
       </Dialog>
 
       {/* Delete confirmation dialog */}
-      <Dialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete API Key</DialogTitle>
@@ -482,18 +461,10 @@ function ApiKeysSection({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : (
@@ -514,9 +485,7 @@ function ApiKeysSection({
 
 function TestSection() {
   const [apiKey, setApiKey] = useState("");
-  const [selectedDate, setSelectedDate] = useState(
-    () => new Date().toISOString().split("T")[0],
-  );
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState<{
     status: number;
@@ -538,22 +507,17 @@ function TestSection() {
 
     try {
       const start = performance.now();
-      const res = await fetch(
-        `/api/v1/snapshot?date=${selectedDate}`,
-        {
-          headers: {
-            Authorization: `Bearer ${apiKey.trim()}`,
-          },
+      const res = await fetch(`/api/v1/snapshot?date=${selectedDate}`, {
+        headers: {
+          Authorization: `Bearer ${apiKey.trim()}`,
         },
-      );
+      });
       const durationMs = Math.round(performance.now() - start);
 
       const body = await res.json();
       setResult({ status: res.status, body, durationMs });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Request failed",
-      );
+      setError(err instanceof Error ? err.message : "Request failed");
     } finally {
       setTesting(false);
     }
@@ -569,11 +533,8 @@ function TestSection() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Send a test request to the snapshot endpoint. Paste one of your API
-        keys below — it will be sent as the{" "}
-        <code className="text-xs bg-secondary px-1 py-0.5 rounded">
-          Authorization
-        </code>{" "}
+        Send a test request to the snapshot endpoint. Paste one of your API keys below — it will be
+        sent as the <code className="text-xs bg-secondary px-1 py-0.5 rounded">Authorization</code>{" "}
         header.
       </p>
 
@@ -607,15 +568,8 @@ function TestSection() {
               onChange={(e) => setSelectedDate(e.target.value)}
             />
           </div>
-          <Button
-            onClick={handleTest}
-            disabled={testing || !selectedDate || !apiKey.trim()}
-          >
-            {testing ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Play className="size-4" />
-            )}
+          <Button onClick={handleTest} disabled={testing || !selectedDate || !apiKey.trim()}>
+            {testing ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
             Send Request
           </Button>
         </div>
@@ -638,9 +592,7 @@ function TestSection() {
               <Button
                 variant="ghost"
                 size="xs"
-                onClick={() =>
-                  resultJson && copy(resultJson, "test-result")
-                }
+                onClick={() => resultJson && copy(resultJson, "test-result")}
                 className="ml-auto"
               >
                 {copiedId === "test-result" ? (
@@ -707,18 +659,12 @@ export default function ApiPage() {
   }, [fetchKeys]);
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Integrations" },
-        { label: "API" },
-      ]}
-    >
+    <AppShell breadcrumbs={[{ label: "Integrations" }, { label: "API" }]}>
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">API</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Access your Gecko data programmatically. Manage API keys and test
-            endpoints.
+            Access your Gecko data programmatically. Manage API keys and test endpoints.
           </p>
         </div>
 
@@ -726,11 +672,7 @@ export default function ApiPage() {
 
         <Separator />
 
-        <ApiKeysSection
-          keys={keys}
-          loading={loading}
-          onRefresh={fetchKeys}
-        />
+        <ApiKeysSection keys={keys} loading={loading} onRefresh={fetchKeys} />
 
         <Separator />
 

@@ -1,23 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { AlertTriangle, Bell, Check, Globe, Loader2, Mail, Sparkles, User } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertTriangle,
-  User,
-  Mail,
-  Globe,
-  Check,
-  Bell,
-  Sparkles,
-  Loader2,
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
 
 // ---------------------------------------------------------------------------
 // Settings Page
@@ -32,9 +23,7 @@ export default function SettingsPage() {
         {/* Page header */}
         <div>
           <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Manage your profile and preferences.
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage your profile and preferences.</p>
         </div>
 
         {/* Profile section */}
@@ -58,11 +47,7 @@ export default function SettingsPage() {
 // Profile Section (read-only, data from Google OAuth)
 // =============================================================================
 
-function ProfileSection({
-  session,
-}: {
-  session: ReturnType<typeof useSession>["data"];
-}) {
+function ProfileSection({ session }: { session: ReturnType<typeof useSession>["data"] }) {
   const user = session?.user;
 
   return (
@@ -87,25 +72,15 @@ function ProfileSection({
           )}
           <div>
             <p className="font-medium">{user?.name ?? "—"}</p>
-            <p className="text-sm text-muted-foreground">
-              Managed by Google OAuth
-            </p>
+            <p className="text-sm text-muted-foreground">Managed by Google OAuth</p>
           </div>
         </div>
 
         <Separator />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <InfoField
-            icon={<User className="size-4" />}
-            label="Name"
-            value={user?.name ?? "—"}
-          />
-          <InfoField
-            icon={<Mail className="size-4" />}
-            label="Email"
-            value={user?.email ?? "—"}
-          />
+          <InfoField icon={<User className="size-4" />} label="Name" value={user?.name ?? "—"} />
+          <InfoField icon={<Mail className="size-4" />} label="Email" value={user?.email ?? "—"} />
         </div>
       </div>
     </section>
@@ -225,8 +200,8 @@ function TimezoneSection() {
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Your timezone determines how daily boundaries are calculated for
-        stats, charts, and AI analysis.
+        Your timezone determines how daily boundaries are calculated for stats, charts, and AI
+        analysis.
       </p>
 
       {error && (
@@ -261,12 +236,7 @@ function TimezoneSection() {
                   ))}
                 </Select>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDetect}
-                disabled={saving}
-              >
+              <Button variant="outline" size="sm" onClick={handleDetect} disabled={saving}>
                 Detect
               </Button>
             </div>
@@ -382,7 +352,9 @@ function NotificationsSection() {
               <Sparkles className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
-              <Label htmlFor="auto-summarize" className="text-sm font-medium">Auto-summarize</Label>
+              <Label htmlFor="auto-summarize" className="text-sm font-medium">
+                Auto-summarize
+              </Label>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Automatically generate AI summaries for your daily screen time.
               </p>
@@ -406,7 +378,9 @@ function NotificationsSection() {
                 <Mail className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <Label htmlFor="email-notifications" className="text-sm font-medium">Email notifications</Label>
+                <Label htmlFor="email-notifications" className="text-sm font-medium">
+                  Email notifications
+                </Label>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Receive daily analysis reports via email.
                 </p>

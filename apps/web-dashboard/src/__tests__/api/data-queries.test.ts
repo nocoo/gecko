@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Data query endpoints tests
@@ -37,8 +37,8 @@ function mockD1(responses: unknown[][] = [[]]) {
           result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 
@@ -217,15 +217,32 @@ describe("GET /api/stats", () => {
   test("returns aggregated stats", async () => {
     mockD1([
       // Timezone lookup
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       // Total stats query
       [{ total_sessions: 100, total_duration: 50000.0, total_apps: 15 }],
       // Longest session query
       [{ max_duration: 3600.0 }],
       // Top apps query
       [
-        { app_name: "Chrome", bundle_id: "com.google.Chrome", total_duration: 20000.0, session_count: 40 },
-        { app_name: "VS Code", bundle_id: "com.microsoft.VSCode", total_duration: 15000.0, session_count: 30 },
+        {
+          app_name: "Chrome",
+          bundle_id: "com.google.Chrome",
+          total_duration: 20000.0,
+          session_count: 40,
+        },
+        {
+          app_name: "VS Code",
+          bundle_id: "com.microsoft.VSCode",
+          total_duration: 15000.0,
+          session_count: 30,
+        },
       ],
     ]);
     const { GET } = await import("../../app/api/stats/route");
@@ -248,7 +265,14 @@ describe("GET /api/stats", () => {
   test("handles no data gracefully", async () => {
     mockD1([
       // Timezone lookup
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
       [{ max_duration: 0 }],
       [],
@@ -268,7 +292,14 @@ describe("GET /api/stats", () => {
   test("defaults to 'today' period", async () => {
     const { calls } = mockD1([
       // Timezone lookup
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
       [{ max_duration: 0 }],
       [],
@@ -289,7 +320,14 @@ describe("GET /api/stats", () => {
 
   test("week period includes start_time filter", async () => {
     const { calls } = mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 50, total_duration: 25000, total_apps: 10 }],
       [{ max_duration: 1800 }],
       [],
@@ -310,7 +348,14 @@ describe("GET /api/stats", () => {
 
   test("month period includes start_time filter", async () => {
     const { calls } = mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 200, total_duration: 100000, total_apps: 20 }],
       [{ max_duration: 7200 }],
       [],
@@ -330,7 +375,14 @@ describe("GET /api/stats", () => {
 
   test("invalid period falls back to today", async () => {
     mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 0, total_duration: 0, total_apps: 0 }],
       [{ max_duration: 0 }],
       [],
@@ -346,7 +398,14 @@ describe("GET /api/stats", () => {
 
   test("all period has no start_time filter", async () => {
     const { calls } = mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       [{ total_sessions: 100, total_duration: 50000, total_apps: 15 }],
       [{ max_duration: 3600 }],
       [],
@@ -366,7 +425,14 @@ describe("GET /api/stats", () => {
 
   test("handles null totals gracefully", async () => {
     mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       // Return empty array instead of row with values
       [],
       [],

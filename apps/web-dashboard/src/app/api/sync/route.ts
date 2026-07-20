@@ -6,7 +6,7 @@
 // writes batches to Cloudflare D1 asynchronously.
 
 import { randomUUID } from "node:crypto";
-import { requireApiKey, jsonOk, jsonError } from "@/lib/api-helpers";
+import { jsonError, jsonOk, requireApiKey } from "@/lib/api-helpers";
 import { getSyncQueue, type QueuedSession } from "@/lib/sync-queue";
 
 export const dynamic = "force-dynamic";
@@ -14,13 +14,7 @@ export const dynamic = "force-dynamic";
 const MAX_BATCH_SIZE = 1000;
 
 // Required fields per session
-const REQUIRED_FIELDS = [
-  "id",
-  "app_name",
-  "window_title",
-  "start_time",
-  "duration",
-] as const;
+const REQUIRED_FIELDS = ["id", "app_name", "window_title", "start_time", "duration"] as const;
 
 interface SyncSession {
   id: string;
@@ -56,10 +50,7 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   if (sessions.length > MAX_BATCH_SIZE) {
-    return jsonError(
-      `Batch too large: ${sessions.length} sessions (max ${MAX_BATCH_SIZE})`,
-      413
-    );
+    return jsonError(`Batch too large: ${sessions.length} sessions (max ${MAX_BATCH_SIZE})`, 413);
   }
 
   // Validate required fields on each session
@@ -70,10 +61,7 @@ export async function POST(req: Request): Promise<Response> {
     }
     for (const field of REQUIRED_FIELDS) {
       if (session[field] === undefined || session[field] === null) {
-        return jsonError(
-          `Session at index ${i} is missing required field: ${field}`,
-          400
-        );
+        return jsonError(`Session at index ${i} is missing required field: ${field}`, 400);
       }
     }
   }

@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Capture NextAuth callbacks for direct testing
@@ -64,7 +64,7 @@ describe("auth", () => {
     function signInCallback(
       email: string | undefined | null,
       allowedEmails: string[],
-      skipAuth: boolean
+      skipAuth: boolean,
     ): boolean {
       if (skipAuth) return true;
       const normalizedEmail = email?.toLowerCase();
@@ -78,26 +78,18 @@ describe("auth", () => {
       const result = signInCallback(
         "alice@example.com",
         ["alice@example.com", "bob@example.com"],
-        false
+        false,
       );
       expect(result).toBe(true);
     });
 
     test("rejects user with email not in allowlist", () => {
-      const result = signInCallback(
-        "hacker@evil.com",
-        ["alice@example.com"],
-        false
-      );
+      const result = signInCallback("hacker@evil.com", ["alice@example.com"], false);
       expect(result).toBe(false);
     });
 
     test("case-insensitive email matching", () => {
-      const result = signInCallback(
-        "ALICE@EXAMPLE.COM",
-        ["alice@example.com"],
-        false
-      );
+      const result = signInCallback("ALICE@EXAMPLE.COM", ["alice@example.com"], false);
       expect(result).toBe(true);
     });
 
@@ -132,7 +124,7 @@ describe("auth", () => {
     function jwtCallback(
       token: Record<string, unknown>,
       user?: { id?: string; email?: string; name?: string; image?: string },
-      account?: { providerAccountId?: string }
+      account?: { providerAccountId?: string },
     ): Record<string, unknown> {
       if (user) {
         token.id = account?.providerAccountId ?? token.sub;
@@ -198,7 +190,7 @@ describe("auth", () => {
   describe("session callback", () => {
     function sessionCallback(
       session: { user?: { id?: string } },
-      token: { id?: string }
+      token: { id?: string },
     ): { user?: { id?: string } } {
       if (session.user && token.id) {
         session.user.id = token.id as string;
@@ -239,7 +231,7 @@ describe("auth", () => {
     function routeDecision(
       pathname: string,
       isLoggedIn: boolean,
-      skipAuth: boolean
+      skipAuth: boolean,
     ): "next" | "redirect-home" | "redirect-login" {
       if (skipAuth) return "next";
       if (pathname.startsWith("/api/auth")) return "next";
@@ -315,7 +307,10 @@ describe("auth", () => {
       const token = { sub: "random-sub" } as Record<string, unknown>;
       const user = { id: "random-id", email: "a@b.com", name: "A", image: "http://img" };
       const account = { providerAccountId: "stable-123" };
-      const result = (await capturedCallbacks.jwt!({ token, user, account })) as Record<string, unknown>;
+      const result = (await capturedCallbacks.jwt!({ token, user, account })) as Record<
+        string,
+        unknown
+      >;
       expect(result.id).toBe("stable-123");
       expect(result.email).toBe("a@b.com");
       expect(result.name).toBe("A");
@@ -326,7 +321,10 @@ describe("auth", () => {
       await import("@/auth");
       const token = { sub: "fallback" } as Record<string, unknown>;
       const user = { id: "x", email: "a@b.com", name: "A", image: "http://img" };
-      const result = (await capturedCallbacks.jwt!({ token, user, account: undefined })) as Record<string, unknown>;
+      const result = (await capturedCallbacks.jwt!({ token, user, account: undefined })) as Record<
+        string,
+        unknown
+      >;
       expect(result.id).toBe("fallback");
     });
 
@@ -341,7 +339,9 @@ describe("auth", () => {
       await import("@/auth");
       const session = { user: { id: undefined as string | undefined } };
       const token = { id: "u123" };
-      const result = (await capturedCallbacks.session!({ session, token })) as { user: { id?: string } };
+      const result = (await capturedCallbacks.session!({ session, token })) as {
+        user: { id?: string };
+      };
       expect(result.user.id).toBe("u123");
     });
 
@@ -349,7 +349,9 @@ describe("auth", () => {
       await import("@/auth");
       const session = { user: {} };
       const token = {};
-      const result = (await capturedCallbacks.session!({ session, token })) as { user: { id?: string } };
+      const result = (await capturedCallbacks.session!({ session, token })) as {
+        user: { id?: string };
+      };
       expect(result.user.id).toBeUndefined();
     });
   });

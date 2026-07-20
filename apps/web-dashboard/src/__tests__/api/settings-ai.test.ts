@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/settings/ai route handler tests
@@ -36,8 +36,8 @@ function mockD1(responses: unknown[][] = [[]]) {
           result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 

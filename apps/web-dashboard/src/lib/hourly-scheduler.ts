@@ -103,9 +103,7 @@ export class HourlyScheduler {
 // ---------------------------------------------------------------------------
 
 /** Create a new HourlyScheduler instance. Useful for testing. */
-export function createHourlyScheduler(
-  options?: HourlySchedulerOptions,
-): HourlyScheduler {
+export function createHourlyScheduler(options?: HourlySchedulerOptions): HourlyScheduler {
   return new HourlyScheduler(options);
 }
 

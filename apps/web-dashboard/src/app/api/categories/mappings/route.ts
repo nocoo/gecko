@@ -1,8 +1,8 @@
 // GET /api/categories/mappings — List app->category mappings for the current user
 // PUT /api/categories/mappings — Set app->category mappings (upsert)
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { query, execute } from "@/lib/d1";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { execute, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 
@@ -54,10 +54,7 @@ export async function PUT(req: Request): Promise<Response> {
   // Validate each entry
   for (const m of body.mappings) {
     if (!m.bundleId?.trim() || !m.categoryId?.trim()) {
-      return jsonError(
-        "Each mapping must have bundleId and categoryId",
-        400,
-      );
+      return jsonError("Each mapping must have bundleId and categoryId", 400);
     }
   }
 
@@ -70,11 +67,7 @@ export async function PUT(req: Request): Promise<Response> {
   for (let i = 0; i < mappings.length; i += BATCH_SIZE) {
     const batch = mappings.slice(i, i + BATCH_SIZE);
     const placeholders = batch.map(() => "(?, ?, ?, datetime('now'))").join(", ");
-    const params = batch.flatMap((m) => [
-      user.userId,
-      m.bundleId.trim(),
-      m.categoryId.trim(),
-    ]);
+    const params = batch.flatMap((m) => [user.userId, m.bundleId.trim(), m.categoryId.trim()]);
 
     await execute(
       `INSERT OR REPLACE INTO app_category_mappings (user_id, bundle_id, category_id, created_at)

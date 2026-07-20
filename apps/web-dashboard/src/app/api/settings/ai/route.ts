@@ -3,14 +3,9 @@
  * PUT  /api/settings/ai — Save AI configuration
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { type AiProvider, type AuthType, isValidProvider, type SdkType } from "@nocoo/next-ai";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { settingsRepo } from "@/lib/settings-repo";
-import {
-  isValidProvider,
-  type AiProvider,
-  type AuthType,
-  type SdkType,
-} from "@nocoo/next-ai";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +14,7 @@ async function readAiSettings(userId: string) {
   const all = await settingsRepo.findByUserId(userId);
   const map = new Map(all.map((s) => [s.key, s.value]));
   const rawAuth = map.get("ai.authType") ?? "";
-  const authType: AuthType | "" =
-    rawAuth === "bearer" || rawAuth === "apiKey" ? rawAuth : "";
+  const authType: AuthType | "" = rawAuth === "bearer" || rawAuth === "apiKey" ? rawAuth : "";
   return {
     provider: (map.get("ai.provider") ?? "") as AiProvider | "",
     apiKey: map.get("ai.apiKey") ?? "",

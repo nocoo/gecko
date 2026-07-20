@@ -12,12 +12,12 @@
 
 "use client";
 
-import { formatDurationCompact } from "@/lib/chart-config";
-import { withAlpha } from "@/lib/palette";
-import { getHashColor } from "@/lib/hash-color";
 import { useIsDark } from "@/hooks/use-dark";
-import { localDateToUTCEpoch, epochToDateStr } from "@/lib/timezone";
-import type { SessionForChart, AppSummary } from "@/services/daily-stats";
+import { formatDurationCompact } from "@/lib/chart-config";
+import { getHashColor } from "@/lib/hash-color";
+import { withAlpha } from "@/lib/palette";
+import { epochToDateStr, localDateToUTCEpoch } from "@/lib/timezone";
+import type { AppSummary, SessionForChart } from "@/services/daily-stats";
 
 // ---------------------------------------------------------------------------
 // Layout constants
@@ -139,21 +139,14 @@ export function formatTime(minutesSinceMidnight: number): string {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GanttChart({
-  sessions,
-  topApps,
-  timezone,
-  className = "",
-}: GanttChartProps) {
+export function GanttChart({ sessions, topApps, timezone, className = "" }: GanttChartProps) {
   const isDark = useIsDark();
   const { rows } = buildGanttData(sessions, topApps, timezone, isDark);
 
   if (rows.length === 0) {
     return (
       <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-        <h3 className="text-sm font-normal text-muted-foreground mb-2">
-          Timeline
-        </h3>
+        <h3 className="text-sm font-normal text-muted-foreground mb-2">Timeline</h3>
         <p className="text-sm text-muted-foreground">No sessions to display.</p>
       </div>
     );
@@ -172,17 +165,12 @@ export function GanttChart({
 
   return (
     <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-      <h3 className="text-sm font-normal text-muted-foreground mb-3">
-        Timeline
-      </h3>
+      <h3 className="text-sm font-normal text-muted-foreground mb-3">Timeline</h3>
 
       <div className="overflow-x-auto">
         <div className="min-w-[500px]">
           {/* Time axis (top) */}
-          <div
-            className="relative mb-1"
-            style={{ height: AXIS_HEIGHT, marginLeft: LABEL_WIDTH }}
-          >
+          <div className="relative mb-1" style={{ height: AXIS_HEIGHT, marginLeft: LABEL_WIDTH }}>
             {ticks.map((t) => {
               const pct = ((t - xMin) / range) * 100;
               return (
@@ -224,10 +212,7 @@ export function GanttChart({
             {rows.map((row) => {
               const color = getHashColor(row.appName, isDark).fg;
               return (
-                <div
-                  key={row.appName}
-                  className="flex items-center gap-0 mb-0.5"
-                >
+                <div key={row.appName} className="flex items-center gap-0 mb-0.5">
                   {/* App label */}
                   <div
                     className="shrink-0 text-xs text-muted-foreground truncate pr-2 text-right"
@@ -280,17 +265,12 @@ export function GanttChart({
         {rows.slice(0, 10).map((row) => {
           const color = getHashColor(row.appName).fg;
           return (
-            <div
-              key={row.appName}
-              className="flex items-center gap-1.5 text-xs"
-            >
+            <div key={row.appName} className="flex items-center gap-1.5 text-xs">
               <span
                 className="inline-block size-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-muted-foreground truncate max-w-[100px]">
-                {row.appName}
-              </span>
+              <span className="text-muted-foreground truncate max-w-[100px]">{row.appName}</span>
               <span className="text-muted-foreground">
                 {formatDurationCompact(row.totalDuration)}
               </span>

@@ -7,7 +7,7 @@
  * daily-analyze.test.ts.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -75,7 +75,12 @@ function mockD1(responses: unknown[][] = [[]]) {
 // ---------------------------------------------------------------------------
 
 /** Timezone settings row mock for Asia/Shanghai. */
-const tzRow = { user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() };
+const tzRow = {
+  user_id: "e2e-test-user",
+  key: "timezone",
+  value: "Asia/Shanghai",
+  updated_at: Date.now(),
+};
 
 /** A cached AI result row. */
 const cachedAiRow = {
@@ -100,7 +105,12 @@ const cachedAiRow = {
 const aiSettingsRows = [
   { user_id: "e2e-test-user", key: "ai.provider", value: "anthropic", updated_at: Date.now() },
   { user_id: "e2e-test-user", key: "ai.apiKey", value: "sk-test-key", updated_at: Date.now() },
-  { user_id: "e2e-test-user", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: Date.now() },
+  {
+    user_id: "e2e-test-user",
+    key: "ai.model",
+    value: "claude-sonnet-4-20250514",
+    updated_at: Date.now(),
+  },
 ];
 
 function makeAnalyzeRequest(date: string, force = false): Request {
@@ -211,7 +221,15 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 3. fetchSessionsForDate — has sessions but will fail at AI call
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 4-6. loadAppContext — categories, tags, notes
       [],
@@ -238,7 +256,15 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext — categories, tags, notes
       [],
@@ -287,7 +313,15 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate — has sessions
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext — categories, tags, notes
       [],
@@ -320,10 +354,20 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
@@ -350,10 +394,20 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
@@ -389,16 +443,35 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
       // 8. dailySummaryRepo.upsertAiResult (cache write)
       [],
       // 9. settingsRepo.findByKey (notification.email.onManualAnalyze) — enabled
-      [{ user_id: "e2e-test-user", key: "notification.email.onManualAnalyze", value: "true", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "notification.email.onManualAnalyze",
+          value: "true",
+          updated_at: Date.now(),
+        },
+      ],
       // 10. sendAnalysisEmail will make D1 calls — provide empty responses
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
@@ -440,10 +513,20 @@ describe("POST /api/daily/[date]/analyze", () => {
       aiSettingsRows,
       // 4. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: 1772157600, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: 1772157600,
+          duration: 3600,
+        },
       ],
       // 5-7. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
       // 8. dailySummaryRepo.upsertAiResult
       [],
       // 9. settingsRepo.findByKey — not enabled

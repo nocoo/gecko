@@ -1,15 +1,9 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import {
-  DayPicker,
-  getDefaultClassNames,
-  type DayPickerProps,
-} from "react-day-picker"
-
-import { cn } from "@/lib/utils"
-import { buttonVariants } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { DayPicker, type DayPickerProps, getDefaultClassNames } from "react-day-picker";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 function Calendar({
   className,
@@ -18,7 +12,7 @@ function Calendar({
   components,
   ...props
 }: DayPickerProps) {
-  const defaultClassNames = getDefaultClassNames()
+  const defaultClassNames = getDefaultClassNames();
 
   return (
     <DayPicker
@@ -32,10 +26,7 @@ function Calendar({
           defaultClassNames.month_caption,
           "flex h-7 items-center justify-center px-8",
         ),
-        caption_label: cn(
-          defaultClassNames.caption_label,
-          "text-sm font-medium",
-        ),
+        caption_label: cn(defaultClassNames.caption_label, "text-sm font-medium"),
         nav: cn(
           defaultClassNames.nav,
           "absolute inset-x-0 top-0 flex items-center justify-between",
@@ -64,10 +55,7 @@ function Calendar({
           buttonVariants({ variant: "ghost", size: "icon-sm" }),
           "relative size-13 p-0 font-normal aria-selected:opacity-100",
         ),
-        range_start: cn(
-          defaultClassNames.range_start,
-          "rounded-l-md bg-accent",
-        ),
+        range_start: cn(defaultClassNames.range_start, "rounded-l-md bg-accent"),
         range_end: cn(defaultClassNames.range_end, "rounded-r-md bg-accent"),
         range_middle: cn(
           defaultClassNames.range_middle,
@@ -85,28 +73,20 @@ function Calendar({
           defaultClassNames.outside,
           "text-muted-foreground/50 aria-selected:text-muted-foreground",
         ),
-        disabled: cn(
-          defaultClassNames.disabled,
-          "text-muted-foreground/40 opacity-50",
-        ),
+        disabled: cn(defaultClassNames.disabled, "text-muted-foreground/40 opacity-50"),
         hidden: cn(defaultClassNames.hidden, "invisible"),
         ...classNames,
       }}
       components={{
         Chevron: ({ orientation, className: chevronClassName, ...chevronProps }) => {
-          const Icon = orientation === "left" ? ChevronLeft : ChevronRight
-          return (
-            <Icon
-              className={cn("size-4", chevronClassName)}
-              {...chevronProps}
-            />
-          )
+          const Icon = orientation === "left" ? ChevronLeft : ChevronRight;
+          return <Icon className={cn("size-4", chevronClassName)} {...chevronProps} />;
         },
         ...components,
       }}
       {...props}
     />
-  )
+  );
 }
 
-export { Calendar }
+export { Calendar };

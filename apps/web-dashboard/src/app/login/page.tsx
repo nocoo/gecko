@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
 import { Suspense } from "react";
 import { Github } from "@/components/icons/github";
-import { APP_VERSION } from "@/lib/version";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import LoadingScreen from "@/components/loading-screen";
+import { APP_VERSION } from "@/lib/version";
 
 function Barcode() {
   const bars = [2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1];
@@ -96,16 +96,8 @@ function LoginContent() {
                 }}
               />
               <div className="flex items-center gap-2">
-                <Image
-                  src="/logo-24.png"
-                  alt="Gecko"
-                  width={16}
-                  height={16}
-                  unoptimized
-                />
-                <span className="text-sm font-semibold text-primary-foreground">
-                  Gecko
-                </span>
+                <Image src="/logo-24.png" alt="Gecko" width={16} height={16} unoptimized />
+                <span className="text-sm font-semibold text-primary-foreground">Gecko</span>
               </div>
               <span className="text-micro font-medium uppercase tracking-widest text-primary-foreground/60">
                 v{APP_VERSION}
@@ -136,9 +128,7 @@ function LoginContent() {
               />
             </div>
 
-            <p className="mt-5 text-lg font-semibold text-foreground">
-              Welcome
-            </p>
+            <p className="mt-5 text-lg font-semibold text-foreground">Welcome</p>
             <p className="mt-1 text-xs text-muted-foreground text-center">
               Sign in to view your screen time analytics
             </p>
@@ -160,6 +150,7 @@ function LoginContent() {
 
             {/* Google Sign-in button */}
             <button
+              type="button"
               onClick={handleGoogleLogin}
               className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-secondary px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent cursor-pointer"
             >
@@ -194,9 +185,7 @@ function LoginContent() {
           <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center border-t border-border bg-secondary/50 py-2.5">
             <div className="flex items-center gap-1.5">
               <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="text-micro text-muted-foreground font-mono">
-                Secure Connection
-              </span>
+              <span className="text-micro text-muted-foreground font-mono">Secure Connection</span>
             </div>
           </div>
         </div>

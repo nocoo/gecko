@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/stats route handler tests
@@ -36,15 +36,20 @@ function mockD1(responses: unknown[][] = [[]]) {
           result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 
   return { calls };
 }
 
-const tzRow = { user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: 1000 };
+const tzRow = {
+  user_id: "e2e-test-user",
+  key: "timezone",
+  value: "Asia/Shanghai",
+  updated_at: 1000,
+};
 
 describe("GET /api/stats", () => {
   test("returns aggregated stats for default period (today)", async () => {
@@ -53,7 +58,12 @@ describe("GET /api/stats", () => {
       [{ total_sessions: 10, total_duration: 3600, total_apps: 3 }], // totals
       [{ max_duration: 900 }], // longest
       [
-        { app_name: "Chrome", bundle_id: "com.google.Chrome", total_duration: 2000, session_count: 5 },
+        {
+          app_name: "Chrome",
+          bundle_id: "com.google.Chrome",
+          total_duration: 2000,
+          session_count: 5,
+        },
         { app_name: "Xcode", bundle_id: "com.apple.Xcode", total_duration: 1600, session_count: 5 },
       ], // topApps
     ]);

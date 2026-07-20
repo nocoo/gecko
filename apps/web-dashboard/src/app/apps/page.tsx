@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { AppShell } from "@/components/layout";
+import {
+  AlertTriangle,
+  AppWindow,
+  ArrowUpDown,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Tag as TagIcon,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CategoryPill } from "@/components/category-pill";
+import { AppShell } from "@/components/layout";
 import { TagBadge } from "@/components/tag-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import {
-  AppWindow,
-  Search,
-  ArrowUpDown,
-  AlertTriangle,
-  Pencil,
-  Plus,
-  X,
-  Save,
-  Tag as TagIcon,
-} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -106,15 +106,14 @@ export default function AppsPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [appsRes, catsRes, tagsRes, catMapRes, tagMapRes, notesRes] =
-        await Promise.all([
-          fetch("/api/apps"),
-          fetch("/api/categories"),
-          fetch("/api/tags"),
-          fetch("/api/categories/mappings"),
-          fetch("/api/tags/mappings"),
-          fetch("/api/apps/notes"),
-        ]);
+      const [appsRes, catsRes, tagsRes, catMapRes, tagMapRes, notesRes] = await Promise.all([
+        fetch("/api/apps"),
+        fetch("/api/categories"),
+        fetch("/api/tags"),
+        fetch("/api/categories/mappings"),
+        fetch("/api/tags/mappings"),
+        fetch("/api/apps/notes"),
+      ]);
 
       if (!appsRes.ok) throw new Error("Failed to load apps");
       if (!catsRes.ok) throw new Error("Failed to load categories");
@@ -123,15 +122,14 @@ export default function AppsPage() {
       if (!tagMapRes.ok) throw new Error("Failed to load tag mappings");
       if (!notesRes.ok) throw new Error("Failed to load notes");
 
-      const [appsData, catsData, tagsData, catMapData, tagMapData, notesData] =
-        await Promise.all([
-          appsRes.json(),
-          catsRes.json(),
-          tagsRes.json(),
-          catMapRes.json(),
-          tagMapRes.json(),
-          notesRes.json(),
-        ]);
+      const [appsData, catsData, tagsData, catMapData, tagMapData, notesData] = await Promise.all([
+        appsRes.json(),
+        catsRes.json(),
+        tagsRes.json(),
+        catMapRes.json(),
+        tagMapRes.json(),
+        notesRes.json(),
+      ]);
 
       setApps(appsData.apps);
       setCategories(catsData.categories);
@@ -208,9 +206,7 @@ export default function AppsPage() {
   function toggleTag(bundleId: string, tagId: string) {
     setPendingTags((prev) => {
       const next = new Map(prev);
-      const current = new Set(
-        prev.get(bundleId) ?? tagMappings.get(bundleId) ?? new Set<string>(),
-      );
+      const current = new Set(prev.get(bundleId) ?? tagMappings.get(bundleId) ?? new Set<string>());
 
       if (current.has(tagId)) {
         current.delete(tagId);
@@ -266,14 +262,11 @@ export default function AppsPage() {
   // Total pending count
   // ---------------------------------------------------------------------------
 
-  const totalPending =
-    pendingCategories.size + pendingTags.size + pendingNotes.size;
+  const totalPending = pendingCategories.size + pendingTags.size + pendingNotes.size;
 
   function hasAppChange(bundleId: string): boolean {
     return (
-      pendingCategories.has(bundleId) ||
-      pendingTags.has(bundleId) ||
-      pendingNotes.has(bundleId)
+      pendingCategories.has(bundleId) || pendingTags.has(bundleId) || pendingNotes.has(bundleId)
     );
   }
 
@@ -305,12 +298,10 @@ export default function AppsPage() {
 
       // Save tag mapping changes
       if (pendingTags.size > 0) {
-        const appsPayload = Array.from(pendingTags.entries()).map(
-          ([bundleId, tagIds]) => ({
-            bundleId,
-            tagIds: Array.from(tagIds),
-          }),
-        );
+        const appsPayload = Array.from(pendingTags.entries()).map(([bundleId, tagIds]) => ({
+          bundleId,
+          tagIds: Array.from(tagIds),
+        }));
         promises.push(
           fetch("/api/tags/mappings", {
             method: "POST",
@@ -387,8 +378,7 @@ export default function AppsPage() {
       const query = filter.toLowerCase();
       if (!query) return true;
       return (
-        app.appName.toLowerCase().includes(query) ||
-        app.bundleId.toLowerCase().includes(query)
+        app.appName.toLowerCase().includes(query) || app.bundleId.toLowerCase().includes(query)
       );
     })
     .sort((a, b) => {
@@ -424,12 +414,7 @@ export default function AppsPage() {
           </div>
           {totalPending > 0 && (
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDiscard}
-                disabled={saving}
-              >
+              <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
                 <X className="size-4" />
                 Discard
               </Button>
@@ -456,15 +441,11 @@ export default function AppsPage() {
         ) : apps.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <AppWindow
-                className="size-4 text-muted-foreground"
-                strokeWidth={1.5}
-              />
+              <AppWindow className="size-4 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">No tracked apps yet</p>
             <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-              Start using the Gecko macOS app and your tracked apps will appear
-              here.
+              Start using the Gecko macOS app and your tracked apps will appear here.
             </p>
           </div>
         ) : (
@@ -481,10 +462,7 @@ export default function AppsPage() {
                 />
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <ArrowUpDown
-                  className="size-4 text-muted-foreground"
-                  strokeWidth={1.5}
-                />
+                <ArrowUpDown className="size-4 text-muted-foreground" strokeWidth={1.5} />
                 <Select
                   value={`${sortField}-${sortDir}`}
                   onChange={(e) => {
@@ -520,28 +498,18 @@ export default function AppsPage() {
                   isCatExpanded={expandedCatApp === app.bundleId}
                   isTagExpanded={expandedTagApp === app.bundleId}
                   isNoteExpanded={expandedNoteApp === app.bundleId}
-                  onCategoryChange={(catId) =>
-                    handleCategoryChange(app.bundleId, catId)
-                  }
+                  onCategoryChange={(catId) => handleCategoryChange(app.bundleId, catId)}
                   onToggleTag={(tagId) => toggleTag(app.bundleId, tagId)}
-                  onNoteChange={(note) =>
-                    handleNoteChange(app.bundleId, note)
-                  }
+                  onNoteChange={(note) => handleNoteChange(app.bundleId, note)}
                   onCreateTag={createTag}
                   onToggleCatExpand={() =>
-                    setExpandedCatApp(
-                      expandedCatApp === app.bundleId ? null : app.bundleId,
-                    )
+                    setExpandedCatApp(expandedCatApp === app.bundleId ? null : app.bundleId)
                   }
                   onToggleTagExpand={() =>
-                    setExpandedTagApp(
-                      expandedTagApp === app.bundleId ? null : app.bundleId,
-                    )
+                    setExpandedTagApp(expandedTagApp === app.bundleId ? null : app.bundleId)
                   }
                   onToggleNoteExpand={() =>
-                    setExpandedNoteApp(
-                      expandedNoteApp === app.bundleId ? null : app.bundleId,
-                    )
+                    setExpandedNoteApp(expandedNoteApp === app.bundleId ? null : app.bundleId)
                   }
                 />
               ))}
@@ -699,13 +667,11 @@ function AppRow({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{app.appName}</p>
-          <p className="text-xs text-muted-foreground truncate">
-            {app.bundleId}
-          </p>
+          <p className="text-xs text-muted-foreground truncate">{app.bundleId}</p>
         </div>
         <p className="shrink-0 text-xs text-muted-foreground tabular-nums">
-          {formatDuration(app.totalDuration)} &middot;{" "}
-          {app.sessionCount} session{app.sessionCount === 1 ? "" : "s"}
+          {formatDuration(app.totalDuration)} &middot; {app.sessionCount} session
+          {app.sessionCount === 1 ? "" : "s"}
         </p>
       </div>
 
@@ -768,7 +734,10 @@ function AppRow({
             {selectedCategory ? "Change" : "Category"}
           </button>
           {isCatExpanded && (
-            <div role="listbox" className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md">
+            <div
+              role="listbox"
+              className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md"
+            >
               {categories.map((cat, idx) => (
                 <button
                   key={cat.id}
@@ -785,12 +754,7 @@ function AppRow({
                     focusedCatIdx === idx && "bg-secondary",
                   )}
                 >
-                  <CategoryPill
-                    title={cat.title}
-                    icon={cat.icon}
-                    colorKey={cat.slug}
-                    size="sm"
-                  />
+                  <CategoryPill title={cat.title} icon={cat.icon} colorKey={cat.slug} size="sm" />
                 </button>
               ))}
             </div>
@@ -864,9 +828,7 @@ function AppRow({
                         onClick={() => onToggleTag(tag.id)}
                         className={cn(
                           "rounded-full transition-[box-shadow,opacity]",
-                          isSelected
-                            ? "ring-2 ring-primary/40"
-                            : "opacity-50 hover:opacity-80",
+                          isSelected ? "ring-2 ring-primary/40" : "opacity-50 hover:opacity-80",
                           focusedTagIdx === idx && "ring-2 ring-foreground/40",
                         )}
                       >
@@ -916,7 +878,6 @@ function AppRow({
               placeholder="Add a note (e.g. 'Work email client', 'Personal project')..."
               value={effectiveNote}
               onChange={(e) => onNoteChange(e.target.value)}
-              autoFocus
             />
             <button
               type="button"
@@ -933,10 +894,11 @@ function AppRow({
             onClick={onToggleNoteExpand}
             className="inline-flex items-center gap-1.5 group text-left"
           >
-            <span className="text-xs text-muted-foreground line-clamp-1">
-              {effectiveNote}
-            </span>
-            <Pencil className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+            <span className="text-xs text-muted-foreground line-clamp-1">{effectiveNote}</span>
+            <Pencil
+              className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              strokeWidth={1.5}
+            />
           </button>
         ) : (
           <button

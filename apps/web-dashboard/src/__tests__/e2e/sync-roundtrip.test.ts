@@ -6,8 +6,8 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -60,7 +60,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -142,14 +142,12 @@ describe.skipIf(!SHOULD_RUN)("E2E: Sync round-trip", () => {
       expect(res.status).toBe(200);
 
       const body = await res.json();
-      const synced = body.sessions.find(
-        (s: { id: string }) => s.id === session.id
-      );
+      const synced = body.sessions.find((s: { id: string }) => s.id === session.id);
 
       // May not find it if D1 is not configured in test env — skip gracefully
       if (!synced) {
         console.log(
-          "[E2E] Session not found in D1 — likely no real D1 configured. Skipping assertion."
+          "[E2E] Session not found in D1 — likely no real D1 configured. Skipping assertion.",
         );
         return;
       }
@@ -213,9 +211,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Sync round-trip", () => {
 
   describe("Scenario: Batch size enforcement", () => {
     test("returns 413 when batch exceeds 1000 sessions", async () => {
-      const sessions = Array.from({ length: 1001 }, (_, i) =>
-        makeSession({ id: `overflow-${i}` })
-      );
+      const sessions = Array.from({ length: 1001 }, (_, i) => makeSession({ id: `overflow-${i}` }));
 
       const res = await syncSessions(sessions);
       expect(res.status).toBe(413);

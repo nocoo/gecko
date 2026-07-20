@@ -2,7 +2,7 @@
  * Tests for daily-summary-repo.ts — CRUD via D1 REST API.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 
 const originalFetch = globalThis.fetch;
@@ -32,7 +32,13 @@ function mockD1(responses: Array<{ results: unknown[]; meta?: { changes: number 
       new Response(
         JSON.stringify({
           success: true,
-          result: [{ results: resp.results, success: true, meta: resp.meta ?? { changes: 0, last_row_id: 0 } }],
+          result: [
+            {
+              results: resp.results,
+              success: true,
+              meta: resp.meta ?? { changes: 0, last_row_id: 0 },
+            },
+          ],
           errors: [],
         }),
         { status: 200 },

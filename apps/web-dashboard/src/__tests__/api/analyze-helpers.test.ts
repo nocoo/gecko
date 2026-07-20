@@ -3,7 +3,7 @@
  * These are exported with _ prefix specifically for testing.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -108,14 +108,17 @@ describe("fmtDuration", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildSessionTimeline", () => {
-  let buildSessionTimeline: (sessions: Array<{
-    appName: string;
-    bundleId: string | null;
-    windowTitle: string;
-    url: string | null;
-    startTime: number;
-    duration: number;
-  }>, tz: string) => string;
+  let buildSessionTimeline: (
+    sessions: Array<{
+      appName: string;
+      bundleId: string | null;
+      windowTitle: string;
+      url: string | null;
+      startTime: number;
+      duration: number;
+    }>,
+    tz: string,
+  ) => string;
 
   beforeEach(async () => {
     const mod = await import("../../app/api/daily/[date]/analyze/route");
@@ -130,7 +133,15 @@ describe("buildSessionTimeline", () => {
     // 2026-02-27 09:00 CST = 2026-02-27T01:00:00Z
     const epoch = Date.UTC(2026, 1, 27, 1, 0, 0) / 1000;
     const sessions = [
-      { appName: "loginwindow", bundleId: "com.apple.loginwindow", windowTitle: "loginwindow", url: null, startTime: epoch, duration: 300, id: "1" },
+      {
+        appName: "loginwindow",
+        bundleId: "com.apple.loginwindow",
+        windowTitle: "loginwindow",
+        url: null,
+        startTime: epoch,
+        duration: 300,
+        id: "1",
+      },
     ];
     const result = buildSessionTimeline(sessions as never, "Asia/Shanghai");
     expect(result).toContain("[IDLE/锁屏]");
@@ -139,7 +150,15 @@ describe("buildSessionTimeline", () => {
   test("includes browser URL", () => {
     const epoch = Date.UTC(2026, 1, 27, 1, 0, 0) / 1000;
     const sessions = [
-      { appName: "Chrome", bundleId: "com.google.Chrome", windowTitle: "GitHub", url: "https://github.com", startTime: epoch, duration: 600, id: "1" },
+      {
+        appName: "Chrome",
+        bundleId: "com.google.Chrome",
+        windowTitle: "GitHub",
+        url: "https://github.com",
+        startTime: epoch,
+        duration: 600,
+        id: "1",
+      },
     ];
     const result = buildSessionTimeline(sessions as never, "Asia/Shanghai");
     expect(result).toContain("https://github.com");
@@ -149,8 +168,24 @@ describe("buildSessionTimeline", () => {
   test("sorts sessions chronologically", () => {
     const epoch = Date.UTC(2026, 1, 27, 1, 0, 0) / 1000;
     const sessions = [
-      { appName: "Slack", bundleId: "com.slack", windowTitle: "", url: null, startTime: epoch + 3600, duration: 300, id: "2" },
-      { appName: "VS Code", bundleId: "com.microsoft.vscode", windowTitle: "", url: null, startTime: epoch, duration: 600, id: "1" },
+      {
+        appName: "Slack",
+        bundleId: "com.slack",
+        windowTitle: "",
+        url: null,
+        startTime: epoch + 3600,
+        duration: 300,
+        id: "2",
+      },
+      {
+        appName: "VS Code",
+        bundleId: "com.microsoft.vscode",
+        windowTitle: "",
+        url: null,
+        startTime: epoch,
+        duration: 600,
+        id: "1",
+      },
     ];
     const result = buildSessionTimeline(sessions as never, "Asia/Shanghai");
     const lines = result.split("\n");
@@ -165,7 +200,10 @@ describe("buildSessionTimeline", () => {
 
 describe("buildAppContextSection", () => {
   let buildAppContextSection: (
-    appContext: Map<string, { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }>,
+    appContext: Map<
+      string,
+      { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }
+    >,
     bundleIdsInDay: Set<string>,
   ) => string;
 
@@ -182,7 +220,10 @@ describe("buildAppContextSection", () => {
 
   test("returns empty string when context exists but not in day bundle IDs", () => {
     const ctx = new Map([
-      ["com.google.Chrome", { bundleId: "com.google.Chrome", categoryTitle: "Browser", tags: [], note: undefined }],
+      [
+        "com.google.Chrome",
+        { bundleId: "com.google.Chrome", categoryTitle: "Browser", tags: [], note: undefined },
+      ],
     ]);
     const ids = new Set(["com.apple.Terminal"]);
     expect(buildAppContextSection(ctx, ids)).toBe("");
@@ -190,12 +231,15 @@ describe("buildAppContextSection", () => {
 
   test("includes category, tags, and note", () => {
     const ctx = new Map([
-      ["com.google.Chrome", {
-        bundleId: "com.google.Chrome",
-        categoryTitle: "Browser",
-        tags: ["work", "research"],
-        note: "Primary browser",
-      }],
+      [
+        "com.google.Chrome",
+        {
+          bundleId: "com.google.Chrome",
+          categoryTitle: "Browser",
+          tags: ["work", "research"],
+          note: "Primary browser",
+        },
+      ],
     ]);
     const ids = new Set(["com.google.Chrome"]);
     const result = buildAppContextSection(ctx, ids);
@@ -207,9 +251,7 @@ describe("buildAppContextSection", () => {
   });
 
   test("excludes context entries with no useful info", () => {
-    const ctx = new Map([
-      ["com.apple.Terminal", { bundleId: "com.apple.Terminal", tags: [] }],
-    ]);
+    const ctx = new Map([["com.apple.Terminal", { bundleId: "com.apple.Terminal", tags: [] }]]);
     const ids = new Set(["com.apple.Terminal"]);
     expect(buildAppContextSection(ctx, ids)).toBe("");
   });
@@ -220,7 +262,11 @@ describe("buildAppContextSection", () => {
 // ---------------------------------------------------------------------------
 
 describe("loadAppContext", () => {
-  let loadAppContext: (userId: string) => Promise<Map<string, { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }>>;
+  let loadAppContext: (
+    userId: string,
+  ) => Promise<
+    Map<string, { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }>
+  >;
 
   beforeEach(async () => {
     const mod = await import("../../app/api/daily/[date]/analyze/route");
@@ -238,7 +284,10 @@ describe("loadAppContext", () => {
       // categories
       [{ bundle_id: "com.google.Chrome", title: "Browser" }],
       // tags
-      [{ bundle_id: "com.google.Chrome", tag_name: "work" }, { bundle_id: "com.google.Chrome", tag_name: "research" }],
+      [
+        { bundle_id: "com.google.Chrome", tag_name: "work" },
+        { bundle_id: "com.google.Chrome", tag_name: "research" },
+      ],
       // notes
       [{ bundle_id: "com.google.Chrome", note: "Main browser" }],
     ]);
@@ -269,8 +318,15 @@ describe("loadAppContext", () => {
 
 describe("loadAiSettings", () => {
   let loadAiSettings: (userId: string) => Promise<{
-    provider: string; apiKey: string; model: string; baseURL: string; sdkType: string;
-    promptSection1: string; promptSection2: string; promptSection3: string; promptSection4: string;
+    provider: string;
+    apiKey: string;
+    model: string;
+    baseURL: string;
+    sdkType: string;
+    promptSection1: string;
+    promptSection2: string;
+    promptSection3: string;
+    promptSection4: string;
   }>;
 
   beforeEach(async () => {
@@ -391,13 +447,13 @@ describe("parseAiResponse", () => {
   });
 
   test("strips markdown code fences", () => {
-    const withFences = "```json\n" + validResponse + "\n```";
+    const withFences = `\`\`\`json\n${validResponse}\n\`\`\``;
     const result = parseAiResponse(withFences);
     expect(result.score).toBe(78);
   });
 
   test("strips code fences without language tag", () => {
-    const withFences = "```\n" + validResponse + "\n```";
+    const withFences = `\`\`\`\n${validResponse}\n\`\`\``;
     const result = parseAiResponse(withFences);
     expect(result.score).toBe(78);
   });
@@ -593,11 +649,15 @@ describe("expandTemplate", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildPrompt", () => {
-  type CustomPromptSections = import("../../app/api/daily/[date]/analyze/route").CustomPromptSections;
+  type CustomPromptSections =
+    import("../../app/api/daily/[date]/analyze/route").CustomPromptSections;
   let buildPrompt: (
     date: string,
     stats: import("../../services/daily-stats").DailyStats,
-    appContext: Map<string, { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }>,
+    appContext: Map<
+      string,
+      { bundleId: string; categoryTitle?: string; tags: string[]; note?: string }
+    >,
     tz: string,
     custom?: CustomPromptSections,
   ) => string;
@@ -607,7 +667,9 @@ describe("buildPrompt", () => {
     buildPrompt = mod._buildPrompt as typeof buildPrompt;
   });
 
-  function makeStats(overrides?: Partial<import("../../services/daily-stats").DailyStats>): import("../../services/daily-stats").DailyStats {
+  function makeStats(
+    overrides?: Partial<import("../../services/daily-stats").DailyStats>,
+  ): import("../../services/daily-stats").DailyStats {
     return {
       date: "2026-02-27",
       totalDuration: 3600,
@@ -616,12 +678,33 @@ describe("buildPrompt", () => {
       activeSpan: 7200,
       scores: { focus: 70, deepWork: 60, switchRate: 80, concentration: 75, overall: 71 },
       topApps: [
-        { appName: "VS Code", bundleId: "com.microsoft.VSCode", totalDuration: 1800, sessionCount: 5 },
+        {
+          appName: "VS Code",
+          bundleId: "com.microsoft.VSCode",
+          totalDuration: 1800,
+          sessionCount: 5,
+        },
         { appName: "Chrome", bundleId: "com.google.Chrome", totalDuration: 900, sessionCount: 3 },
       ],
       sessions: [
-        { id: "1", appName: "VS Code", bundleId: "com.microsoft.VSCode", windowTitle: "main.ts", url: null, startTime: 1740600000, duration: 1800 },
-        { id: "2", appName: "Chrome", bundleId: "com.google.Chrome", windowTitle: "GitHub", url: "https://github.com", startTime: 1740601800, duration: 900 },
+        {
+          id: "1",
+          appName: "VS Code",
+          bundleId: "com.microsoft.VSCode",
+          windowTitle: "main.ts",
+          url: null,
+          startTime: 1740600000,
+          duration: 1800,
+        },
+        {
+          id: "2",
+          appName: "Chrome",
+          bundleId: "com.google.Chrome",
+          windowTitle: "GitHub",
+          url: "https://github.com",
+          startTime: 1740601800,
+          duration: 900,
+        },
       ],
       ...overrides,
     };
@@ -653,8 +736,24 @@ describe("buildPrompt", () => {
   test("includes idle note when idle sessions present", () => {
     const stats = makeStats({
       sessions: [
-        { id: "1", appName: "loginwindow", bundleId: "com.apple.loginwindow", windowTitle: "loginwindow", url: null, startTime: 1740600000, duration: 600 },
-        { id: "2", appName: "VS Code", bundleId: "com.microsoft.VSCode", windowTitle: "main.ts", url: null, startTime: 1740600600, duration: 1800 },
+        {
+          id: "1",
+          appName: "loginwindow",
+          bundleId: "com.apple.loginwindow",
+          windowTitle: "loginwindow",
+          url: null,
+          startTime: 1740600000,
+          duration: 600,
+        },
+        {
+          id: "2",
+          appName: "VS Code",
+          bundleId: "com.microsoft.VSCode",
+          windowTitle: "main.ts",
+          url: null,
+          startTime: 1740600600,
+          duration: 1800,
+        },
       ],
     });
     const result = buildPrompt("2026-02-27", stats, new Map(), "Asia/Shanghai");
@@ -668,7 +767,15 @@ describe("buildPrompt", () => {
 
   test("includes app context section when relevant", () => {
     const ctx = new Map([
-      ["com.microsoft.VSCode", { bundleId: "com.microsoft.VSCode", categoryTitle: "IDE", tags: ["dev"], note: "Main editor" }],
+      [
+        "com.microsoft.VSCode",
+        {
+          bundleId: "com.microsoft.VSCode",
+          categoryTitle: "IDE",
+          tags: ["dev"],
+          note: "Main editor",
+        },
+      ],
     ]);
     const result = buildPrompt("2026-02-27", makeStats(), ctx, "Asia/Shanghai");
     expect(result).toContain("应用上下文");
@@ -732,7 +839,10 @@ describe("buildPrompt", () => {
   });
 
   test("custom section2 expands all score variables", () => {
-    const custom = { section2: "F:{{scores.focus}} D:{{scores.deepWork}} S:{{scores.switchRate}} C:{{scores.concentration}} O:{{scores.overall}}" };
+    const custom = {
+      section2:
+        "F:{{scores.focus}} D:{{scores.deepWork}} S:{{scores.switchRate}} C:{{scores.concentration}} O:{{scores.overall}}",
+    };
     const result = buildPrompt("2026-02-27", makeStats(), new Map(), "Asia/Shanghai", custom);
     expect(result).toContain("F:70 D:60 S:80 C:75 O:71");
   });

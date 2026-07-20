@@ -9,22 +9,15 @@
  * Returns a discriminated union (never throws for expected errors).
  */
 
-import { settingsRepo } from "@/lib/settings-repo";
-import { dailySummaryRepo } from "@/lib/daily-summary-repo";
-import {
-  resolveAiConfig,
-  createAiModel,
-} from "@nocoo/next-ai/server";
 import type { AiSettingsInput } from "@nocoo/next-ai";
+import { createAiModel, resolveAiConfig } from "@nocoo/next-ai/server";
 import { generateText } from "ai";
-import {
-  computeDailyStats,
-  type DailyStats,
-  type SessionForChart,
-} from "@/services/daily-stats";
 import { query } from "@/lib/d1";
-import { epochToLocalHHMM } from "@/lib/timezone";
+import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import { fetchSessionsForDate } from "@/lib/session-queries";
+import { settingsRepo } from "@/lib/settings-repo";
+import { epochToLocalHHMM } from "@/lib/timezone";
+import { computeDailyStats, type DailyStats, type SessionForChart } from "@/services/daily-stats";
 import {
   DEFAULT_PROMPT_SECTION_1,
   DEFAULT_PROMPT_SECTION_2,
@@ -84,8 +77,22 @@ export interface AiSettings {
 }
 
 export type AnalysisOutcome =
-  | { ok: true; score: number; model: string; provider: string; durationMs: number; result: AiAnalysisResult; prompt: string; stats: DailyStats; usage?: { promptTokens: number; completionTokens: number; totalTokens: number } }
-  | { ok: false; reason: "no_ai_config" | "no_sessions" | "ai_error" | "parse_error"; message: string };
+  | {
+      ok: true;
+      score: number;
+      model: string;
+      provider: string;
+      durationMs: number;
+      result: AiAnalysisResult;
+      prompt: string;
+      stats: DailyStats;
+      usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+    }
+  | {
+      ok: false;
+      reason: "no_ai_config" | "no_sessions" | "ai_error" | "parse_error";
+      message: string;
+    };
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -259,8 +266,10 @@ export function buildSessionTimeline(sessions: SessionForChart[], tz: string): s
  */
 export function expandTemplate(template: string, vars: Record<string, string>): string {
   return template.replace(/\{\{(\w+(?:\.\w+)*)\}\}/g, (match, key: string) => {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return key in vars ? vars[key]! : match;
+    if (!(key in vars)) {
+      return match;
+    }
+    return vars[key] ?? match;
   });
 }
 
@@ -289,13 +298,12 @@ export function buildPrompt(
   }
   const appContextSection = buildAppContextSection(appContext, bundleIdsInDay);
 
-  const idleSessions = stats.sessions.filter(
-    (s) => s.bundleId && IDLE_BUNDLE_IDS.has(s.bundleId),
-  );
+  const idleSessions = stats.sessions.filter((s) => s.bundleId && IDLE_BUNDLE_IDS.has(s.bundleId));
   const idleDuration = idleSessions.reduce((sum, s) => sum + s.duration, 0);
-  const idleNote = idleDuration > 0
-    ? `\n- 闲置/锁屏时间：${Math.round(idleDuration / 60)} 分钟（loginwindow/ScreenSaver 等属于闲置，不应算作有效工作）`
-    : "";
+  const idleNote =
+    idleDuration > 0
+      ? `\n- 闲置/锁屏时间：${Math.round(idleDuration / 60)} 分钟（loginwindow/ScreenSaver 等属于闲置，不应算作有效工作）`
+      : "";
 
   const vars: Record<string, string> = {
     date,
@@ -355,11 +363,13 @@ export function parseAiResponse(text: string): AiAnalysisResult {
 
   let timeSegments: TimeSegment[] = [];
   if (Array.isArray(parsed.timeSegments) && parsed.timeSegments.length > 0) {
-    timeSegments = (parsed.timeSegments as Record<string, unknown>[]).map((seg) => ({
-      timeRange: String(seg.timeRange ?? ""),
-      label: String(seg.label ?? ""),
-      description: String(seg.description ?? ""),
-    })).filter((seg) => seg.timeRange && seg.label);
+    timeSegments = (parsed.timeSegments as Record<string, unknown>[])
+      .map((seg) => ({
+        timeRange: String(seg.timeRange ?? ""),
+        label: String(seg.label ?? ""),
+        description: String(seg.description ?? ""),
+      }))
+      .filter((seg) => seg.timeRange && seg.label);
   }
 
   return {
@@ -387,10 +397,14 @@ export async function runAnalysis(
   // 1. Load AI config
   const settings = await loadAiSettings(userId);
   if (!settings.provider || !settings.apiKey) {
-    return { ok: false, reason: "no_ai_config", message: "AI provider and API key must be configured first." };
+    return {
+      ok: false,
+      reason: "no_ai_config",
+      message: "AI provider and API key must be configured first.",
+    };
   }
 
-  let config;
+  let config: ReturnType<typeof resolveAiConfig>;
   try {
     const input: AiSettingsInput = {
       provider: settings.provider,
@@ -427,7 +441,10 @@ export async function runAnalysis(
   if (settings.promptSection4) customSections.section4 = settings.promptSection4;
 
   const prompt = buildPrompt(
-    date, stats, appContext, tz,
+    date,
+    stats,
+    appContext,
+    tz,
     Object.keys(customSections).length > 0 ? customSections : undefined,
   );
 
@@ -463,7 +480,9 @@ export async function runAnalysis(
     return {
       ok: false,
       reason: "ai_error",
-      message: isTimeout ? "AI provider timed out. Try again or use a faster model." : `AI provider error: ${message}`,
+      message: isTimeout
+        ? "AI provider timed out. Try again or use a faster model."
+        : `AI provider error: ${message}`,
     };
   }
 
@@ -495,7 +514,9 @@ export async function runAnalysis(
       prompt,
     );
   } catch (err) {
-    console.error(`[analyze-core] Failed to cache AI result: ${err instanceof Error ? err.message : err}`);
+    console.error(
+      `[analyze-core] Failed to cache AI result: ${err instanceof Error ? err.message : err}`,
+    );
   }
 
   return {

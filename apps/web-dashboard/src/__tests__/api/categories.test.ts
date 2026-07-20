@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/categories route handler tests
@@ -99,10 +99,38 @@ describe("/api/categories", () => {
         ...Array(mappingBatches).fill([]),
         // Main SELECT query — returns the newly seeded defaults
         [
-          { id: "cat-1", title: "System Core", icon: "cpu", is_default: 1, slug: "system-core", created_at: "2026-01-01T00:00:00.000Z" },
-          { id: "cat-2", title: "System App", icon: "monitor", is_default: 1, slug: "system-app", created_at: "2026-01-01T00:00:00.000Z" },
-          { id: "cat-3", title: "Browser", icon: "globe", is_default: 1, slug: "browser", created_at: "2026-01-01T00:00:00.000Z" },
-          { id: "cat-4", title: "Application", icon: "app-window", is_default: 1, slug: "application", created_at: "2026-01-01T00:00:00.000Z" },
+          {
+            id: "cat-1",
+            title: "System Core",
+            icon: "cpu",
+            is_default: 1,
+            slug: "system-core",
+            created_at: "2026-01-01T00:00:00.000Z",
+          },
+          {
+            id: "cat-2",
+            title: "System App",
+            icon: "monitor",
+            is_default: 1,
+            slug: "system-app",
+            created_at: "2026-01-01T00:00:00.000Z",
+          },
+          {
+            id: "cat-3",
+            title: "Browser",
+            icon: "globe",
+            is_default: 1,
+            slug: "browser",
+            created_at: "2026-01-01T00:00:00.000Z",
+          },
+          {
+            id: "cat-4",
+            title: "Application",
+            icon: "app-window",
+            is_default: 1,
+            slug: "application",
+            created_at: "2026-01-01T00:00:00.000Z",
+          },
         ],
       ]);
       const { GET } = await import("../../app/api/categories/route");
@@ -277,9 +305,7 @@ describe("/api/categories", () => {
     });
 
     test("returns 403 when trying to edit a default category", async () => {
-      mockD1([
-        [{ id: "cat-1", user_id: "e2e-test-user", is_default: 1 }],
-      ]);
+      mockD1([[{ id: "cat-1", user_id: "e2e-test-user", is_default: 1 }]]);
       const { PUT } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories", {
@@ -323,9 +349,7 @@ describe("/api/categories", () => {
     });
 
     test("returns 404 when category belongs to another user", async () => {
-      mockD1([
-        [{ id: "cat-1", user_id: "other-user", is_default: 0 }],
-      ]);
+      mockD1([[{ id: "cat-1", user_id: "other-user", is_default: 0 }]]);
       const { PUT } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories", {
@@ -339,9 +363,7 @@ describe("/api/categories", () => {
     });
 
     test("returns 400 when no fields to update", async () => {
-      mockD1([
-        [{ id: "cat-1", user_id: "e2e-test-user", is_default: 0 }],
-      ]);
+      mockD1([[{ id: "cat-1", user_id: "e2e-test-user", is_default: 0 }]]);
       const { PUT } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories", {
@@ -386,9 +408,7 @@ describe("/api/categories", () => {
     });
 
     test("returns 403 when trying to delete a default category", async () => {
-      mockD1([
-        [{ id: "cat-1", user_id: "e2e-test-user", is_default: 1 }],
-      ]);
+      mockD1([[{ id: "cat-1", user_id: "e2e-test-user", is_default: 1 }]]);
       const { DELETE } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories", {
@@ -446,9 +466,7 @@ describe("/api/categories", () => {
     });
 
     test("returns 404 when category belongs to another user", async () => {
-      mockD1([
-        [{ id: "cat-1", user_id: "other-user", is_default: 0 }],
-      ]);
+      mockD1([[{ id: "cat-1", user_id: "other-user", is_default: 0 }]]);
       const { DELETE } = await import("../../app/api/categories/route");
 
       const req = new Request("http://localhost/api/categories", {

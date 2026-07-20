@@ -1,6 +1,6 @@
 // GET /api/sync/status — Sync health: last sync time per device.
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { jsonOk, requireSession } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
@@ -26,13 +26,13 @@ export async function GET(_req: Request): Promise<Response> {
            AND s2.device_id = sync_logs.device_id
        )
      ORDER BY synced_at DESC`,
-    [user.userId]
+    [user.userId],
   );
 
   // Get device names from api_keys
   const keys = await query<{ device_id: string; name: string }>(
     "SELECT device_id, name FROM api_keys WHERE user_id = ?",
-    [user.userId]
+    [user.userId],
   );
 
   const nameMap = new Map(keys.map((k) => [k.device_id, k.name]));

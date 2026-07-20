@@ -5,8 +5,8 @@
  * Auth is via X-Webhook-Key header → pull key lookup (no session).
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import { gunzipSync } from "node:zlib";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { BackupEnvelope } from "@/lib/backy";
 
 const originalFetch = globalThis.fetch;
@@ -32,7 +32,7 @@ function d1Resp(results: unknown[]) {
   });
 }
 
-const VALID_PULL_KEY = "bpk_" + "ab".repeat(32);
+const VALID_PULL_KEY = `bpk_${"ab".repeat(32)}`;
 const USER_ID = "user-abc-123";
 
 /**
@@ -174,13 +174,26 @@ describe("POST /api/backy/pull", () => {
         if (standard.length > 0) return standard;
         // Add a focus session for richer data
         if (sql.includes("focus_sessions")) {
-          return [{
-            id: "s1", user_id: USER_ID, device_id: "d1", app_name: "Safari",
-            window_title: "Test", url: null, start_time: 100, end_time: 200,
-            duration: 100, bundle_id: "com.apple.Safari", tab_title: null,
-            tab_count: null, document_path: null, is_full_screen: 0,
-            is_minimized: 0, synced_at: null,
-          }];
+          return [
+            {
+              id: "s1",
+              user_id: USER_ID,
+              device_id: "d1",
+              app_name: "Safari",
+              window_title: "Test",
+              url: null,
+              start_time: 100,
+              end_time: 200,
+              duration: 100,
+              bundle_id: "com.apple.Safari",
+              tab_title: null,
+              tab_count: null,
+              document_path: null,
+              is_full_screen: 0,
+              is_minimized: 0,
+              synced_at: null,
+            },
+          ];
         }
         return [];
       },

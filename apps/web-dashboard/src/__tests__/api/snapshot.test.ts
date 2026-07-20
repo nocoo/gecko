@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/snapshot — Public API snapshot endpoint tests
@@ -51,7 +51,14 @@ describe("GET /api/v1/snapshot", () => {
     const dayStart = 1740585600; // 2025-02-27 00:00:00 Asia/Shanghai
     mockD1([
       // 1. getUserTimezone → settings lookup
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       // 2. fetchSessionsForDate → focus_sessions
       [
         {
@@ -100,19 +107,28 @@ describe("GET /api/v1/snapshot", () => {
   test("returns snapshot with cached AI analysis", async () => {
     mockD1([
       // timezone
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       // sessions
       [],
       // cached AI
-      [{
-        id: "ds1",
-        user_id: "e2e-test-user",
-        date: "2025-02-27",
-        ai_score: 78,
-        ai_result_json: JSON.stringify({ summary: "Good focus day" }),
-        ai_model: "gpt-4o",
-        ai_generated_at: "2025-02-27T20:00:00.000Z",
-      }],
+      [
+        {
+          id: "ds1",
+          user_id: "e2e-test-user",
+          date: "2025-02-27",
+          ai_score: 78,
+          ai_result_json: JSON.stringify({ summary: "Good focus day" }),
+          ai_model: "gpt-4o",
+          ai_generated_at: "2025-02-27T20:00:00.000Z",
+        },
+      ],
     ]);
 
     const { GET } = await import("../../app/api/v1/snapshot/route");
@@ -131,7 +147,14 @@ describe("GET /api/v1/snapshot", () => {
   test("returns empty stats when no sessions exist", async () => {
     mockD1([
       // timezone
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
       // no sessions
       [],
       // no AI
@@ -166,7 +189,14 @@ describe("GET /api/v1/snapshot", () => {
   test("returns 400 for invalid date format", async () => {
     mockD1([
       // timezone lookup
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
@@ -180,7 +210,14 @@ describe("GET /api/v1/snapshot", () => {
 
   test("returns 400 for invalid date values (e.g. Feb 30)", async () => {
     mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
@@ -191,7 +228,14 @@ describe("GET /api/v1/snapshot", () => {
 
   test("returns 400 for future dates", async () => {
     mockD1([
-      [{ user_id: "e2e-test-user", key: "timezone", value: "Asia/Shanghai", updated_at: Date.now() }],
+      [
+        {
+          user_id: "e2e-test-user",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: Date.now(),
+        },
+      ],
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 

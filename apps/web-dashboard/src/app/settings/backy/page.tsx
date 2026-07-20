@@ -1,11 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  AlertTriangle,
+  Check,
+  Copy,
+  HardDriveDownload,
+  HardDriveUpload,
+  History,
+  Loader2,
+  Package,
+  Plug,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -14,19 +24,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  HardDriveUpload,
-  HardDriveDownload,
-  Check,
-  Copy,
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  Plug,
-  History,
-  Package,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 // =============================================================================
 // Types
@@ -189,16 +189,13 @@ function PushConfigSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <HardDriveUpload
-          className="size-5 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+        <HardDriveUpload className="size-5 text-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Push Backup</h2>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Push your data to a Backy backup service. Configure the webhook URL and
-        API key from your Backy instance.
+        Push your data to a Backy backup service. Configure the webhook URL and API key from your
+        Backy instance.
       </p>
 
       {error && (
@@ -229,20 +226,14 @@ function PushConfigSection({
               <Input
                 id="api-key"
                 type="password"
-                placeholder={
-                  configured ? "Enter new key to replace" : "Your Backy API key"
-                }
+                placeholder={configured ? "Enter new key to replace" : "Your Backy API key"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
               />
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                onClick={handleSave}
-                disabled={saving || !webhookUrl || !apiKey}
-                size="sm"
-              >
+              <Button onClick={handleSave} disabled={saving || !webhookUrl || !apiKey} size="sm">
                 {saving ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
@@ -255,12 +246,7 @@ function PushConfigSection({
 
               {configured && (
                 <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleTest}
-                    disabled={testing}
-                  >
+                  <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
                     {testing ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
@@ -274,12 +260,7 @@ function PushConfigSection({
                     )}
                   </Button>
 
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePush}
-                    disabled={pushing}
-                  >
+                  <Button variant="outline" size="sm" onClick={handlePush} disabled={pushing}>
                     {pushing ? (
                       <>
                         <Loader2 className="size-4 animate-spin" />
@@ -353,9 +334,7 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
       const res = await fetch("/api/backy/history");
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          (data as { error?: string }).error ?? `Failed to load (${res.status})`,
-        );
+        throw new Error((data as { error?: string }).error ?? `Failed to load (${res.status})`);
       }
       const data = await res.json();
       setProjectName(data.project_name ?? null);
@@ -369,21 +348,18 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
   }, []);
 
   useEffect(() => {
+    // Parent bumps refreshKey after a successful backup to reload history.
+    void refreshKey;
     fetchHistory();
   }, [fetchHistory, refreshKey]);
 
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <History
-          className="size-5 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+        <History className="size-5 text-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Backup History</h2>
         {!loading && totalBackups > 0 && (
-          <span className="text-xs text-muted-foreground tabular-nums">
-            ({totalBackups} total)
-          </span>
+          <span className="text-xs text-muted-foreground tabular-nums">({totalBackups} total)</span>
         )}
       </div>
 
@@ -410,10 +386,7 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
         ) : backups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <Package
-                className="size-5 text-muted-foreground"
-                strokeWidth={1.5}
-              />
+              <Package className="size-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">No backups yet</p>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -429,9 +402,7 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
               >
                 <Package className="size-4 text-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {b.tag ?? "Untitled backup"}
-                  </p>
+                  <p className="text-sm font-medium truncate">{b.tag ?? "Untitled backup"}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatRelativeTime(b.created_at)}
                     {b.environment && (
@@ -540,23 +511,18 @@ function PullWebhookSection() {
   }
 
   const webhookUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/api/backy/pull`
-      : "/api/backy/pull";
+    typeof window !== "undefined" ? `${window.location.origin}/api/backy/pull` : "/api/backy/pull";
 
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <HardDriveDownload
-          className="size-5 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+        <HardDriveDownload className="size-5 text-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Pull Webhook</h2>
       </div>
 
       <p className="text-sm text-muted-foreground">
-        Allow Backy to trigger backups on a schedule. Generate a webhook key and
-        configure it in your Backy instance.
+        Allow Backy to trigger backups on a schedule. Generate a webhook key and configure it in
+        your Backy instance.
       </p>
 
       {error && (
@@ -599,12 +565,7 @@ function PullWebhookSection() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerate}
-                disabled={generating}
-              >
+              <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating}>
                 {generating ? (
                   <Loader2 className="size-4 animate-spin" />
                 ) : (
@@ -626,22 +587,13 @@ function PullWebhookSection() {
         ) : (
           <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <HardDriveDownload
-                className="size-5 text-muted-foreground"
-                strokeWidth={1.5}
-              />
+              <HardDriveDownload className="size-5 text-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">No pull webhook configured</p>
             <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-              Generate a webhook key to let Backy trigger scheduled backups
-              automatically.
+              Generate a webhook key to let Backy trigger scheduled backups automatically.
             </p>
-            <Button
-              onClick={handleGenerate}
-              disabled={generating}
-              size="sm"
-              className="mt-4"
-            >
+            <Button onClick={handleGenerate} disabled={generating} size="sm" className="mt-4">
               {generating ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />
@@ -666,15 +618,13 @@ function PullWebhookSection() {
           <DialogHeader>
             <DialogTitle>Webhook Key Generated</DialogTitle>
             <DialogDescription>
-              Copy this key now and paste it in your Backy instance settings. It
-              won&apos;t be shown again.
+              Copy this key now and paste it in your Backy instance settings. It won&apos;t be shown
+              again.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Webhook URL
-              </Label>
+              <Label className="text-xs text-muted-foreground">Webhook URL</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded-lg bg-secondary px-3 py-2 text-xs font-mono break-all select-all">
                   {webhookUrl}
@@ -689,9 +639,7 @@ function PullWebhookSection() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">
-                Webhook Key
-              </Label>
+              <Label className="text-xs text-muted-foreground">Webhook Key</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded-lg bg-secondary px-3 py-2.5 text-xs font-mono break-all select-all">
                   {revealedKey}
@@ -712,8 +660,8 @@ function PullWebhookSection() {
             <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
               <AlertTriangle className="size-4 shrink-0 mt-0.5" />
               <span>
-                Store this key securely. You will not be able to see it again
-                after closing this dialog.
+                Store this key securely. You will not be able to see it again after closing this
+                dialog.
               </span>
             </div>
           </div>
@@ -729,23 +677,15 @@ function PullWebhookSection() {
           <DialogHeader>
             <DialogTitle>Revoke Webhook Key</DialogTitle>
             <DialogDescription>
-              Are you sure you want to revoke the pull webhook key? Backy will no
-              longer be able to trigger scheduled backups.
+              Are you sure you want to revoke the pull webhook key? Backy will no longer be able to
+              trigger scheduled backups.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setRevokeOpen(false)}
-              disabled={revoking}
-            >
+            <Button variant="outline" onClick={() => setRevokeOpen(false)} disabled={revoking}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleRevoke}
-              disabled={revoking}
-            >
+            <Button variant="destructive" onClick={handleRevoke} disabled={revoking}>
               {revoking ? "Revoking..." : "Revoke Key"}
             </Button>
           </DialogFooter>
@@ -764,31 +704,20 @@ export default function BackySettingsPage() {
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
 
   const handleConfigured = useCallback(() => setPushConfigured(true), []);
-  const handlePushSuccess = useCallback(
-    () => setHistoryRefreshKey((k) => k + 1),
-    [],
-  );
+  const handlePushSuccess = useCallback(() => setHistoryRefreshKey((k) => k + 1), []);
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Integrations" },
-        { label: "Backy" },
-      ]}
-    >
+    <AppShell breadcrumbs={[{ label: "Integrations" }, { label: "Backy" }]}>
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">Backy</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Configure automatic backups with Backy. Push your data to a backup
-            service, or let Backy pull on a schedule.
+            Configure automatic backups with Backy. Push your data to a backup service, or let Backy
+            pull on a schedule.
           </p>
         </div>
 
-        <PushConfigSection
-          onConfigured={handleConfigured}
-          onPushSuccess={handlePushSuccess}
-        />
+        <PushConfigSection onConfigured={handleConfigured} onPushSuccess={handlePushSuccess} />
 
         {pushConfigured && (
           <>

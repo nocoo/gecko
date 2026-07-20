@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/categories/mappings route handler tests
@@ -62,9 +62,7 @@ describe("/api/categories/mappings", () => {
           },
         ],
       ]);
-      const { GET } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { GET } = await import("../../app/api/categories/mappings/route");
 
       const req = new Request("http://localhost/api/categories/mappings");
       const res = await GET(req);
@@ -78,9 +76,7 @@ describe("/api/categories/mappings", () => {
 
     test("returns empty array when no mappings", async () => {
       mockD1([[]]);
-      const { GET } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { GET } = await import("../../app/api/categories/mappings/route");
 
       const req = new Request("http://localhost/api/categories/mappings");
       const res = await GET(req);
@@ -94,9 +90,7 @@ describe("/api/categories/mappings", () => {
   describe("PUT /api/categories/mappings", () => {
     test("upserts mappings", async () => {
       const { calls } = mockD1([[]]);
-      const { PUT } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { PUT } = await import("../../app/api/categories/mappings/route");
 
       const req = new Request("http://localhost/api/categories/mappings", {
         method: "PUT",
@@ -123,9 +117,7 @@ describe("/api/categories/mappings", () => {
 
     test("returns 400 when mappings array is empty", async () => {
       mockD1();
-      const { PUT } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { PUT } = await import("../../app/api/categories/mappings/route");
 
       const req = new Request("http://localhost/api/categories/mappings", {
         method: "PUT",
@@ -139,9 +131,7 @@ describe("/api/categories/mappings", () => {
 
     test("returns 400 when bundleId is missing", async () => {
       mockD1();
-      const { PUT } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { PUT } = await import("../../app/api/categories/mappings/route");
 
       const req = new Request("http://localhost/api/categories/mappings", {
         method: "PUT",
@@ -158,9 +148,7 @@ describe("/api/categories/mappings", () => {
     test("batches large mapping sets to respect D1 param limits", async () => {
       // 30 mappings => 2 batches (25 + 5), each INSERT OR REPLACE
       const { calls } = mockD1([[], []]);
-      const { PUT } = await import(
-        "../../app/api/categories/mappings/route"
-      );
+      const { PUT } = await import("../../app/api/categories/mappings/route");
 
       const mappings = Array.from({ length: 30 }, (_, i) => ({
         bundleId: `com.app.${i}`,

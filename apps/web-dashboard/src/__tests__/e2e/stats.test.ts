@@ -6,8 +6,8 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -59,7 +59,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -80,8 +80,7 @@ afterAll(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const api = (path: string, init?: RequestInit) =>
-  fetch(`${BASE_URL}${path}`, init);
+const api = (path: string, init?: RequestInit) => fetch(`${BASE_URL}${path}`, init);
 
 // ---------------------------------------------------------------------------
 // Seed data — sync sessions so stats endpoints have something to aggregate
@@ -137,63 +136,51 @@ describe("E2E: Stats API", () => {
   // /api/stats
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/stats returns today's stats",
-    async () => {
-      const res = await api("/api/stats");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/stats returns today's stats", async () => {
+    const res = await api("/api/stats");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.period).toBe("today");
-      expect(typeof body.totalSessions).toBe("number");
-      expect(typeof body.totalDuration).toBe("number");
-      expect(typeof body.totalApps).toBe("number");
-      expect(typeof body.longestSession).toBe("number");
-      expect(Array.isArray(body.topApps)).toBe(true);
-    },
-  );
+    const body = await res.json();
+    expect(body.period).toBe("today");
+    expect(typeof body.totalSessions).toBe("number");
+    expect(typeof body.totalDuration).toBe("number");
+    expect(typeof body.totalApps).toBe("number");
+    expect(typeof body.longestSession).toBe("number");
+    expect(Array.isArray(body.topApps)).toBe(true);
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/stats?period=week returns weekly stats",
-    async () => {
-      const res = await api("/api/stats?period=week");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/stats?period=week returns weekly stats", async () => {
+    const res = await api("/api/stats?period=week");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.period).toBe("week");
-      expect(typeof body.totalSessions).toBe("number");
-      expect(typeof body.totalDuration).toBe("number");
-      expect(Array.isArray(body.topApps)).toBe(true);
-    },
-  );
+    const body = await res.json();
+    expect(body.period).toBe("week");
+    expect(typeof body.totalSessions).toBe("number");
+    expect(typeof body.totalDuration).toBe("number");
+    expect(Array.isArray(body.topApps)).toBe(true);
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/stats?period=invalid falls back to today",
-    async () => {
-      const res = await api("/api/stats?period=invalid");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/stats?period=invalid falls back to today", async () => {
+    const res = await api("/api/stats?period=invalid");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.period).toBe("today");
-    },
-  );
+    const body = await res.json();
+    expect(body.period).toBe("today");
+  });
 
   // -------------------------------------------------------------------------
   // /api/stats/timeline
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/stats/timeline returns daily timeline",
-    async () => {
-      const res = await api("/api/stats/timeline");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/stats/timeline returns daily timeline", async () => {
+    const res = await api("/api/stats/timeline");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.period).toBe("week");
-      expect(typeof body.timezone).toBe("string");
-      expect(Array.isArray(body.timeline)).toBe(true);
-    },
-  );
+    const body = await res.json();
+    expect(body.period).toBe("week");
+    expect(typeof body.timezone).toBe("string");
+    expect(Array.isArray(body.timeline)).toBe(true);
+  });
 
   test.skipIf(!SHOULD_RUN)(
     "GET /api/stats/timeline?period=month returns monthly timeline",

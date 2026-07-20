@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/backy/history route handler tests
@@ -49,7 +49,9 @@ function mockFetchRouter(opts: {
       throw opts.externalError;
     }
     if (opts.externalJson) {
-      return new Response(JSON.stringify(opts.externalJson), { status: opts.externalStatus ?? 200 });
+      return new Response(JSON.stringify(opts.externalJson), {
+        status: opts.externalStatus ?? 200,
+      });
     }
     return new Response(opts.externalBody ?? "", { status: opts.externalStatus ?? 200 });
   }) as unknown as typeof fetch;

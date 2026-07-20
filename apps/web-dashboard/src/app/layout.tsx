@@ -18,9 +18,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXTAUTH_URL ?? "http://localhost:3000",
-  ),
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
   title: "gecko - Screen Time Dashboard",
   description: "Personal screen time tracking and focus analytics",
   openGraph: {

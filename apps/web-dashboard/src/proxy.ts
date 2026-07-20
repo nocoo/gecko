@@ -1,6 +1,6 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { exposeOwnAccessorsSync } from "@/lib/vinext-request-shim";
 
 // Skip auth in E2E test environment
@@ -39,10 +39,7 @@ const authHandler = auth((req) => {
   // vinext returns 405 for non-GET requests to a Page route. Let these
   // through so the route handler's requireApiKey() can do the real check
   // (and return a proper 401 on bad tokens).
-  const hasBearerToken = req.headers
-    .get("authorization")
-    ?.toLowerCase()
-    .startsWith("bearer ");
+  const hasBearerToken = req.headers.get("authorization")?.toLowerCase().startsWith("bearer ");
 
   // Allow auth routes, health check, and Bearer-authenticated API requests through
   if (isAuthRoute || isLiveRoute || hasBearerToken) {

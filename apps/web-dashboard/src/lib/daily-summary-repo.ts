@@ -6,7 +6,7 @@
  * Only AI analysis results are stored here — stats are always computed fresh.
  */
 
-import { query, execute } from "@/lib/d1";
+import { execute, query } from "@/lib/d1";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,10 +38,7 @@ export interface DailySummaryRangeRow {
 
 export const dailySummaryRepo = {
   /** Find a cached summary for a given user + date. */
-  async findByUserAndDate(
-    userId: string,
-    date: string,
-  ): Promise<DailySummaryRow | null> {
+  async findByUserAndDate(userId: string, date: string): Promise<DailySummaryRow | null> {
     const rows = await query<DailySummaryRow>(
       `SELECT id, user_id, date, ai_score, ai_result_json,
               ai_model, ai_prompt, ai_generated_at, created_at, updated_at

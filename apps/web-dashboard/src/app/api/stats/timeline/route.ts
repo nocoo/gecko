@@ -2,9 +2,9 @@
 // Supports ?period=week|month|all (default: week)
 // Returns an array of { date, totalDuration, sessionCount } per day.
 
-import { requireSession, jsonOk, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonOk, requireSession } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
-import { localDateToUTCEpoch, todayInTz, sqlDateExpr } from "@/lib/timezone";
+import { localDateToUTCEpoch, sqlDateExpr, todayInTz } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,7 @@ export async function GET(req: Request): Promise<Response> {
      WHERE ${where}
      GROUP BY ${dateExpr}
      ORDER BY date ASC`,
-    params
+    params,
   );
 
   return jsonOk({

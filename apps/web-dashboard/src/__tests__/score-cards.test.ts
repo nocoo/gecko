@@ -2,12 +2,8 @@
  * Unit tests for score card utility functions.
  */
 
-import { describe, test, expect } from "vitest";
-import {
-  getScoreColor,
-  getScoreLabel,
-  SCORE_DIMENSIONS,
-} from "@/components/daily/score-cards";
+import { describe, expect, test } from "vitest";
+import { getScoreColor, getScoreLabel, SCORE_DIMENSIONS } from "@/components/daily/score-cards";
 
 // ---------------------------------------------------------------------------
 // getScoreColor

@@ -2,8 +2,8 @@
 // Called from GET /api/categories when a user has zero categories.
 
 import { randomUUID } from "node:crypto";
-import { query, execute } from "@/lib/d1";
-import { DEFAULT_CATEGORIES, BUNDLE_ID_MAPPINGS } from "@/lib/default-categories";
+import { execute, query } from "@/lib/d1";
+import { BUNDLE_ID_MAPPINGS, DEFAULT_CATEGORIES } from "@/lib/default-categories";
 
 /**
  * Check if a user already has categories. If not, seed the 4 defaults
@@ -20,8 +20,7 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   );
 
   // SELECT COUNT(*) always returns exactly one row.
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const cnt = existing[0]!.cnt;
+  const cnt = existing[0]?.cnt ?? 0;
   if (cnt > 0) {
     return false;
   }
@@ -36,19 +35,15 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     categoryIdBySlug.set(cat.slug, id);
   }
 
-  const catPlaceholders = DEFAULT_CATEGORIES.map(
-    () => "(?, ?, ?, ?, 1, ?, ?)",
-  ).join(", ");
-  const catParams = DEFAULT_CATEGORIES.flatMap((cat) => [
+  const catPlaceholders = DEFAULT_CATEGORIES.map(() => "(?, ?, ?, ?, 1, ?, ?)").join(", ");
+  const catParams = DEFAULT_CATEGORIES.flatMap((cat) => {
     // categoryIdBySlug was just populated from DEFAULT_CATEGORIES above.
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    categoryIdBySlug.get(cat.slug)!,
-    userId,
-    cat.title,
-    cat.icon,
-    cat.slug,
-    now,
-  ]);
+    const categoryId = categoryIdBySlug.get(cat.slug);
+    if (!categoryId) {
+      throw new Error(`Missing category id for slug ${cat.slug}`);
+    }
+    return [categoryId, userId, cat.title, cat.icon, cat.slug, now];
+  });
 
   await execute(
     `INSERT INTO categories (id, user_id, title, icon, is_default, slug, created_at)
@@ -61,8 +56,11 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   // DEFAULT_CATEGORIES (verified statically), so the lookup is total.
   const mappingEntries: Array<{ bundleId: string; categoryId: string }> = [];
   for (const [bundleId, slug] of BUNDLE_ID_MAPPINGS) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    mappingEntries.push({ bundleId, categoryId: categoryIdBySlug.get(slug)! });
+    const categoryId = categoryIdBySlug.get(slug);
+    if (!categoryId) {
+      throw new Error(`Missing category id for mapping slug ${slug}`);
+    }
+    mappingEntries.push({ bundleId, categoryId });
   }
 
   // Batch insert: 3 params per row (user_id, bundle_id, category_id) + datetime('now') in SQL.
@@ -70,9 +68,7 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
   const BATCH_SIZE = 25;
   for (let i = 0; i < mappingEntries.length; i += BATCH_SIZE) {
     const batch = mappingEntries.slice(i, i + BATCH_SIZE);
-    const placeholders = batch
-      .map(() => "(?, ?, ?, datetime('now'))")
-      .join(", ");
+    const placeholders = batch.map(() => "(?, ?, ?, datetime('now'))").join(", ");
     const params = batch.flatMap((m) => [userId, m.bundleId, m.categoryId]);
 
     await execute(

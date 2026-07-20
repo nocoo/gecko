@@ -3,7 +3,7 @@
  * Target: ≥95% coverage.
  */
 
-import { describe, test, expect, afterEach, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   createHourlyScheduler,
   getHourlyScheduler,

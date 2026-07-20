@@ -1,12 +1,41 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import {
+  AlertTriangle,
+  AppWindow,
+  BookOpen,
+  Briefcase,
+  Camera,
+  Code,
+  Cpu,
+  FileText,
+  Folder,
+  Gamepad2,
+  Globe,
+  Heart,
+  Layers,
+  Lock,
+  type LucideProps,
+  Mail,
+  MessageSquare,
+  Monitor,
+  Music,
+  Paintbrush,
+  Pencil,
+  Plus,
+  Shield,
+  ShoppingBag,
+  Terminal,
+  Trash2,
+  Video,
+  Wrench,
+  Zap,
+} from "lucide-react";
+import type { FC } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AVAILABLE_ICONS, CategoryPill } from "@/components/category-pill";
 import { AppShell } from "@/components/layout";
-import { CategoryPill, AVAILABLE_ICONS } from "@/components/category-pill";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -15,39 +44,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Layers,
-  Plus,
-  Pencil,
-  Trash2,
-  AlertTriangle,
-  Lock,
-  Cpu,
-  Monitor,
-  Globe,
-  AppWindow,
-  Folder,
-  Code,
-  MessageSquare,
-  Mail,
-  Music,
-  Gamepad2,
-  Paintbrush,
-  Camera,
-  FileText,
-  Terminal,
-  Video,
-  ShoppingBag,
-  BookOpen,
-  Briefcase,
-  Heart,
-  Shield,
-  Wrench,
-  Zap,
-  type LucideProps,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { FC } from "react";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -120,18 +120,12 @@ export default function CategoriesPage() {
   }, [fetchCategories]);
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Settings", href: "/settings" },
-        { label: "Categories" },
-      ]}
-    >
+    <AppShell breadcrumbs={[{ label: "Settings", href: "/settings" }, { label: "Categories" }]}>
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">Categories</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Organize your apps into categories. Default categories cannot be
-            edited or removed.
+            Organize your apps into categories. Default categories cannot be edited or removed.
           </p>
         </div>
 
@@ -298,13 +292,8 @@ function CategoriesSection({
           {/* Default categories */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Lock
-                className="size-4 text-muted-foreground"
-                strokeWidth={1.5}
-              />
-              <h2 className="text-sm font-medium text-muted-foreground">
-                Default Categories
-              </h2>
+              <Lock className="size-4 text-muted-foreground" strokeWidth={1.5} />
+              <h2 className="text-sm font-medium text-muted-foreground">Default Categories</h2>
             </div>
 
             <div className="space-y-2">
@@ -312,9 +301,7 @@ function CategoriesSection({
                 <CategoryRow key={cat.id} category={cat} />
               ))}
               {defaultCategories.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No default categories found.
-                </p>
+                <p className="text-sm text-muted-foreground">No default categories found.</p>
               )}
             </div>
           </div>
@@ -325,13 +312,8 @@ function CategoriesSection({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Layers
-                  className="size-4 text-muted-foreground"
-                  strokeWidth={1.5}
-                />
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  Custom Categories
-                </h2>
+                <Layers className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                <h2 className="text-sm font-medium text-muted-foreground">Custom Categories</h2>
               </div>
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="size-4" />
@@ -343,15 +325,11 @@ function CategoriesSection({
               {customCategories.length === 0 ? (
                 <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-                    <Layers
-                      className="size-4 text-muted-foreground"
-                      strokeWidth={1.5}
-                    />
+                    <Layers className="size-4 text-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm font-medium">No custom categories</p>
                   <p className="mt-1 text-xs text-muted-foreground max-w-xs">
-                    Create a category to group apps beyond the built-in
-                    defaults.
+                    Create a category to group apps beyond the built-in defaults.
                   </p>
                 </div>
               ) : (
@@ -374,9 +352,7 @@ function CategoriesSection({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Category</DialogTitle>
-            <DialogDescription>
-              Add a new category to organize your apps.
-            </DialogDescription>
+            <DialogDescription>Add a new category to organize your apps.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -400,26 +376,16 @@ function CategoriesSection({
               <div className="space-y-2">
                 <Label>Preview</Label>
                 <div>
-                  <CategoryPill
-                    title={createTitle.trim()}
-                    icon={createIcon}
-                  />
+                  <CategoryPill title={createTitle.trim()} icon={createIcon} />
                 </div>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCreateOpen(false)}
-              disabled={creating}
-            >
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
               Cancel
             </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={creating || !createTitle.trim()}
-            >
+            <Button onClick={handleCreate} disabled={creating || !createTitle.trim()}>
               {creating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
@@ -467,17 +433,10 @@ function CategoriesSection({
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditTarget(null)}
-              disabled={editing}
-            >
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editing}>
               Cancel
             </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={editing || !editTitle.trim()}
-            >
+            <Button onClick={handleEdit} disabled={editing || !editTitle.trim()}>
               {editing ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -500,18 +459,10 @@ function CategoriesSection({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
@@ -537,14 +488,8 @@ function CategoryRow({
   return (
     <div className="flex items-center justify-between rounded-2xl bg-secondary p-4">
       <div className="flex items-center gap-3 min-w-0">
-        <CategoryPill
-          title={category.title}
-          icon={category.icon}
-          colorKey={category.slug}
-        />
-        {category.isDefault && (
-          <span className="text-xs text-muted-foreground">Built-in</span>
-        )}
+        <CategoryPill title={category.title} icon={category.icon} colorKey={category.slug} />
+        {category.isDefault && <span className="text-xs text-muted-foreground">Built-in</span>}
       </div>
       {!category.isDefault && (
         <div className="flex items-center gap-1 shrink-0">
@@ -574,13 +519,7 @@ function CategoryRow({
 // Icon Picker
 // =============================================================================
 
-function IconPicker({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (icon: string) => void;
-}) {
+function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
   return (
     <div className="flex flex-wrap gap-2">
       {AVAILABLE_ICONS.map((iconName) => {

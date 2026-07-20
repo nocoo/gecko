@@ -2,19 +2,19 @@
  * Tests for backy.ts — types and pure utility functions.
  */
 
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
   BACKUP_SCHEMA_VERSION,
+  BACKY_SETTING_KEYS,
   type BackupEnvelope,
   type BackupStats,
-  envelopeStats,
   buildBackupTag,
   buildFileName,
-  todayUTC,
   compressEnvelope,
   decompressEnvelope,
+  envelopeStats,
   isBackySettingKey,
-  BACKY_SETTING_KEYS,
+  todayUTC,
 } from "@/lib/backy";
 
 // ---------------------------------------------------------------------------
@@ -81,12 +81,26 @@ describe("envelopeStats", () => {
         synced_at: null,
       })),
       categories: [
-        { id: "c1", user_id: "u", title: "Dev", icon: "code", is_default: 0, slug: "dev", created_at: "" },
-        { id: "c2", user_id: "u", title: "Browser", icon: "globe", is_default: 1, slug: "browser", created_at: "" },
+        {
+          id: "c1",
+          user_id: "u",
+          title: "Dev",
+          icon: "code",
+          is_default: 0,
+          slug: "dev",
+          created_at: "",
+        },
+        {
+          id: "c2",
+          user_id: "u",
+          title: "Browser",
+          icon: "globe",
+          is_default: 1,
+          slug: "browser",
+          created_at: "",
+        },
       ],
-      tags: [
-        { id: "t1", user_id: "u", name: "work", created_at: "" },
-      ],
+      tags: [{ id: "t1", user_id: "u", name: "work", created_at: "" }],
     });
 
     const stats = envelopeStats(env);
@@ -118,8 +132,14 @@ describe("buildBackupTag", () => {
 
   test("works with zero counts", () => {
     const stats: BackupStats = {
-      sessions: 0, categories: 0, tags: 0,
-      appNotes: 0, dailySummaries: 0, settings: 0, apiKeys: 0, syncLogs: 0,
+      sessions: 0,
+      categories: 0,
+      tags: 0,
+      appNotes: 0,
+      dailySummaries: 0,
+      settings: 0,
+      apiKeys: 0,
+      syncLogs: 0,
     };
     expect(buildBackupTag("0.1.0", "2026-01-01", stats)).toBe("v0.1.0-2026-01-01-0sess-0cat-0tag");
   });
@@ -176,30 +196,34 @@ describe("compress / decompress roundtrip", () => {
 
   test("envelope with data roundtrips correctly", () => {
     const original = makeEnvelope({
-      focusSessions: [{
-        id: "s-1",
-        user_id: "u",
-        device_id: "d",
-        app_name: "Chrome",
-        window_title: "GitHub",
-        url: "https://github.com",
-        start_time: 1709337600,
-        end_time: null,
-        duration: 300,
-        bundle_id: "com.google.Chrome",
-        tab_title: "GitHub",
-        tab_count: 12,
-        document_path: null,
-        is_full_screen: 0,
-        is_minimized: 0,
-        synced_at: "2026-03-02T10:00:00Z",
-      }],
-      settings: [{
-        user_id: "u",
-        key: "timezone",
-        value: "Asia/Shanghai",
-        updated_at: 1709337600000,
-      }],
+      focusSessions: [
+        {
+          id: "s-1",
+          user_id: "u",
+          device_id: "d",
+          app_name: "Chrome",
+          window_title: "GitHub",
+          url: "https://github.com",
+          start_time: 1709337600,
+          end_time: null,
+          duration: 300,
+          bundle_id: "com.google.Chrome",
+          tab_title: "GitHub",
+          tab_count: 12,
+          document_path: null,
+          is_full_screen: 0,
+          is_minimized: 0,
+          synced_at: "2026-03-02T10:00:00Z",
+        },
+      ],
+      settings: [
+        {
+          user_id: "u",
+          key: "timezone",
+          value: "Asia/Shanghai",
+          updated_at: 1709337600000,
+        },
+      ],
     });
 
     const compressed = compressEnvelope(original);

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { resetSyncQueue } from "../../lib/sync-queue";
 
 // ---------------------------------------------------------------------------
@@ -93,11 +93,7 @@ describe("POST /api/sync", () => {
     const fetchCalls: string[] = [];
     globalThis.fetch = vi.fn((...args: unknown[]) => {
       const url =
-        typeof args[0] === "string"
-          ? args[0]
-          : args[0] instanceof Request
-            ? args[0].url
-            : "";
+        typeof args[0] === "string" ? args[0] : args[0] instanceof Request ? args[0].url : "";
       fetchCalls.push(url);
       return originalFetch(...(args as Parameters<typeof fetch>));
     }) as unknown as typeof fetch;
@@ -119,9 +115,7 @@ describe("POST /api/sync", () => {
       await POST(req);
 
       // No fetch calls should have been made to cloudflare D1
-      const d1Calls = fetchCalls.filter((url) =>
-        url.includes("api.cloudflare.com"),
-      );
+      const d1Calls = fetchCalls.filter((url) => url.includes("api.cloudflare.com"));
       expect(d1Calls.length).toBe(0);
     } finally {
       globalThis.fetch = originalFetch;
@@ -132,10 +126,7 @@ describe("POST /api/sync", () => {
     const { getSyncQueue } = await import("../../lib/sync-queue");
     const { POST } = await import("../../app/api/sync/route");
 
-    const sessions = [
-      sampleSession({ id: "id-1" }),
-      sampleSession({ id: "id-2" }),
-    ];
+    const sessions = [sampleSession({ id: "id-1" }), sampleSession({ id: "id-2" })];
 
     const req = new Request("http://localhost/api/sync", {
       method: "POST",
@@ -191,9 +182,7 @@ describe("POST /api/sync", () => {
   test("returns 413 for batch larger than 1000", async () => {
     const { POST } = await import("../../app/api/sync/route");
 
-    const sessions = Array.from({ length: 1001 }, (_, i) =>
-      sampleSession({ id: `id-${i}` }),
-    );
+    const sessions = Array.from({ length: 1001 }, (_, i) => sampleSession({ id: `id-${i}` }));
 
     const req = new Request("http://localhost/api/sync", {
       method: "POST",
@@ -256,9 +245,7 @@ describe("POST /api/sync", () => {
         Authorization: "Bearer gk_test123",
       },
       body: JSON.stringify({
-        sessions: [
-          sampleSession({ is_full_screen: true, is_minimized: true }),
-        ],
+        sessions: [sampleSession({ is_full_screen: true, is_minimized: true })],
       }),
     });
 

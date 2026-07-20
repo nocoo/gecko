@@ -2,7 +2,7 @@
  * Tests for /api/backy/config and /api/backy/test route handlers.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -44,7 +44,13 @@ function mockD1WithExternal(
         new Response(
           JSON.stringify({
             success: true,
-            result: [{ results, success: true, meta: { changes: results.length > 0 ? 1 : 0, last_row_id: 0 } }],
+            result: [
+              {
+                results,
+                success: true,
+                meta: { changes: results.length > 0 ? 1 : 0, last_row_id: 0 },
+              },
+            ],
             errors: [],
           }),
           { status: 200 },
@@ -82,10 +88,12 @@ describe("/api/backy/config GET", () => {
   });
 
   test("returns config with masked API key", async () => {
-    mockD1WithExternal([[
-      { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-      { key: "backy.apiKey", value: "sk-test-secret-key-12345" },
-    ]]);
+    mockD1WithExternal([
+      [
+        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
+        { key: "backy.apiKey", value: "sk-test-secret-key-12345" },
+      ],
+    ]);
     const { GET } = await import("../../app/api/backy/config/route");
 
     const res = await GET();
@@ -101,9 +109,7 @@ describe("/api/backy/config GET", () => {
   });
 
   test("returns unconfigured when only webhookUrl exists", async () => {
-    mockD1WithExternal([[
-      { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-    ]]);
+    mockD1WithExternal([[{ key: "backy.webhookUrl", value: "https://backy.example.com/webhook" }]]);
     const { GET } = await import("../../app/api/backy/config/route");
 
     const res = await GET();
@@ -218,10 +224,12 @@ describe("/api/backy/config PUT", () => {
 describe("/api/backy/test POST", () => {
   test("returns ok when backy service responds 200", async () => {
     const { externalCalls } = mockD1WithExternal(
-      [[
-        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-        { key: "backy.apiKey", value: "sk-test-123" },
-      ]],
+      [
+        [
+          { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
+          { key: "backy.apiKey", value: "sk-test-123" },
+        ],
+      ],
       () => new Response(null, { status: 200 }),
     );
     const { POST } = await import("../../app/api/backy/test/route");
@@ -244,10 +252,12 @@ describe("/api/backy/test POST", () => {
 
   test("returns ok=false when backy responds non-200", async () => {
     mockD1WithExternal(
-      [[
-        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-        { key: "backy.apiKey", value: "sk-test-123" },
-      ]],
+      [
+        [
+          { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
+          { key: "backy.apiKey", value: "sk-test-123" },
+        ],
+      ],
       () => new Response("Unauthorized", { status: 401 }),
     );
     const { POST } = await import("../../app/api/backy/test/route");
@@ -273,11 +283,15 @@ describe("/api/backy/test POST", () => {
 
   test("returns 502 when connection fails", async () => {
     mockD1WithExternal(
-      [[
-        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-        { key: "backy.apiKey", value: "sk-test-123" },
-      ]],
-      () => { throw new Error("ECONNREFUSED"); },
+      [
+        [
+          { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
+          { key: "backy.apiKey", value: "sk-test-123" },
+        ],
+      ],
+      () => {
+        throw new Error("ECONNREFUSED");
+      },
     );
     const { POST } = await import("../../app/api/backy/test/route");
 

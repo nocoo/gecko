@@ -163,24 +163,14 @@ function ScoreRing({
 // Components
 // ---------------------------------------------------------------------------
 
-function DimensionCard({
-  dimension,
-  score,
-}: {
-  dimension: ScoreDimension;
-  score: number;
-}) {
+function DimensionCard({ dimension, score }: { dimension: ScoreDimension; score: number }) {
   const color = getScoreColor(score);
 
   return (
     <div className="rounded-widget bg-secondary p-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs text-muted-foreground">
-          {dimension.label}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          {Math.round(dimension.weight * 100)}%
-        </span>
+        <span className="text-xs text-muted-foreground">{dimension.label}</span>
+        <span className="text-xs text-muted-foreground">{Math.round(dimension.weight * 100)}%</span>
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className={`text-xl font-semibold font-display tracking-tight ${color.text}`}>
@@ -188,9 +178,7 @@ function DimensionCard({
         </span>
         <span className="text-xs text-muted-foreground">/ 100</span>
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">
-        {dimension.description}
-      </p>
+      <p className="mt-1.5 text-xs text-muted-foreground">{dimension.description}</p>
     </div>
   );
 }
@@ -200,31 +188,25 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
 
   return (
     <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-      <h3 className="text-sm font-normal text-muted-foreground mb-3">
-        Productivity Score
-      </h3>
+      <h3 className="text-sm font-normal text-muted-foreground mb-3">Productivity Score</h3>
 
       {/* Overall score */}
       <div className="flex items-center gap-4 mb-4">
         <ScoreRing score={scores.overall} size={72} strokeWidth={6} />
         <div>
-          <p className={`text-xl md:text-2xl font-semibold font-display tracking-tight ${overallColor.text}`}>
+          <p
+            className={`text-xl md:text-2xl font-semibold font-display tracking-tight ${overallColor.text}`}
+          >
             {getScoreLabel(scores.overall)}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Overall weighted score
-          </p>
+          <p className="text-xs text-muted-foreground">Overall weighted score</p>
         </div>
       </div>
 
       {/* Dimension cards grid */}
       <div className="grid grid-cols-2 gap-3">
         {SCORE_DIMENSIONS.map((dim) => (
-          <DimensionCard
-            key={dim.key}
-            dimension={dim}
-            score={scores[dim.key]}
-          />
+          <DimensionCard key={dim.key} dimension={dim} score={scores[dim.key]} />
         ))}
       </div>
     </div>

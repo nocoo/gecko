@@ -5,29 +5,29 @@
  * Handles: auth, date validation, force flag, cache check, HTTP response mapping.
  */
 
-import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { ensureAutoAnalyze } from "@/lib/auto-analyze";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
+import { settingsRepo } from "@/lib/settings-repo";
 import { todayInTz } from "@/lib/timezone";
 import {
-  runAnalysis,
+  type AiAnalysisResult,
+  type AppContext,
+  BROWSER_BUNDLE_IDS,
+  buildAppContextSection,
+  buildPrompt,
+  buildSessionTimeline,
+  type CustomPromptSections,
+  expandTemplate,
+  fmtDuration,
+  IDLE_BUNDLE_IDS,
   loadAiSettings,
   loadAppContext,
-  buildPrompt,
-  buildAppContextSection,
-  buildSessionTimeline,
-  fmtDuration,
-  expandTemplate,
   parseAiResponse,
-  IDLE_BUNDLE_IDS,
-  BROWSER_BUNDLE_IDS,
-  type AiAnalysisResult,
+  runAnalysis,
   type TimeSegment,
-  type AppContext,
-  type CustomPromptSections,
 } from "@/services/analyze-core";
 import { sendAnalysisEmail } from "@/services/email-notification";
-import { settingsRepo } from "@/lib/settings-repo";
-import { ensureAutoAnalyze } from "@/lib/auto-analyze";
 
 // Wire up the hourly auto-analyze scheduler once at module load time.
 // This must live in a route module (not instrumentation.ts) because vinext
@@ -37,17 +37,16 @@ ensureAutoAnalyze();
 
 export const dynamic = "force-dynamic";
 
-// Re-export types for consumer modules (client components, preview-prompt route)
-export type { AiAnalysisResult, TimeSegment, AppContext, CustomPromptSections };
-
 // Re-export prompt defaults (some modules import them from this path)
 export {
   DEFAULT_PROMPT_SECTION_1,
   DEFAULT_PROMPT_SECTION_2,
   DEFAULT_PROMPT_SECTION_3,
   DEFAULT_PROMPT_SECTION_4,
+  PROMPT_TEMPLATE_VARIABLES,
 } from "@/services/prompt-defaults";
-export { PROMPT_TEMPLATE_VARIABLES } from "@/services/prompt-defaults";
+// Re-export types for consumer modules (client components, preview-prompt route)
+export type { AiAnalysisResult, AppContext, CustomPromptSections, TimeSegment };
 
 // ---------------------------------------------------------------------------
 // Internal helpers (kept here — HTTP-only concerns)
@@ -67,7 +66,12 @@ function validateDate(dateStr: string, tz: string): string | null {
     return "Invalid date.";
   }
   const test = new Date(Date.UTC(y, m - 1, d));
-  if (Number.isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
+  if (
+    Number.isNaN(test.getTime()) ||
+    test.getUTCFullYear() !== y ||
+    test.getUTCMonth() !== m - 1 ||
+    test.getUTCDate() !== d
+  ) {
     return "Invalid date.";
   }
   const today = todayInTz(tz);
@@ -81,20 +85,20 @@ function validateDate(dateStr: string, tz: string): string | null {
 // Underscore-prefixed exports for testing & preview-prompt route
 // ---------------------------------------------------------------------------
 
+export type { AppContext as _AppContext };
 export {
-  validateDate as _validateDate,
+  BROWSER_BUNDLE_IDS as _BROWSER_BUNDLE_IDS,
+  buildAppContextSection as _buildAppContextSection,
+  buildPrompt as _buildPrompt,
+  buildSessionTimeline as _buildSessionTimeline,
+  expandTemplate as _expandTemplate,
+  fmtDuration as _fmtDuration,
+  IDLE_BUNDLE_IDS as _IDLE_BUNDLE_IDS,
   loadAiSettings as _loadAiSettings,
   loadAppContext as _loadAppContext,
-  buildAppContextSection as _buildAppContextSection,
-  fmtDuration as _fmtDuration,
-  buildSessionTimeline as _buildSessionTimeline,
-  buildPrompt as _buildPrompt,
   parseAiResponse as _parseAiResponse,
-  expandTemplate as _expandTemplate,
-  IDLE_BUNDLE_IDS as _IDLE_BUNDLE_IDS,
-  BROWSER_BUNDLE_IDS as _BROWSER_BUNDLE_IDS,
+  validateDate as _validateDate,
 };
-export type { AppContext as _AppContext };
 
 // ---------------------------------------------------------------------------
 // Route handler
@@ -163,7 +167,9 @@ export async function POST(
       date,
       result: outcome.result,
       stats: outcome.stats,
-    }).catch(() => {}); // fire-and-forget
+    }).catch(() => {
+      // fire-and-forget; sendAnalysisEmail already handles errors
+    });
   }
 
   return jsonOk({

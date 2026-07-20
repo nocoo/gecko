@@ -8,16 +8,11 @@
  * Authentication: Bearer token (gk_xxx) via Authorization header.
  */
 
-import {
-  requireApiKey,
-  jsonOk,
-  jsonError,
-  getUserTimezone,
-} from "@/lib/api-helpers";
-import { fetchSessionsForDate } from "@/lib/session-queries";
-import { computeDailyStats } from "@/services/daily-stats";
+import { getUserTimezone, jsonError, jsonOk, requireApiKey } from "@/lib/api-helpers";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
+import { fetchSessionsForDate } from "@/lib/session-queries";
 import { todayInTz } from "@/lib/timezone";
+import { computeDailyStats } from "@/services/daily-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -41,7 +36,7 @@ function validateDate(dateStr: string, tz: string): string | null {
   }
   const test = new Date(Date.UTC(y, m - 1, d));
   if (
-    isNaN(test.getTime()) ||
+    Number.isNaN(test.getTime()) ||
     test.getUTCFullYear() !== y ||
     test.getUTCMonth() !== m - 1 ||
     test.getUTCDate() !== d
@@ -84,10 +79,7 @@ export async function GET(req: Request): Promise<Response> {
   const stats = computeDailyStats(dateParam, rows);
 
   // Cached AI analysis (if any)
-  const cached = await dailySummaryRepo.findByUserAndDate(
-    user.userId,
-    dateParam,
-  );
+  const cached = await dailySummaryRepo.findByUserAndDate(user.userId, dateParam);
   const ai = cached?.ai_result_json
     ? {
         score: cached.ai_score,

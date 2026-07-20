@@ -2,9 +2,9 @@
  * Unit tests for the Gantt chart data transformation functions.
  */
 
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import { buildGanttData, formatTime } from "@/components/daily/gantt-chart";
-import type { SessionForChart, AppSummary } from "@/services/daily-stats";
+import type { AppSummary, SessionForChart } from "@/services/daily-stats";
 
 // ---------------------------------------------------------------------------
 // Fixtures

@@ -1,13 +1,9 @@
-import * as React from "react"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown } from "lucide-react";
+import type * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
-function Select({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<"select">) {
+function Select({ className, children, ...props }: React.ComponentProps<"select">) {
   return (
     <div className="relative">
       <select
@@ -25,7 +21,7 @@ function Select({
         strokeWidth={1.5}
       />
     </div>
-  )
+  );
 }
 
-export { Select }
+export { Select };

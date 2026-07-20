@@ -7,15 +7,12 @@
  * Hard fail if tools are not installed — no soft-skip.
  */
 
-async function runCommand(
-  cmd: string[],
-  label: string,
-): Promise<boolean> {
+async function runCommand(cmd: string[], label: string): Promise<boolean> {
   try {
     const proc = Bun.spawn(cmd, {
       stdout: "pipe",
       stderr: "pipe",
-      cwd: import.meta.dir + "/..",
+      cwd: `${import.meta.dir}/..`,
     });
     const stdout = await new Response(proc.stdout).text();
     const stderr = await new Response(proc.stderr).text();
@@ -31,15 +28,9 @@ async function runCommand(
     console.log(`${label}: passed`);
     return true;
   } catch {
-    console.error(
-      `${label}: tool not installed. Install it to pass the security gate.`,
-    );
-    console.error(
-      `  osv-scanner: https://github.com/google/osv-scanner`,
-    );
-    console.error(
-      `  gitleaks:    https://github.com/gitleaks/gitleaks`,
-    );
+    console.error(`${label}: tool not installed. Install it to pass the security gate.`);
+    console.error(`  osv-scanner: https://github.com/google/osv-scanner`);
+    console.error(`  gitleaks:    https://github.com/gitleaks/gitleaks`);
     return false;
   }
 }

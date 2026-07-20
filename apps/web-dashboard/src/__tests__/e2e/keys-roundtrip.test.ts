@@ -6,8 +6,8 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -59,7 +59,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -80,11 +80,9 @@ afterAll(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const api = (path: string, init?: RequestInit) =>
-  fetch(`${BASE_URL}${path}`, init);
+const api = (path: string, init?: RequestInit) => fetch(`${BASE_URL}${path}`, init);
 
-const json = (path: string, init?: RequestInit) =>
-  api(path, init).then((r) => r.json());
+const json = (path: string, init?: RequestInit) => api(path, init).then((r) => r.json());
 
 // ---------------------------------------------------------------------------
 // Shared state across ordered test scenarios
@@ -155,9 +153,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: API Keys round-trip", () => {
 
       expect(body.keys).toBeArray();
 
-      const found = body.keys.find(
-        (k: { id: string }) => k.id === createdKeyId,
-      );
+      const found = body.keys.find((k: { id: string }) => k.id === createdKeyId);
       expect(found).toBeDefined();
       expect(found.name).toBe("E2E Test Device");
       expect(found.deviceId).toBeDefined();
@@ -231,9 +227,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: API Keys round-trip", () => {
 
       expect(body.keys).toBeArray();
 
-      const found = body.keys.find(
-        (k: { id: string }) => k.id === createdKeyId,
-      );
+      const found = body.keys.find((k: { id: string }) => k.id === createdKeyId);
       expect(found).toBeUndefined();
     });
   });

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { BUNDLE_ID_MAPPINGS } from "../../lib/default-categories";
 
 // ---------------------------------------------------------------------------
@@ -58,7 +58,7 @@ describe("seedDefaultCategories", () => {
     const batchCount = Math.ceil(mappingCount / 25);
     const responses: unknown[][] = [
       [{ cnt: 0 }], // COUNT
-      [],            // INSERT categories
+      [], // INSERT categories
       ...Array(batchCount).fill([]), // INSERT mapping batches
     ];
 
@@ -109,11 +109,7 @@ describe("seedDefaultCategories", () => {
   test("auto-maps known bundle_ids to default categories", async () => {
     const mappingCount = BUNDLE_ID_MAPPINGS.size;
     const batchCount = Math.ceil(mappingCount / 25);
-    const responses: unknown[][] = [
-      [{ cnt: 0 }],
-      [],
-      ...Array(batchCount).fill([]),
-    ];
+    const responses: unknown[][] = [[{ cnt: 0 }], [], ...Array(batchCount).fill([])];
 
     const { calls } = mockD1(responses);
     const { seedDefaultCategories } = await import("../../lib/seed-categories");
@@ -142,11 +138,7 @@ describe("seedDefaultCategories", () => {
   test("respects D1 batch size limit of 25 rows per INSERT", async () => {
     const mappingCount = BUNDLE_ID_MAPPINGS.size;
     const batchCount = Math.ceil(mappingCount / 25);
-    const responses: unknown[][] = [
-      [{ cnt: 0 }],
-      [],
-      ...Array(batchCount).fill([]),
-    ];
+    const responses: unknown[][] = [[{ cnt: 0 }], [], ...Array(batchCount).fill([])];
 
     const { calls } = mockD1(responses);
     const { seedDefaultCategories } = await import("../../lib/seed-categories");
@@ -172,11 +164,7 @@ describe("seedDefaultCategories", () => {
   test("each default category gets a unique UUID", async () => {
     const mappingCount = BUNDLE_ID_MAPPINGS.size;
     const batchCount = Math.ceil(mappingCount / 25);
-    const responses: unknown[][] = [
-      [{ cnt: 0 }],
-      [],
-      ...Array(batchCount).fill([]),
-    ];
+    const responses: unknown[][] = [[{ cnt: 0 }], [], ...Array(batchCount).fill([])];
 
     const { calls } = mockD1(responses);
     const { seedDefaultCategories } = await import("../../lib/seed-categories");
@@ -197,20 +185,14 @@ describe("seedDefaultCategories", () => {
     expect(new Set(uuids).size).toBe(4);
     // All should look like UUIDs
     for (const uuid of uuids) {
-      expect(uuid).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
+      expect(uuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     }
   });
 
   test("all default categories use the same user_id", async () => {
     const mappingCount = BUNDLE_ID_MAPPINGS.size;
     const batchCount = Math.ceil(mappingCount / 25);
-    const responses: unknown[][] = [
-      [{ cnt: 0 }],
-      [],
-      ...Array(batchCount).fill([]),
-    ];
+    const responses: unknown[][] = [[{ cnt: 0 }], [], ...Array(batchCount).fill([])];
 
     const { calls } = mockD1(responses);
     const { seedDefaultCategories } = await import("../../lib/seed-categories");
@@ -230,11 +212,7 @@ describe("seedDefaultCategories", () => {
     // First call: user has 0 categories → seed
     const mappingCount = BUNDLE_ID_MAPPINGS.size;
     const batchCount = Math.ceil(mappingCount / 25);
-    const responsesFirst: unknown[][] = [
-      [{ cnt: 0 }],
-      [],
-      ...Array(batchCount).fill([]),
-    ];
+    const responsesFirst: unknown[][] = [[{ cnt: 0 }], [], ...Array(batchCount).fill([])];
     const { calls: calls1 } = mockD1(responsesFirst);
     const { seedDefaultCategories } = await import("../../lib/seed-categories");
     await seedDefaultCategories("user-123");

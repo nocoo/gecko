@@ -2,7 +2,7 @@
  * Tests for /api/backy/pull-key — Pull key management endpoints.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 
@@ -30,7 +30,9 @@ function d1Resp(results: unknown[], changes = 0) {
 /**
  * Mock fetch for D1 calls. Tracks SQL queries for assertion.
  */
-function mockD1(handler: (sql: string, params: unknown[]) => { results: unknown[]; changes?: number }) {
+function mockD1(
+  handler: (sql: string, params: unknown[]) => { results: unknown[]; changes?: number },
+) {
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
   globalThis.fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
@@ -61,7 +63,7 @@ describe("GET /api/backy/pull-key", () => {
   });
 
   test("returns masked key when pull key exists", async () => {
-    const pullKey = "bpk_" + "ab".repeat(32); // 68 chars total
+    const pullKey = `bpk_${"ab".repeat(32)}`; // 68 chars total
 
     mockD1((sql) => {
       if (sql.includes("backy.pullKey")) {

@@ -10,14 +10,14 @@
  * Follows the SyncQueue pattern: class + factory + lazy singleton.
  */
 
-import { todayInTz, yesterdayInTz } from "@/lib/timezone";
 import { getUserTimezone } from "@/lib/api-helpers";
-import { settingsRepo } from "@/lib/settings-repo";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
-import { fetchSessionsForDate } from "@/lib/session-queries";
-import { runAnalysis, type AnalysisOutcome } from "@/services/analyze-core";
-import { sendAnalysisEmail } from "@/services/email-notification";
 import { getHourlyScheduler } from "@/lib/hourly-scheduler";
+import { fetchSessionsForDate } from "@/lib/session-queries";
+import { settingsRepo } from "@/lib/settings-repo";
+import { todayInTz, yesterdayInTz } from "@/lib/timezone";
+import { type AnalysisOutcome, runAnalysis } from "@/services/analyze-core";
+import { sendAnalysisEmail } from "@/services/email-notification";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -164,7 +164,9 @@ export class AutoAnalyzeService {
     promise
       .then(async (outcome) => {
         if (outcome.ok) {
-          console.log(`[AutoAnalyze] Analysis complete for user ${userId} date ${yesterday}: score=${outcome.score}`);
+          console.log(
+            `[AutoAnalyze] Analysis complete for user ${userId} date ${yesterday}: score=${outcome.score}`,
+          );
           // Fire-and-forget email notification.
           // sendAnalysisEmail is documented "Never throws"; the .catch is
           // defense-in-depth only, hence not reachable from tests.
@@ -173,10 +175,14 @@ export class AutoAnalyzeService {
             date: yesterday,
             result: outcome.result,
             stats: outcome.stats,
-          /* v8 ignore next */
-          }).catch(() => {}); // swallow — sendAnalysisEmail already handles errors internally
+            /* v8 ignore next */
+          }).catch(() => {
+            // swallow — sendAnalysisEmail already handles errors internally
+          });
         } else {
-          console.warn(`[AutoAnalyze] Analysis failed for user ${userId} date ${yesterday}: ${outcome.reason} — ${outcome.message}`);
+          console.warn(
+            `[AutoAnalyze] Analysis failed for user ${userId} date ${yesterday}: ${outcome.reason} — ${outcome.message}`,
+          );
           // Release the DB claim so the next tick can retry
           await this.deps.releaseAnalysisClaim(userId, yesterday);
         }
@@ -221,8 +227,7 @@ export class AutoAnalyzeService {
 
 function createDefaultDeps(): AutoAnalyzeDeps {
   return {
-    findAutoSummarizeUsers: () =>
-      settingsRepo.findUserIdsByKeyValue("ai.autoSummarize", "true"),
+    findAutoSummarizeUsers: () => settingsRepo.findUserIdsByKeyValue("ai.autoSummarize", "true"),
     getUserTimezone: (userId) => getUserTimezone(userId),
     hasAnalysis: async (userId, date) => {
       const row = await dailySummaryRepo.findByUserAndDate(userId, date);
@@ -232,10 +237,8 @@ function createDefaultDeps(): AutoAnalyzeDeps {
       const rows = await fetchSessionsForDate(userId, date, tz);
       return rows.length > 0;
     },
-    claimForAnalysis: (userId, date) =>
-      dailySummaryRepo.claimForAnalysis(userId, date),
-    releaseAnalysisClaim: (userId, date) =>
-      dailySummaryRepo.releaseAnalysisClaim(userId, date),
+    claimForAnalysis: (userId, date) => dailySummaryRepo.claimForAnalysis(userId, date),
+    releaseAnalysisClaim: (userId, date) => dailySummaryRepo.releaseAnalysisClaim(userId, date),
     runAnalysis: (userId, date, tz) => runAnalysis(userId, date, tz),
   };
 }

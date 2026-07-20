@@ -1,34 +1,34 @@
 "use client";
 
 import {
-  Cpu,
-  Monitor,
-  Globe,
   AppWindow,
-  Folder,
-  Code,
-  MessageSquare,
-  Mail,
-  Music,
-  Gamepad2,
-  Paintbrush,
-  Camera,
-  FileText,
-  Terminal,
-  Video,
-  ShoppingBag,
   BookOpen,
   Briefcase,
+  Camera,
+  Code,
+  Cpu,
+  FileText,
+  Folder,
+  Gamepad2,
+  Globe,
   Heart,
+  type LucideProps,
+  Mail,
+  MessageSquare,
+  Monitor,
+  Music,
+  Paintbrush,
   Shield,
+  ShoppingBag,
+  Terminal,
+  Video,
   Wrench,
   Zap,
-  type LucideProps,
 } from "lucide-react";
-import { getHashColor } from "@/lib/hash-color";
-import { useIsDark } from "@/hooks/use-dark";
-import { cn } from "@/lib/utils";
 import type { ComponentProps, FC } from "react";
+import { useIsDark } from "@/hooks/use-dark";
+import { getHashColor } from "@/lib/hash-color";
+import { cn } from "@/lib/utils";
 
 /**
  * Static icon map for category icons.
@@ -63,8 +63,7 @@ const ICON_MAP: Record<string, FC<LucideProps>> = {
 /** Default fallback icon when the icon name is not found in the map. */
 const DEFAULT_ICON = Folder;
 
-export interface CategoryPillProps
-  extends Omit<ComponentProps<"span">, "children"> {
+export interface CategoryPillProps extends Omit<ComponentProps<"span">, "children"> {
   /** Category title to display */
   title: string;
   /** Lucide icon name (e.g. 'monitor', 'globe') */
@@ -101,10 +100,7 @@ export function CategoryPill({
       style={{ color: fg, backgroundColor: bg }}
       {...props}
     >
-      <IconComponent
-        className={size === "sm" ? "size-3" : "size-3.5"}
-        strokeWidth={2}
-      />
+      <IconComponent className={size === "sm" ? "size-3" : "size-3.5"} strokeWidth={2} />
       {title}
     </span>
   );

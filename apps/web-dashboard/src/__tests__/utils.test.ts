@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import { cn, getAvatarColor } from "../lib/utils";
 
 describe("src/lib/utils", () => {

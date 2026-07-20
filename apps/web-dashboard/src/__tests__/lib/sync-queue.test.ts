@@ -1,8 +1,8 @@
-import { describe, test, expect, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
-  createSyncQueue,
   buildMultiRowInsert,
   COLUMNS,
+  createSyncQueue,
   type QueuedSession,
 } from "../../lib/sync-queue";
 
@@ -341,9 +341,7 @@ describe("SyncQueue", () => {
     test("default batchSize of 7 stays within D1's 100-param limit", () => {
       const queue = createSyncQueue({ autoStart: false });
       // Build a full default batch (7 rows)
-      const items = Array.from({ length: 7 }, (_, i) =>
-        sampleItem({ id: `batch-${i}` })
-      );
+      const items = Array.from({ length: 7 }, (_, i) => sampleItem({ id: `batch-${i}` }));
       const { params } = buildMultiRowInsert(items);
 
       // 7 rows × 14 cols = 98 params — must be < 100
@@ -357,9 +355,7 @@ describe("SyncQueue", () => {
     });
 
     test("8 rows would exceed D1's 100-param limit", () => {
-      const items = Array.from({ length: 8 }, (_, i) =>
-        sampleItem({ id: `over-${i}` })
-      );
+      const items = Array.from({ length: 8 }, (_, i) => sampleItem({ id: `over-${i}` }));
       const { params } = buildMultiRowInsert(items);
 
       // 8 rows × 14 cols = 112 params — exceeds limit
@@ -417,9 +413,7 @@ describe("SyncQueue", () => {
           new Response(
             JSON.stringify({
               success: true,
-              result: [
-                { results: [], success: true, meta: { changes: 1, last_row_id: 1 } },
-              ],
+              result: [{ results: [], success: true, meta: { changes: 1, last_row_id: 1 } }],
               errors: [],
             }),
             { status: 200 },

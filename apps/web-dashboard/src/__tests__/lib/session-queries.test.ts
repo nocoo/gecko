@@ -7,7 +7,7 @@
  * 3. Zero-duration sessions after clipping are filtered out
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 const originalFetch = globalThis.fetch;
 

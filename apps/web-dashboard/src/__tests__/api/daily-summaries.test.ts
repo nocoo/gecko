@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/daily/summaries route handler tests
@@ -36,8 +36,8 @@ function mockD1(responses: unknown[][] = [[]]) {
           result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 
@@ -53,9 +53,7 @@ const tzRow = {
 
 async function callGET(from: string, to: string) {
   const { GET } = await import("../../app/api/daily/summaries/route");
-  const req = new Request(
-    `http://localhost/api/daily/summaries?from=${from}&to=${to}`,
-  );
+  const req = new Request(`http://localhost/api/daily/summaries?from=${from}&to=${to}`);
   return GET(req);
 }
 
@@ -134,9 +132,7 @@ describe("GET /api/daily/summaries", () => {
   });
 
   test("returns empty array when range is fully in the future", async () => {
-    mockD1([
-      [tzRow],
-    ]);
+    mockD1([[tzRow]]);
 
     // 60-day window starting in 2099 — within range cap but entirely after today.
     const res = await callGET("2099-01-01", "2099-02-28");

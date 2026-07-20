@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 interface BreadcrumbItem {
   label: string;
@@ -19,10 +19,7 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           <span key={item.label} className="flex items-center gap-1">
             {index > 0 && <ChevronRight className="h-3 w-3" />}
             {item.href && !isLast ? (
-              <Link
-                href={item.href}
-                className="hover:text-foreground transition-colors"
-              >
+              <Link href={item.href} className="hover:text-foreground transition-colors">
                 {item.label}
               </Link>
             ) : (

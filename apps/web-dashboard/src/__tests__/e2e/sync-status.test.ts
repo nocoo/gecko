@@ -3,8 +3,8 @@
 // Runs against the dev:e2e server (port 17018, E2E_SKIP_AUTH=true).
 // IMPORTANT: Skipped unless RUN_E2E=true.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -56,7 +56,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -77,8 +77,7 @@ afterAll(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const api = (path: string, init?: RequestInit) =>
-  fetch(`${BASE_URL}${path}`, init);
+const api = (path: string, init?: RequestInit) => fetch(`${BASE_URL}${path}`, init);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -122,17 +121,14 @@ describe("Sync Status E2E", () => {
     await new Promise((r) => setTimeout(r, DRAIN_WAIT_MS));
   });
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/sync/status returns devices array",
-    async () => {
-      const res = await api("/api/sync/status");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/sync/status returns devices array", async () => {
+    const res = await api("/api/sync/status");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body).toHaveProperty("devices");
-      expect(Array.isArray(body.devices)).toBe(true);
-    },
-  );
+    const body = await res.json();
+    expect(body).toHaveProperty("devices");
+    expect(Array.isArray(body.devices)).toBe(true);
+  });
 
   test.skipIf(!SHOULD_RUN)(
     "each device entry has expected fields when sync_logs exist",

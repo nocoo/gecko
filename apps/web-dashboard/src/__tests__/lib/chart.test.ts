@@ -1,4 +1,11 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
+import {
+  AXIS_CONFIG,
+  BAR_RADIUS,
+  formatDurationCompact,
+  getChartColor,
+  RESPONSIVE_CONTAINER_PROPS,
+} from "../../lib/chart-config";
 import {
   CHART_COLORS,
   CHART_TOKENS,
@@ -8,13 +15,6 @@ import {
   chartPrimary,
   withAlpha,
 } from "../../lib/palette";
-import {
-  getChartColor,
-  AXIS_CONFIG,
-  BAR_RADIUS,
-  formatDurationCompact,
-  RESPONSIVE_CONTAINER_PROPS,
-} from "../../lib/chart-config";
 
 // ---------------------------------------------------------------------------
 // palette.ts

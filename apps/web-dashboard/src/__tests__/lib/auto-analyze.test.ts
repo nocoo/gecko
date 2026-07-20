@@ -4,14 +4,14 @@
  * All I/O dependencies are injected as mocks.
  */
 
-import { describe, test, expect, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import {
+  type AutoAnalyzeDeps,
   createAutoAnalyze,
+  ensureAutoAnalyze,
   getAutoAnalyze,
   resetAutoAnalyze,
-  ensureAutoAnalyze,
   resetEnsureAutoAnalyze,
-  type AutoAnalyzeDeps,
 } from "@/lib/auto-analyze";
 import type { AnalysisOutcome } from "@/services/analyze-core";
 import type { DailyStats } from "@/services/daily-stats";
@@ -31,7 +31,16 @@ function makeDeps(overrides?: Partial<AutoAnalyzeDeps>): AutoAnalyzeDeps {
     claimForAnalysis: vi.fn(() => Promise.resolve(true)),
     releaseAnalysisClaim: vi.fn(() => Promise.resolve()),
     runAnalysis: vi.fn(() =>
-      Promise.resolve({ ok: true, score: 75, model: "test", provider: "test", durationMs: 100, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome),
+      Promise.resolve({
+        ok: true,
+        score: 75,
+        model: "test",
+        provider: "test",
+        durationMs: 100,
+        result: {} as never,
+        prompt: "p",
+        stats: stubStats,
+      } as AnalysisOutcome),
     ),
     nowFn: () => Date.now(),
     ...overrides,
@@ -117,7 +126,16 @@ describe("AutoAnalyzeService.onTick", () => {
     expect(svc.getRunningTasks().size).toBe(1);
 
     // Resolve the analysis
-    resolveAnalysis!({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats });
+    resolveAnalysis!({
+      ok: true,
+      score: 80,
+      model: "m",
+      provider: "p",
+      durationMs: 50,
+      result: {} as never,
+      prompt: "p",
+      stats: stubStats,
+    });
 
     // Give the .finally() callback a chance to run
     await new Promise((r) => setTimeout(r, 10));
@@ -162,7 +180,16 @@ describe("AutoAnalyzeService.onTick", () => {
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1); // not called again
 
     // Cleanup
-    resolveAnalysis!({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats });
+    resolveAnalysis!({
+      ok: true,
+      score: 80,
+      model: "m",
+      provider: "p",
+      durationMs: 50,
+      result: {} as never,
+      prompt: "p",
+      stats: stubStats,
+    });
     await new Promise((r) => setTimeout(r, 10));
   });
 
@@ -180,7 +207,16 @@ describe("AutoAnalyzeService.onTick", () => {
         if (callCount === 1) {
           return new Promise<AnalysisOutcome>(() => {});
         }
-        return Promise.resolve({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome);
+        return Promise.resolve({
+          ok: true,
+          score: 80,
+          model: "m",
+          provider: "p",
+          durationMs: 50,
+          result: {} as never,
+          prompt: "p",
+          stats: stubStats,
+        } as AnalysisOutcome);
       }),
       nowFn: () => now,
     });
@@ -263,7 +299,16 @@ describe("AutoAnalyzeService.onTick", () => {
       }),
       runAnalysis: vi.fn(() => {
         callOrder.push("analyze");
-        return Promise.resolve({ ok: true, score: 75, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome);
+        return Promise.resolve({
+          ok: true,
+          score: 75,
+          model: "m",
+          provider: "p",
+          durationMs: 50,
+          result: {} as never,
+          prompt: "p",
+          stats: stubStats,
+        } as AnalysisOutcome);
       }),
     });
     const svc = createAutoAnalyze(deps);
@@ -286,7 +331,16 @@ describe("releaseAnalysisClaim behavior", () => {
       hasSessions: vi.fn(() => Promise.resolve(true)),
       hasAnalysis: vi.fn(() => Promise.resolve(false)),
       runAnalysis: vi.fn(() =>
-        Promise.resolve({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats } as AnalysisOutcome),
+        Promise.resolve({
+          ok: true,
+          score: 80,
+          model: "m",
+          provider: "p",
+          durationMs: 50,
+          result: {} as never,
+          prompt: "p",
+          stats: stubStats,
+        } as AnalysisOutcome),
       ),
     });
     const svc = createAutoAnalyze(deps);
@@ -303,7 +357,11 @@ describe("releaseAnalysisClaim behavior", () => {
       hasSessions: vi.fn(() => Promise.resolve(true)),
       hasAnalysis: vi.fn(() => Promise.resolve(false)),
       runAnalysis: vi.fn(() =>
-        Promise.resolve({ ok: false, reason: "ai_error", message: "provider timeout" } as AnalysisOutcome),
+        Promise.resolve({
+          ok: false,
+          reason: "ai_error",
+          message: "provider timeout",
+        } as AnalysisOutcome),
       ),
     });
     const svc = createAutoAnalyze(deps);
@@ -380,10 +438,11 @@ describe("getRunningTasks()", () => {
       findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
       hasSessions: vi.fn(() => Promise.resolve(true)),
       hasAnalysis: vi.fn(() => Promise.resolve(false)),
-      runAnalysis: vi.fn(() =>
-        new Promise<AnalysisOutcome>((resolve) => {
-          resolveAnalysis = resolve;
-        }),
+      runAnalysis: vi.fn(
+        () =>
+          new Promise<AnalysisOutcome>((resolve) => {
+            resolveAnalysis = resolve;
+          }),
       ),
       nowFn: () => 42000,
     });
@@ -401,7 +460,16 @@ describe("getRunningTasks()", () => {
     expect((task as Record<string, unknown>).promise).toBeUndefined();
 
     // Cleanup
-    resolveAnalysis!({ ok: true, score: 80, model: "m", provider: "p", durationMs: 50, result: {} as never, prompt: "p", stats: stubStats });
+    resolveAnalysis!({
+      ok: true,
+      score: 80,
+      model: "m",
+      provider: "p",
+      durationMs: 50,
+      result: {} as never,
+      prompt: "p",
+      stats: stubStats,
+    });
     await new Promise((r) => setTimeout(r, 10));
   });
 });
@@ -440,9 +508,7 @@ describe("singleton management", () => {
   });
 
   test("ensureAutoAnalyze wires the scheduler callback to service.onTick", async () => {
-    const { resetHourlyScheduler, getHourlyScheduler } = await import(
-      "@/lib/hourly-scheduler"
-    );
+    const { resetHourlyScheduler, getHourlyScheduler } = await import("@/lib/hourly-scheduler");
     resetHourlyScheduler();
     resetEnsureAutoAnalyze();
     resetAutoAnalyze();

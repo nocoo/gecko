@@ -6,7 +6,7 @@
  * DELETE /api/backy/pull-key — Revoke the pull key
  */
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { jsonOk, requireSession } from "@/lib/api-helpers";
 import { backyRepo } from "@/lib/backy-repo";
 
 export const dynamic = "force-dynamic";

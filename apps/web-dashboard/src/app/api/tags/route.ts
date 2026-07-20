@@ -4,8 +4,8 @@
 // DELETE /api/tags — Delete a tag
 
 import { randomUUID } from "node:crypto";
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { query, execute } from "@/lib/d1";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { execute, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 

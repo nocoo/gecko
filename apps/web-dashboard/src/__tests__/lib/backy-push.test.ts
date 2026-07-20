@@ -5,7 +5,7 @@
  * fetch via the same globalThis.fetch handle.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { executePush } from "@/lib/backy-push";
 
 const originalFetch = globalThis.fetch;
@@ -31,7 +31,7 @@ function mockFetch(
   webhookHandler: (init: RequestInit) => Response | Promise<Response>,
 ) {
   let d1Idx = 0;
-  globalThis.fetch = vi.fn(async (url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn(async (_url: string, init: RequestInit) => {
     if (init.body && typeof init.body === "string") {
       // D1 calls are JSON with sql field
       try {
@@ -75,8 +75,26 @@ describe("executePush", () => {
     mockFetch(
       [
         // exportUserData — many SELECTs all returning empty.
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
       ],
       (init) => {
         webhookCalled = true;
@@ -103,12 +121,8 @@ describe("executePush", () => {
 
   test("returns 502 when backy responds with non-2xx", async () => {
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
-      () =>
-        new Response("server boom", { status: 500 }),
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
+      () => new Response("server boom", { status: 500 }),
     );
 
     const result = await executePush("u1", {
@@ -126,10 +140,7 @@ describe("executePush", () => {
 
   test("returns 502 with body fallback when response.text() throws", async () => {
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
       () => {
         // Simulate Response whose .text() throws to exercise the catch.
         const res = new Response(null, { status: 503 });
@@ -151,10 +162,7 @@ describe("executePush", () => {
 
   test("returns 502 when fetch throws an Error", async () => {
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
       () => {
         throw new Error("network down");
       },
@@ -174,10 +182,7 @@ describe("executePush", () => {
 
   test("returns 502 with 'Unknown error' when fetch throws a non-Error", async () => {
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
       () => {
         // throwing a string exercises the `err instanceof Error ? ... : "Unknown error"` branch
         throw "raw string failure";
@@ -199,10 +204,7 @@ describe("executePush", () => {
     vi.stubEnv("NODE_ENV", "production");
     let observedEnv: string | undefined;
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
       async (init) => {
         const fd = init.body as FormData;
         observedEnv = fd.get("environment") as string;
@@ -223,10 +225,7 @@ describe("executePush", () => {
     vi.stubEnv("NODE_ENV", "staging");
     let observedEnv: string | undefined;
     mockFetch(
-      [
-        [], [], [], [], [], [], [], [], [], [],
-        [], [], [], [], [], [], [], [], [], [],
-      ],
+      [[], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []],
       async (init) => {
         const fd = init.body as FormData;
         observedEnv = fd.get("environment") as string;

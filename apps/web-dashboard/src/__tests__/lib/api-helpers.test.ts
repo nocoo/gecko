@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // API helpers tests — auth extraction for route handlers
@@ -53,7 +53,7 @@ describe("api-helpers", () => {
     // Simulates the session extraction logic
     function extractUserId(
       session: { user?: { id?: string } } | null,
-      skipAuth: boolean
+      skipAuth: boolean,
     ): { userId: string } | { error: string; status: number } {
       if (skipAuth) {
         return { userId: "e2e-test-user" };
@@ -150,7 +150,9 @@ describe("api-helpers", () => {
   // ---------------------------------------------------------------------------
 
   describe("requireApiKey() E2E mode", () => {
-    let requireApiKey: (req: Request) => Promise<{ user?: { userId: string; deviceId: string }; error?: Response }>;
+    let requireApiKey: (
+      req: Request,
+    ) => Promise<{ user?: { userId: string; deviceId: string }; error?: Response }>;
 
     beforeEach(async () => {
       process.env.E2E_SKIP_AUTH = "true";
@@ -176,7 +178,9 @@ describe("api-helpers", () => {
   // ---------------------------------------------------------------------------
 
   describe("requireApiKey() auth mode", () => {
-    let requireApiKey: (req: Request) => Promise<{ user?: { userId: string; deviceId: string }; error?: Response }>;
+    let requireApiKey: (
+      req: Request,
+    ) => Promise<{ user?: { userId: string; deviceId: string }; error?: Response }>;
 
     beforeEach(async () => {
       delete process.env.E2E_SKIP_AUTH;
@@ -189,19 +193,19 @@ describe("api-helpers", () => {
       const result = await requireApiKey(req);
       expect(result.error).toBeDefined();
       expect(result.error!.status).toBe(401);
-      const body = await result.error!.json() as { error: string };
+      const body = (await result.error!.json()) as { error: string };
       expect(body.error).toContain("Missing or invalid Authorization");
     });
 
     test("returns 401 when API key is invalid", async () => {
-      mockD1([[]]);  // No matching key
+      mockD1([[]]); // No matching key
       const req = new Request("http://localhost", {
         headers: { Authorization: "Bearer gk_invalid_key_12345" },
       });
       const result = await requireApiKey(req);
       expect(result.error).toBeDefined();
       expect(result.error!.status).toBe(401);
-      const body = await result.error!.json() as { error: string };
+      const body = (await result.error!.json()) as { error: string };
       expect(body.error).toContain("Invalid API key");
     });
 
@@ -355,9 +359,7 @@ describe("api-helpers", () => {
     });
 
     test("returns user's timezone from settings", async () => {
-      mockD1([
-        [{ user_id: "u1", key: "timezone", value: "America/New_York", updated_at: 100 }],
-      ]);
+      mockD1([[{ user_id: "u1", key: "timezone", value: "America/New_York", updated_at: 100 }]]);
       const tz = await getUserTimezone("u1");
       expect(tz).toBe("America/New_York");
     });
@@ -369,9 +371,7 @@ describe("api-helpers", () => {
     });
 
     test("falls back to default for invalid timezone", async () => {
-      mockD1([
-        [{ user_id: "u1", key: "timezone", value: "Invalid/Timezone", updated_at: 100 }],
-      ]);
+      mockD1([[{ user_id: "u1", key: "timezone", value: "Invalid/Timezone", updated_at: 100 }]]);
       const tz = await getUserTimezone("u1");
       expect(tz).toBe("Asia/Shanghai");
     });

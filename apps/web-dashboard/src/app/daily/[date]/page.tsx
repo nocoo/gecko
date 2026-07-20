@@ -7,11 +7,7 @@
 
 import { DailyReviewClient } from "@/components/daily/daily-review-client";
 
-export default async function DailyReviewPage({
-  params,
-}: {
-  params: Promise<{ date: string }>;
-}) {
+export default async function DailyReviewPage({ params }: { params: Promise<{ date: string }> }) {
   const { date } = await params;
   return <DailyReviewClient date={date} />;
 }

@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/keys route handler tests
@@ -26,7 +26,7 @@ function mockD1(responses: unknown[][] = [[]]) {
   let callIndex = 0;
   const calls: Array<{ sql: string; params: unknown[] }> = [];
 
-  globalThis.fetch = vi.fn((url: string, init: RequestInit) => {
+  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
     const body = JSON.parse(init.body as string);
     calls.push({ sql: body.sql, params: body.params });
 
@@ -40,8 +40,8 @@ function mockD1(responses: unknown[][] = [[]]) {
           result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 
@@ -177,7 +177,7 @@ describe("/api/keys/[id]", () => {
     test("renames an API key", async () => {
       mockD1([
         [{ id: "key-1", user_id: "e2e-test-user" }], // findOwnedKey
-        [],                                            // UPDATE
+        [], // UPDATE
       ]);
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
@@ -273,10 +273,7 @@ describe("/api/keys/[id]", () => {
     test("deletes user's API key", async () => {
       // First query: check key exists and belongs to user
       // Second query: delete the key
-      mockD1([
-        [{ id: "key-1", user_id: "e2e-test-user" }],
-        [],
-      ]);
+      mockD1([[{ id: "key-1", user_id: "e2e-test-user" }], []]);
       const { DELETE } = await import("../../app/api/keys/[id]/route");
 
       const req = new Request("http://localhost/api/keys/key-1", {

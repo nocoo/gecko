@@ -6,7 +6,7 @@
  * Composite primary key: (user_id, key).
  */
 
-import { query, execute } from "@/lib/d1";
+import { execute, query } from "@/lib/d1";
 
 export interface DbSetting {
   user_id: string;
@@ -45,18 +45,15 @@ export const settingsRepo = {
   },
 
   async delete(userId: string, key: string): Promise<boolean> {
-    const result = await execute(
-      "DELETE FROM settings WHERE user_id = ? AND key = ?",
-      [userId, key],
-    );
+    const result = await execute("DELETE FROM settings WHERE user_id = ? AND key = ?", [
+      userId,
+      key,
+    ]);
     return result.meta.changes > 0;
   },
 
   async deleteByUserId(userId: string): Promise<number> {
-    const result = await execute(
-      "DELETE FROM settings WHERE user_id = ?",
-      [userId],
-    );
+    const result = await execute("DELETE FROM settings WHERE user_id = ?", [userId]);
     return result.meta.changes;
   },
 

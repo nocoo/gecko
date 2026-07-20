@@ -6,11 +6,11 @@
  * Date must be YYYY-MM-DD and not in the future.
  */
 
-import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
-import { computeDailyStats } from "@/services/daily-stats";
-import { todayInTz } from "@/lib/timezone";
 import { fetchSessionsForDate } from "@/lib/session-queries";
+import { todayInTz } from "@/lib/timezone";
+import { computeDailyStats } from "@/services/daily-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,12 @@ function validateDate(dateStr: string, tz: string): string | null {
     return "Invalid date.";
   }
   const test = new Date(Date.UTC(y, m - 1, d));
-  if (isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
+  if (
+    Number.isNaN(test.getTime()) ||
+    test.getUTCFullYear() !== y ||
+    test.getUTCMonth() !== m - 1 ||
+    test.getUTCDate() !== d
+  ) {
     return "Invalid date.";
   }
   // Must not be in the future

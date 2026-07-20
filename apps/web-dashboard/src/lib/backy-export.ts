@@ -6,23 +6,23 @@
  * for a single query per user.
  */
 
-import { query } from "@/lib/d1";
-import { APP_VERSION } from "@/lib/version";
 import {
   BACKUP_SCHEMA_VERSION,
   type BackupEnvelope,
-  type BkFocusSession,
-  type BkCategory,
-  type BkAppCategoryMapping,
-  type BkTag,
-  type BkAppTagMapping,
-  type BkAppNote,
-  type BkDailySummary,
-  type BkSetting,
   type BkApiKey,
+  type BkAppCategoryMapping,
+  type BkAppNote,
+  type BkAppTagMapping,
+  type BkCategory,
+  type BkDailySummary,
+  type BkFocusSession,
+  type BkSetting,
   type BkSyncLog,
+  type BkTag,
   isBackySettingKey,
 } from "@/lib/backy";
+import { query } from "@/lib/d1";
+import { APP_VERSION } from "@/lib/version";
 
 /** Rows per D1 query when paginating focus_sessions. */
 export const PAGE_SIZE = 5000;

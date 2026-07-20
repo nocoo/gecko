@@ -4,7 +4,7 @@
  * Collects all user data, gzip-compresses it, and uploads via multipart/form-data.
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { executePush } from "@/lib/backy-push";
 
 export const dynamic = "force-dynamic";

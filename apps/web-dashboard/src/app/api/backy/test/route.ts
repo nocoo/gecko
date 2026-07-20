@@ -5,7 +5,7 @@
  * with the stored API key to verify the service is reachable.
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { backyRepo } from "@/lib/backy-repo";
 
 export const dynamic = "force-dynamic";

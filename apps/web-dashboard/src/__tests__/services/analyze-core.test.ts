@@ -5,18 +5,18 @@
  * bun:test vi.fn() for the `ai` module's generateText.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
-  loadAiSettings,
-  loadAppContext,
+  type AppContext,
+  buildAppContextSection,
   buildPrompt,
   buildSessionTimeline,
-  buildAppContextSection,
-  fmtDuration,
   expandTemplate,
+  fmtDuration,
+  loadAiSettings,
+  loadAppContext,
   parseAiResponse,
   runAnalysis,
-  type AppContext,
 } from "@/services/analyze-core";
 import { computeDailyStats } from "@/services/daily-stats";
 
@@ -140,7 +140,12 @@ describe("parseAiResponse", () => {
   });
 
   test("rejects score > 100", () => {
-    const json = JSON.stringify({ score: 101, highlights: ["a"], improvements: ["b"], summary: "c" });
+    const json = JSON.stringify({
+      score: 101,
+      highlights: ["a"],
+      improvements: ["b"],
+      summary: "c",
+    });
     expect(() => parseAiResponse(json)).toThrow("invalid score");
   });
 
@@ -169,19 +174,33 @@ describe("buildSessionTimeline", () => {
   });
 
   test("marks idle sessions", () => {
-    const sessions = [{
-      id: "1", appName: "loginwindow", bundleId: "com.apple.loginwindow",
-      windowTitle: "", url: null, startTime: EPOCH_10AM, duration: 600,
-    }];
+    const sessions = [
+      {
+        id: "1",
+        appName: "loginwindow",
+        bundleId: "com.apple.loginwindow",
+        windowTitle: "",
+        url: null,
+        startTime: EPOCH_10AM,
+        duration: 600,
+      },
+    ];
     const result = buildSessionTimeline(sessions, "Asia/Shanghai");
     expect(result).toContain("[IDLE/锁屏]");
   });
 
   test("includes browser URLs", () => {
-    const sessions = [{
-      id: "1", appName: "Chrome", bundleId: "com.google.Chrome",
-      windowTitle: "Google", url: "https://google.com", startTime: EPOCH_10AM, duration: 300,
-    }];
+    const sessions = [
+      {
+        id: "1",
+        appName: "Chrome",
+        bundleId: "com.google.Chrome",
+        windowTitle: "Google",
+        url: "https://google.com",
+        startTime: EPOCH_10AM,
+        duration: 300,
+      },
+    ];
     const result = buildSessionTimeline(sessions, "Asia/Shanghai");
     expect(result).toContain("URL: https://google.com");
   });
@@ -215,7 +234,15 @@ describe("buildPrompt", () => {
 
   test("produces a non-empty prompt string", () => {
     const stats = computeDailyStats("2026-03-01", [
-      { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: EPOCH_10AM, duration: 3600 },
+      {
+        id: "s1",
+        app_name: "VSCode",
+        bundle_id: "com.microsoft.VSCode",
+        window_title: "test.ts",
+        url: null,
+        start_time: EPOCH_10AM,
+        duration: 3600,
+      },
     ]);
     const appContext = new Map<string, AppContext>();
     const prompt = buildPrompt("2026-03-01", stats, appContext, "Asia/Shanghai");
@@ -226,7 +253,15 @@ describe("buildPrompt", () => {
 
   test("uses custom sections when provided", () => {
     const stats = computeDailyStats("2026-03-01", [
-      { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: EPOCH_10AM, duration: 3600 },
+      {
+        id: "s1",
+        app_name: "VSCode",
+        bundle_id: "com.microsoft.VSCode",
+        window_title: "test.ts",
+        url: null,
+        start_time: EPOCH_10AM,
+        duration: 3600,
+      },
     ]);
     const appContext = new Map<string, AppContext>();
     const prompt = buildPrompt("2026-03-01", stats, appContext, "Asia/Shanghai", {
@@ -377,10 +412,20 @@ describe("runAnalysis", () => {
       ],
       // 2. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
       // 3-5. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
@@ -416,10 +461,20 @@ describe("runAnalysis", () => {
       ],
       // 2. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
       // 3-5. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
       // 6. dailySummaryRepo.upsertAiResult
       [],
     ]);
@@ -468,15 +523,27 @@ describe("runAnalysis", () => {
       ],
       // 2. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
       // 3-5. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
     ];
 
     globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
       let body: Record<string, unknown>;
-      try { body = JSON.parse(init.body as string); } catch {
+      try {
+        body = JSON.parse(init.body as string);
+      } catch {
         return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
       }
       if (!body.sql) {
@@ -488,15 +555,20 @@ describe("runAnalysis", () => {
 
       // 6th call is the upsert — make it fail
       if (callIndex > responses.length) {
-        return Promise.resolve(new Response(JSON.stringify({ error: "D1 write failed" }), { status: 500 }));
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: "D1 write failed" }), { status: 500 }),
+        );
       }
 
       return Promise.resolve(
-        new Response(JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }), { status: 200 }),
+        new Response(
+          JSON.stringify({
+            success: true,
+            result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
+            errors: [],
+          }),
+          { status: 200 },
+        ),
       );
     }) as unknown as typeof fetch;
 
@@ -526,10 +598,20 @@ describe("runAnalysis", () => {
       ],
       // 2. fetchSessionsForDate
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
       // 3-5. loadAppContext
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
@@ -552,7 +634,15 @@ describe("runAnalysis", () => {
       ],
       // 2. fetchSessionsForDate — use valid epoch within day bounds
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "test.ts", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
       // 3-5. loadAppContext — categories, tags, notes
       [],
@@ -597,9 +687,19 @@ describe("runAnalysis", () => {
         { user_id: "u1", key: "ai.prompt.section4", value: "CUSTOM-S4", updated_at: 100 },
       ],
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "x",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
-      [], [], [],
+      [],
+      [],
+      [],
       [], // upsert
     ]);
 
@@ -634,9 +734,19 @@ describe("runAnalysis", () => {
         { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
       ],
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "x",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
-      [], [], [],
+      [],
+      [],
+      [],
       [],
     ]);
 
@@ -664,9 +774,19 @@ describe("runAnalysis", () => {
         { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
       ],
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "x",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
@@ -693,9 +813,19 @@ describe("runAnalysis", () => {
         { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
       ],
       [
-        { id: "s1", app_name: "VSCode", bundle_id: "com.microsoft.VSCode", window_title: "x", url: null, start_time: MARCH_01_10AM_CST, duration: 3600 },
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "x",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
       ],
-      [], [], [],
+      [],
+      [],
+      [],
     ]);
 
     const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
@@ -741,10 +871,17 @@ describe("buildSessionTimeline branch coverage", () => {
 
   test("session without bundleId is neither IDLE nor browser", () => {
     const result = buildSessionTimeline(
-      [{
-        id: "s", appName: "Mystery", bundleId: null, windowTitle: "",
-        url: null, startTime: EPOCH_10AM, duration: 60,
-      }],
+      [
+        {
+          id: "s",
+          appName: "Mystery",
+          bundleId: null,
+          windowTitle: "",
+          url: null,
+          startTime: EPOCH_10AM,
+          duration: 60,
+        },
+      ],
       "Asia/Shanghai",
     );
     expect(result).not.toContain("[IDLE/锁屏]");
@@ -818,7 +955,15 @@ describe("buildPrompt branch coverage", () => {
 
   test("session without bundleId does not contribute to bundleIdsInDay", () => {
     const stats = computeDailyStats("2026-03-01", [
-      { id: "s", app_name: "Unknown", bundle_id: null, window_title: "", url: null, start_time: EPOCH_10AM, duration: 600 },
+      {
+        id: "s",
+        app_name: "Unknown",
+        bundle_id: null,
+        window_title: "",
+        url: null,
+        start_time: EPOCH_10AM,
+        duration: 600,
+      },
     ]);
     const ctx = new Map<string, AppContext>();
     const prompt = buildPrompt("2026-03-01", stats, ctx, "Asia/Shanghai");

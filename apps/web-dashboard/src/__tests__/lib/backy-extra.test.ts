@@ -4,12 +4,12 @@
  * test files so the intent (close coverage gaps) stays visible.
  */
 
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import {
+  type BackupEnvelope,
   buildTagFromEnvelope,
   compressEnvelope,
   decompressEnvelope,
-  type BackupEnvelope,
 } from "@/lib/backy";
 import { execute } from "@/lib/d1";
 

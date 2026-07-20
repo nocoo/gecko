@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  navGroups,
-  allNavItems,
-  isActive,
-} from "@/components/layout/sidebar";
+import { allNavItems, isActive, navGroups } from "@/components/layout/sidebar";
 
 describe("sidebar navigation", () => {
   describe("navGroups", () => {
@@ -22,27 +18,17 @@ describe("sidebar navigation", () => {
 
     it("group 1 is Data with Apps, Categories, Tags", () => {
       expect(navGroups[1]!.label).toBe("Data");
-      expect(navGroups[1]!.items.map((i) => i.label)).toEqual([
-        "Apps",
-        "Categories",
-        "Tags",
-      ]);
+      expect(navGroups[1]!.items.map((i) => i.label)).toEqual(["Apps", "Categories", "Tags"]);
     });
 
     it("group 2 is Integrations with API, Backy", () => {
       expect(navGroups[2]!.label).toBe("Integrations");
-      expect(navGroups[2]!.items.map((i) => i.label)).toEqual([
-        "API",
-        "Backy",
-      ]);
+      expect(navGroups[2]!.items.map((i) => i.label)).toEqual(["API", "Backy"]);
     });
 
     it("group 3 is Settings with General, AI Settings", () => {
       expect(navGroups[3]!.label).toBe("Settings");
-      expect(navGroups[3]!.items.map((i) => i.label)).toEqual([
-        "General",
-        "AI Settings",
-      ]);
+      expect(navGroups[3]!.items.map((i) => i.label)).toEqual(["General", "AI Settings"]);
     });
 
     it("every item has an href, label, and icon", () => {

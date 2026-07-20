@@ -4,8 +4,8 @@
 // DELETE /api/categories — Delete a custom category
 
 import { randomUUID } from "node:crypto";
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { query, execute } from "@/lib/d1";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { execute, query } from "@/lib/d1";
 import { seedDefaultCategories } from "@/lib/seed-categories";
 
 export const dynamic = "force-dynamic";
@@ -80,10 +80,7 @@ export async function POST(req: Request): Promise<Response> {
     [id, user.userId, title, icon, slug, now],
   );
 
-  return jsonOk(
-    { id, title, icon, isDefault: false, slug, createdAt: now },
-    201,
-  );
+  return jsonOk({ id, title, icon, isDefault: false, slug, createdAt: now }, 201);
 }
 
 /** PUT /api/categories */
@@ -142,10 +139,7 @@ export async function PUT(req: Request): Promise<Response> {
   }
 
   params.push(id);
-  await execute(
-    `UPDATE categories SET ${updates.join(", ")} WHERE id = ?`,
-    params,
-  );
+  await execute(`UPDATE categories SET ${updates.join(", ")} WHERE id = ?`, params);
 
   return jsonOk({
     id,
@@ -191,9 +185,7 @@ export async function DELETE(req: Request): Promise<Response> {
   }
 
   // Remove app mappings first, then the category
-  await execute("DELETE FROM app_category_mappings WHERE category_id = ?", [
-    id,
-  ]);
+  await execute("DELETE FROM app_category_mappings WHERE category_id = ?", [id]);
   await execute("DELETE FROM categories WHERE id = ?", [id]);
 
   return jsonOk({ deleted: true });

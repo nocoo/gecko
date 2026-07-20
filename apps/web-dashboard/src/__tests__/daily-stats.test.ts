@@ -4,7 +4,7 @@
  * TDD: tests written first, implementation follows.
  */
 
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
   computeDailyStats,
   computeScores,
@@ -46,9 +46,7 @@ describe("computeScores", () => {
   });
 
   test("single session returns perfect scores", () => {
-    const sessions = [
-      session({ appName: "VSCode", startTime: 1000, duration: 3600 }),
-    ];
+    const sessions = [session({ appName: "VSCode", startTime: 1000, duration: 3600 })];
     const scores = computeScores(sessions);
 
     // Focus: 3600/3600 = 100%
@@ -130,9 +128,7 @@ describe("computeScores", () => {
   test("deep work: 5+ segments yields 100", () => {
     const sessions = [];
     for (let i = 0; i < 6; i++) {
-      sessions.push(
-        session({ appName: `App${i}`, startTime: i * 4000, duration: 2000 }),
-      );
+      sessions.push(session({ appName: `App${i}`, startTime: i * 4000, duration: 2000 }));
     }
     const scores = computeScores(sessions);
     expect(scores.deepWork).toBe(100);
@@ -144,9 +140,7 @@ describe("computeScores", () => {
   // Dev workflow URLs (localhost, 127.0.0.1, ports, hexly.ai) are excluded
 
   test("switch rate: 0 switches per hour → 100", () => {
-    const sessions = [
-      session({ appName: "A", startTime: 0, duration: 7200 }),
-    ];
+    const sessions = [session({ appName: "A", startTime: 0, duration: 7200 })];
     const scores = computeScores(sessions);
     expect(scores.switchRate).toBe(100);
   });
@@ -320,9 +314,7 @@ describe("computeScores", () => {
   // -- Concentration dimension --
 
   test("concentration: single app → 100", () => {
-    const sessions = [
-      session({ appName: "A", startTime: 0, duration: 3600 }),
-    ];
+    const sessions = [session({ appName: "A", startTime: 0, duration: 3600 })];
     const scores = computeScores(sessions);
     expect(scores.concentration).toBe(100);
   });
@@ -342,15 +334,13 @@ describe("computeScores", () => {
   // -- Overall (weighted) --
 
   test("overall is weighted average of 4 dimensions", () => {
-    const sessions = [
-      session({ appName: "A", startTime: 0, duration: 3600 }),
-    ];
+    const sessions = [session({ appName: "A", startTime: 0, duration: 3600 })];
     const scores = computeScores(sessions);
     const expected = Math.round(
       scores.focus * 0.3 +
-      scores.deepWork * 0.3 +
-      scores.switchRate * 0.2 +
-      scores.concentration * 0.2,
+        scores.deepWork * 0.3 +
+        scores.switchRate * 0.2 +
+        scores.concentration * 0.2,
     );
     expect(scores.overall).toBe(expected);
   });
@@ -440,9 +430,24 @@ describe("computeDailyStats", () => {
 
   test("computes correct totals for multiple sessions", () => {
     const rows = [
-      session({ appName: "Chrome", bundle_id: "com.google.Chrome", startTime: 1000, duration: 600 }),
-      session({ appName: "VSCode", bundle_id: "com.microsoft.VSCode", startTime: 1700, duration: 1200 }),
-      session({ appName: "Chrome", bundle_id: "com.google.Chrome", startTime: 3000, duration: 300 }),
+      session({
+        appName: "Chrome",
+        bundle_id: "com.google.Chrome",
+        startTime: 1000,
+        duration: 600,
+      }),
+      session({
+        appName: "VSCode",
+        bundle_id: "com.microsoft.VSCode",
+        startTime: 1700,
+        duration: 1200,
+      }),
+      session({
+        appName: "Chrome",
+        bundle_id: "com.google.Chrome",
+        startTime: 3000,
+        duration: 300,
+      }),
     ];
     const stats = computeDailyStats("2026-02-27", rows);
 
@@ -489,9 +494,7 @@ describe("computeDailyStats", () => {
   });
 
   test("includes scores in output", () => {
-    const rows = [
-      session({ appName: "A", startTime: 0, duration: 3600 }),
-    ];
+    const rows = [session({ appName: "A", startTime: 0, duration: 3600 })];
     const stats = computeDailyStats("2026-02-27", rows);
     expect(stats.scores).toBeDefined();
     expect(stats.scores.focus).toBeGreaterThan(0);
@@ -508,9 +511,7 @@ describe("computeScores branch coverage", () => {
     // 12 deep switches in ~1h → 12/h → 60
     const sessions: SessionRow[] = [];
     for (let i = 0; i < 13; i++) {
-      sessions.push(
-        session({ appName: `App${i}`, startTime: i * 300, duration: 300 }),
-      );
+      sessions.push(session({ appName: `App${i}`, startTime: i * 300, duration: 300 }));
     }
     const scores = computeScores(sessions);
     // 12 switches in ~1.08h ≈ 11/h → 60
@@ -521,9 +522,7 @@ describe("computeScores branch coverage", () => {
     // 22 deep switches in ~1.1h → 20/h → 40
     const sessions: SessionRow[] = [];
     for (let i = 0; i < 23; i++) {
-      sessions.push(
-        session({ appName: `App${i}`, startTime: i * 180, duration: 300 }),
-      );
+      sessions.push(session({ appName: `App${i}`, startTime: i * 180, duration: 300 }));
     }
     const scores = computeScores(sessions);
     expect(scores.switchRate).toBe(40);
@@ -533,18 +532,14 @@ describe("computeScores branch coverage", () => {
     // 35 deep switches in ~0.5h → 70/h → 20
     const sessions: SessionRow[] = [];
     for (let i = 0; i < 36; i++) {
-      sessions.push(
-        session({ appName: `App${i}`, startTime: i * 50, duration: 300 }),
-      );
+      sessions.push(session({ appName: `App${i}`, startTime: i * 50, duration: 300 }));
     }
     const scores = computeScores(sessions);
     expect(scores.switchRate).toBe(20);
   });
 
   test("zero activeSpan (single zero-duration session) yields focus=0", () => {
-    const sessions = [
-      session({ appName: "A", startTime: 1000, duration: 0 }),
-    ];
+    const sessions = [session({ appName: "A", startTime: 1000, duration: 0 })];
     const scores = computeScores(sessions);
     expect(scores.focus).toBe(0);
     // switchesPerHour falls into the activeHours <= 0 branch

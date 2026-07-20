@@ -1,7 +1,7 @@
 // GET /api/stats — Aggregated usage stats for the current user.
 // Supports ?period=today|week|month|all (default: today)
 
-import { requireSession, jsonOk, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonOk, requireSession } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
 import { localDateToUTCEpoch, todayInTz } from "@/lib/timezone";
 
@@ -78,7 +78,7 @@ export async function GET(req: Request): Promise<Response> {
        COUNT(DISTINCT app_name) as total_apps
      FROM focus_sessions
      WHERE ${where}`,
-    params
+    params,
   );
 
   // Longest session
@@ -86,7 +86,7 @@ export async function GET(req: Request): Promise<Response> {
     `SELECT COALESCE(MAX(duration), 0) as max_duration
      FROM focus_sessions
      WHERE ${where}`,
-    params
+    params,
   );
 
   // Top apps by duration
@@ -106,7 +106,7 @@ export async function GET(req: Request): Promise<Response> {
      GROUP BY app_name
      ORDER BY total_duration DESC
      LIMIT 20`,
-    params
+    params,
   );
 
   return jsonOk({

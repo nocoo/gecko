@@ -1,12 +1,11 @@
 "use client";
 
-import { getHashColor } from "@/lib/hash-color";
-import { useIsDark } from "@/hooks/use-dark";
-import { cn } from "@/lib/utils";
 import type { ComponentProps } from "react";
+import { useIsDark } from "@/hooks/use-dark";
+import { getHashColor } from "@/lib/hash-color";
+import { cn } from "@/lib/utils";
 
-export interface TagBadgeProps
-  extends Omit<ComponentProps<"span">, "children"> {
+export interface TagBadgeProps extends Omit<ComponentProps<"span">, "children"> {
   /** Tag name to display */
   name: string;
   /** String to hash for color (defaults to name) */
@@ -19,13 +18,7 @@ export interface TagBadgeProps
  * Colored pill displaying a tag with label only (no icon).
  * Color is computed from a stable hash of `colorKey` (or `name`).
  */
-export function TagBadge({
-  name,
-  colorKey,
-  size = "md",
-  className,
-  ...props
-}: TagBadgeProps) {
+export function TagBadge({ name, colorKey, size = "md", className, ...props }: TagBadgeProps) {
   const isDark = useIsDark();
   const { fg, bg } = getHashColor(colorKey ?? name, isDark);
 

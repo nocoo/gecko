@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx";
+import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
@@ -40,6 +40,9 @@ export function getAvatarColor(name: string): string {
   const hash = hashString(name);
   const index = hash % AVATAR_COLORS.length;
   // `index` is `hash % AVATAR_COLORS.length`, always a valid index.
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return AVATAR_COLORS[index]!;
+  const color = AVATAR_COLORS[index];
+  if (color === undefined) {
+    return AVATAR_COLORS[0] ?? "bg-blue-500";
+  }
+  return color;
 }

@@ -1,3 +1,5 @@
 {
-  "*.{ts,tsx}": ["eslint --max-warnings 0 --no-warn-ignored"]
+  "*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,css}": [
+    "biome check --write --error-on-warnings --max-diagnostics=500 --no-errors-on-unmatched"
+  ]
 }

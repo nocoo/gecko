@@ -4,16 +4,16 @@
  * Mocks: globalThis.fetch for Dove webhook, D1 queries for settingsRepo.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import type { AiAnalysisResult } from "@/services/analyze-core";
+import type { DailyStats } from "@/services/daily-stats";
 import {
-  sendAnalysisEmail,
   formatHighlights,
   formatImprovements,
   formatTimeSegments,
   type SendAnalysisEmailParams,
+  sendAnalysisEmail,
 } from "@/services/email-notification";
-import type { AiAnalysisResult } from "@/services/analyze-core";
-import type { DailyStats } from "@/services/daily-stats";
 
 const originalFetch = globalThis.fetch;
 
@@ -173,7 +173,14 @@ describe("sendAnalysisEmail", () => {
       // notification.email.enabled = false
       [{ user_id: "user-123", key: "notification.email.enabled", value: "false", updated_at: 100 }],
       // notification.email.address
-      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      [
+        {
+          user_id: "user-123",
+          key: "notification.email.address",
+          value: "test@example.com",
+          updated_at: 100,
+        },
+      ],
     ]);
     await sendAnalysisEmail(makeParams());
     const doveCalls = fetchCalls.filter((c) => c.url.includes("dove"));
@@ -185,7 +192,14 @@ describe("sendAnalysisEmail", () => {
       // notification.email.enabled
       [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
       // notification.email.address
-      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      [
+        {
+          user_id: "user-123",
+          key: "notification.email.address",
+          value: "test@example.com",
+          updated_at: 100,
+        },
+      ],
     ]);
 
     await sendAnalysisEmail(makeParams());
@@ -212,7 +226,14 @@ describe("sendAnalysisEmail", () => {
   test("idempotency key contains userId and date", async () => {
     const { fetchCalls } = mockD1([
       [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      [
+        {
+          user_id: "user-123",
+          key: "notification.email.address",
+          value: "test@example.com",
+          updated_at: 100,
+        },
+      ],
     ]);
 
     await sendAnalysisEmail(makeParams({ userId: "u-abc", date: "2026-01-15" }));
@@ -225,13 +246,23 @@ describe("sendAnalysisEmail", () => {
   test("formats variables correctly", async () => {
     const { fetchCalls } = mockD1([
       [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      [
+        {
+          user_id: "user-123",
+          key: "notification.email.address",
+          value: "test@example.com",
+          updated_at: 100,
+        },
+      ],
     ]);
 
     await sendAnalysisEmail(makeParams());
 
     const doveCalls = fetchCalls.filter((c) => c.url.includes("dove"));
-    const vars = (doveCalls[0]!.body as Record<string, unknown>).variables as Record<string, unknown>;
+    const vars = (doveCalls[0]!.body as Record<string, unknown>).variables as Record<
+      string,
+      unknown
+    >;
 
     // highlights → Markdown list
     expect(vars.highlights).toContain("- Deep focus on frontend");
@@ -260,8 +291,22 @@ describe("sendAnalysisEmail", () => {
 
       // D1 mock
       const responses: unknown[][] = [
-        [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-        [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.enabled",
+            value: "true",
+            updated_at: 100,
+          },
+        ],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.address",
+            value: "test@example.com",
+            updated_at: 100,
+          },
+        ],
       ];
       const results = responses[callIndex] ?? [];
       callIndex++;
@@ -294,8 +339,22 @@ describe("sendAnalysisEmail", () => {
 
       // D1 mock
       const responses: unknown[][] = [
-        [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-        [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.enabled",
+            value: "true",
+            updated_at: 100,
+          },
+        ],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.address",
+            value: "test@example.com",
+            updated_at: 100,
+          },
+        ],
       ];
       const results = responses[callIndex] ?? [];
       callIndex++;
@@ -326,8 +385,22 @@ describe("sendAnalysisEmail", () => {
       }
 
       const responses: unknown[][] = [
-        [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-        [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.enabled",
+            value: "true",
+            updated_at: 100,
+          },
+        ],
+        [
+          {
+            user_id: "user-123",
+            key: "notification.email.address",
+            value: "test@example.com",
+            updated_at: 100,
+          },
+        ],
       ];
       const results = responses[callIndex] ?? [];
       callIndex++;
@@ -350,7 +423,14 @@ describe("sendAnalysisEmail", () => {
     delete process.env.NEXTAUTH_URL;
     const { fetchCalls } = mockD1([
       [{ user_id: "user-123", key: "notification.email.enabled", value: "true", updated_at: 100 }],
-      [{ user_id: "user-123", key: "notification.email.address", value: "test@example.com", updated_at: 100 }],
+      [
+        {
+          user_id: "user-123",
+          key: "notification.email.address",
+          value: "test@example.com",
+          updated_at: 100,
+        },
+      ],
     ]);
 
     await sendAnalysisEmail(makeParams());

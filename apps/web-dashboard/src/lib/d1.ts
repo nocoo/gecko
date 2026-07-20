@@ -40,8 +40,8 @@ interface D1Response {
 // Covered by E2E tests; excluded from v8 coverage (unit tests don't set D1_LOCAL_PATH).
 // ---------------------------------------------------------------------------
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let localDb: any = null;
+type BetterSqliteDatabase = import("better-sqlite3").Database;
+let localDb: BetterSqliteDatabase | null = null;
 
 /* v8 ignore start */
 /** Get or create the local SQLite database connection. */
@@ -68,9 +68,7 @@ async function executeLocal(sql: string, params: unknown[] = []): Promise<D1Exec
   const db = await getLocalDb();
   const trimmed = sql.trim().toUpperCase();
   const isSelect =
-    trimmed.startsWith("SELECT") ||
-    trimmed.startsWith("WITH") ||
-    trimmed.startsWith("PRAGMA");
+    trimmed.startsWith("SELECT") || trimmed.startsWith("WITH") || trimmed.startsWith("PRAGMA");
 
   if (isSelect) {
     const stmt = db.prepare(sql);
@@ -112,10 +110,7 @@ function buildUrl(config: D1Config): string {
 }
 
 /** Execute a query against the remote D1 REST API. */
-async function executeRemote(
-  sql: string,
-  params: unknown[] = []
-): Promise<D1ExecuteResult> {
+async function executeRemote(sql: string, params: unknown[] = []): Promise<D1ExecuteResult> {
   const config = getD1Config();
   const url = buildUrl(config);
 
@@ -146,8 +141,7 @@ async function executeRemote(
       const data = (await response.json()) as D1Response;
 
       if (!data.success || !data.result?.[0]?.success) {
-        const errorMsg =
-          data.errors?.[0]?.message ?? "Unknown D1 error";
+        const errorMsg = data.errors?.[0]?.message ?? "Unknown D1 error";
         throw new Error(`D1 query failed: ${errorMsg}`);
       }
 
@@ -158,8 +152,7 @@ async function executeRemote(
     } catch (err) {
       lastError = err;
       // Only retry on network-level errors (socket reset, TLS closure)
-      const isNetworkError =
-        err instanceof TypeError && err.message === "fetch failed";
+      const isNetworkError = err instanceof TypeError && err.message === "fetch failed";
       if (!isNetworkError || attempt === MAX_RETRIES) {
         throw err;
       }
@@ -177,10 +170,7 @@ async function executeRemote(
 // ---------------------------------------------------------------------------
 
 /** Execute a raw SQL query and return the full result with meta. */
-export async function execute(
-  sql: string,
-  params: unknown[] = []
-): Promise<D1ExecuteResult> {
+export async function execute(sql: string, params: unknown[] = []): Promise<D1ExecuteResult> {
   /* v8 ignore next 3 */
   if (isLocalMode()) {
     return executeLocal(sql, params);
@@ -191,7 +181,7 @@ export async function execute(
 /** Execute a SELECT query and return typed results. */
 export async function query<T = Record<string, unknown>>(
   sql: string,
-  params: unknown[] = []
+  params: unknown[] = [],
 ): Promise<T[]> {
   const result = await execute(sql, params);
   return result.results as T[];
@@ -205,4 +195,3 @@ export function closeLocal(): void {
     localDb = null;
   }
 }
-

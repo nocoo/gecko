@@ -1,17 +1,17 @@
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
-  getDateBoundsEpoch,
-  localDateToUTCEpoch,
-  getTimezoneOffsetMinutes,
+  COMMON_TIMEZONES,
+  DEFAULT_TIMEZONE,
+  epochToDateStr,
   epochToLocalHHMM,
   epochToLocalHHMMSS,
-  epochToDateStr,
+  getDateBoundsEpoch,
+  getTimezoneOffsetMinutes,
+  isValidTimezone,
+  localDateToUTCEpoch,
+  sqlDateExpr,
   todayInTz,
   yesterdayInTz,
-  sqlDateExpr,
-  isValidTimezone,
-  DEFAULT_TIMEZONE,
-  COMMON_TIMEZONES,
 } from "../../lib/timezone";
 
 // ---------------------------------------------------------------------------
@@ -214,8 +214,8 @@ describe("yesterdayInTz", () => {
   test("is exactly 1 day before today", () => {
     const today = todayInTz("UTC");
     const yesterday = yesterdayInTz("UTC");
-    const todayDate = new Date(today + "T00:00:00Z");
-    const yesterdayDate = new Date(yesterday + "T00:00:00Z");
+    const todayDate = new Date(`${today}T00:00:00Z`);
+    const yesterdayDate = new Date(`${yesterday}T00:00:00Z`);
     const diffMs = todayDate.getTime() - yesterdayDate.getTime();
     expect(diffMs).toBe(86400 * 1000);
   });

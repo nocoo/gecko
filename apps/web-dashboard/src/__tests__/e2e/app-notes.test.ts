@@ -6,8 +6,8 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -59,7 +59,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -80,8 +80,7 @@ afterAll(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const api = (path: string, init?: RequestInit) =>
-  fetch(`${BASE_URL}${path}`, init);
+const api = (path: string, init?: RequestInit) => fetch(`${BASE_URL}${path}`, init);
 
 // ---------------------------------------------------------------------------
 // Seed data — sync sessions so /api/apps has data to list
@@ -137,137 +136,113 @@ describe("E2E: App Notes API", () => {
   // /api/apps
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/apps lists tracked apps",
-    async () => {
-      const res = await api("/api/apps");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/apps lists tracked apps", async () => {
+    const res = await api("/api/apps");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(Array.isArray(body.apps)).toBe(true);
-      expect(body.apps.length).toBeGreaterThan(0);
+    const body = await res.json();
+    expect(Array.isArray(body.apps)).toBe(true);
+    expect(body.apps.length).toBeGreaterThan(0);
 
-      // Each app should have the expected shape
-      const first = body.apps[0];
-      expect(typeof first.bundleId).toBe("string");
-      expect(typeof first.appName).toBe("string");
-      expect(typeof first.totalDuration).toBe("number");
-      expect(typeof first.sessionCount).toBe("number");
-    },
-  );
+    // Each app should have the expected shape
+    const first = body.apps[0];
+    expect(typeof first.bundleId).toBe("string");
+    expect(typeof first.appName).toBe("string");
+    expect(typeof first.totalDuration).toBe("number");
+    expect(typeof first.sessionCount).toBe("number");
+  });
 
   // -------------------------------------------------------------------------
   // /api/apps/notes — CRUD
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/apps/notes returns empty notes initially",
-    async () => {
-      const res = await api("/api/apps/notes");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/apps/notes returns empty notes initially", async () => {
+    const res = await api("/api/apps/notes");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(Array.isArray(body.notes)).toBe(true);
-      // May or may not be empty depending on prior test runs, but shape is correct
-    },
-  );
+    const body = await res.json();
+    expect(Array.isArray(body.notes)).toBe(true);
+    // May or may not be empty depending on prior test runs, but shape is correct
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "PUT /api/apps/notes creates a note",
-    async () => {
-      const res = await api("/api/apps/notes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bundleId: "com.apple.Safari",
-          note: "Web browsing",
-        }),
-      });
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("PUT /api/apps/notes creates a note", async () => {
+    const res = await api("/api/apps/notes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bundleId: "com.apple.Safari",
+        note: "Web browsing",
+      }),
+    });
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.bundleId).toBe("com.apple.Safari");
-      expect(body.note).toBe("Web browsing");
-    },
-  );
+    const body = await res.json();
+    expect(body.bundleId).toBe("com.apple.Safari");
+    expect(body.note).toBe("Web browsing");
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/apps/notes lists the created note",
-    async () => {
-      const res = await api("/api/apps/notes");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/apps/notes lists the created note", async () => {
+    const res = await api("/api/apps/notes");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      const notes = body.notes as Array<{ bundleId: string; note: string }>;
-      const safari = notes.find((n) => n.bundleId === "com.apple.Safari");
-      expect(safari).toBeDefined();
-      expect(safari!.note).toBe("Web browsing");
-    },
-  );
+    const body = await res.json();
+    const notes = body.notes as Array<{ bundleId: string; note: string }>;
+    const safari = notes.find((n) => n.bundleId === "com.apple.Safari");
+    expect(safari).toBeDefined();
+    expect(safari!.note).toBe("Web browsing");
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "PUT /api/apps/notes updates the note",
-    async () => {
-      const res = await api("/api/apps/notes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bundleId: "com.apple.Safari",
-          note: "Updated note",
-        }),
-      });
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("PUT /api/apps/notes updates the note", async () => {
+    const res = await api("/api/apps/notes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bundleId: "com.apple.Safari",
+        note: "Updated note",
+      }),
+    });
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.bundleId).toBe("com.apple.Safari");
-      expect(body.note).toBe("Updated note");
-    },
-  );
+    const body = await res.json();
+    expect(body.bundleId).toBe("com.apple.Safari");
+    expect(body.note).toBe("Updated note");
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "PUT /api/apps/notes with note > 500 chars returns 400",
-    async () => {
-      const longNote = "x".repeat(501);
-      const res = await api("/api/apps/notes", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          bundleId: "com.apple.Safari",
-          note: longNote,
-        }),
-      });
-      expect(res.status).toBe(400);
+  test.skipIf(!SHOULD_RUN)("PUT /api/apps/notes with note > 500 chars returns 400", async () => {
+    const longNote = "x".repeat(501);
+    const res = await api("/api/apps/notes", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        bundleId: "com.apple.Safari",
+        note: longNote,
+      }),
+    });
+    expect(res.status).toBe(400);
 
-      const body = await res.json();
-      expect(body.error).toContain("500 characters");
-    },
-  );
+    const body = await res.json();
+    expect(body.error).toContain("500 characters");
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "DELETE /api/apps/notes removes the note",
-    async () => {
-      const res = await api("/api/apps/notes", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bundleId: "com.apple.Safari" }),
-      });
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("DELETE /api/apps/notes removes the note", async () => {
+    const res = await api("/api/apps/notes", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bundleId: "com.apple.Safari" }),
+    });
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      expect(body.deleted).toBe(true);
-    },
-  );
+    const body = await res.json();
+    expect(body.deleted).toBe(true);
+  });
 
-  test.skipIf(!SHOULD_RUN)(
-    "GET /api/apps/notes is empty after delete",
-    async () => {
-      const res = await api("/api/apps/notes");
-      expect(res.status).toBe(200);
+  test.skipIf(!SHOULD_RUN)("GET /api/apps/notes is empty after delete", async () => {
+    const res = await api("/api/apps/notes");
+    expect(res.status).toBe(200);
 
-      const body = await res.json();
-      const notes = body.notes as Array<{ bundleId: string }>;
-      const safari = notes.find((n) => n.bundleId === "com.apple.Safari");
-      expect(safari).toBeUndefined();
-    },
-  );
+    const body = await res.json();
+    const notes = body.notes as Array<{ bundleId: string }>;
+    const safari = notes.find((n) => n.bundleId === "com.apple.Safari");
+    expect(safari).toBeUndefined();
+  });
 });

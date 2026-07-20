@@ -1,47 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import {
+  AppWindow,
+  Bot,
+  CalendarDays,
+  ChevronUp,
+  HardDriveUpload,
+  Layers,
+  LayoutDashboard,
+  List,
+  LogOut,
+  PanelLeft,
+  Plug,
+  SlidersHorizontal,
+  Tags,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import {
-  LayoutDashboard,
-  List,
-  CalendarDays,
-  AppWindow,
-  SlidersHorizontal,
-  Layers,
-  Tags,
-  Bot,
-  HardDriveUpload,
-  Plug,
-  PanelLeft,
-  LogOut,
-  ChevronUp,
-} from "lucide-react";
+import { signOut, useSession } from "next-auth/react";
+import { useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { useSidebar } from "./sidebar-context";
 
 // =============================================================================
 // Navigation structure — flat groups with labels (basalt pattern)
 // =============================================================================
 
-type IconComponent = React.ComponentType<
-  React.SVGProps<SVGSVGElement> & { strokeWidth?: number }
->;
+type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { strokeWidth?: number }>;
 
 interface NavItem {
   href: string;
@@ -100,20 +90,14 @@ const allNavItems = navGroups.flatMap((g) => g.items);
 /** Check if a nav item is currently active. */
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
   if (href === "/" || exact) return pathname === href;
-  return pathname === href || pathname.startsWith(href + "/");
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 // =============================================================================
 // NavGroupSection — collapsible group with label header (basalt pattern)
 // =============================================================================
 
-function NavGroupSection({
-  group,
-  pathname,
-}: {
-  group: NavGroup;
-  pathname: string;
-}) {
+function NavGroupSection({ group, pathname }: { group: NavGroup; pathname: string }) {
   const [open, setOpen] = useState(group.defaultOpen ?? true);
 
   return (
@@ -157,10 +141,7 @@ function NavGroupSection({
                       : "text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
-                  <item.icon
-                    className="h-4 w-4 shrink-0"
-                    strokeWidth={1.5}
-                  />
+                  <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
                   <span className="flex-1 text-left">{item.label}</span>
                 </Link>
               );
@@ -215,15 +196,12 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
+                  type="button"
                   onClick={toggle}
                   aria-label="Expand sidebar"
                   className="flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors mb-2"
                 >
-                  <PanelLeft
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                  />
+                  <PanelLeft className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="right" sideOffset={8}>
@@ -263,18 +241,14 @@ export function Sidebar() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
+                    type="button"
                     onClick={() => signOut({ callbackUrl: "/login" })}
                     className="cursor-pointer"
                   >
                     <Avatar className="h-9 w-9">
-                      {userImage && (
-                        <AvatarImage src={userImage} alt={userName} />
-                      )}
+                      {userImage && <AvatarImage src={userImage} alt={userName} />}
                       <AvatarFallback
-                        className={cn(
-                          "text-xs text-white",
-                          getAvatarColor(userName),
-                        )}
+                        className={cn("text-xs text-white", getAvatarColor(userName))}
                       >
                         {userInitial}
                       </AvatarFallback>
@@ -304,23 +278,18 @@ export function Sidebar() {
                     unoptimized
                     className="shrink-0"
                   />
-                  <span className="text-lg font-bold tracking-tighter">
-                    Gecko
-                  </span>
+                  <span className="text-lg font-bold tracking-tighter">Gecko</span>
                   <span className="rounded-md bg-secondary px-1.5 py-0.5 text-micro font-medium text-muted-foreground leading-none">
                     v{APP_VERSION}
                   </span>
                 </div>
                 <button
+                  type="button"
                   onClick={toggle}
                   aria-label="Collapse sidebar"
                   className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <PanelLeft
-                    className="h-4 w-4"
-                    aria-hidden="true"
-                    strokeWidth={1.5}
-                  />
+                  <PanelLeft className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
                 </button>
               </div>
             </div>
@@ -328,11 +297,7 @@ export function Sidebar() {
             {/* Navigation — expanded: collapsible groups with labels */}
             <nav className="flex-1 overflow-y-auto pt-1">
               {navGroups.map((group) => (
-                <NavGroupSection
-                  key={group.label}
-                  group={group}
-                  pathname={pathname}
-                />
+                <NavGroupSection key={group.label} group={group} pathname={pathname} />
               ))}
             </nav>
 
@@ -340,38 +305,24 @@ export function Sidebar() {
             <div className="px-4 py-3">
               <div className="flex items-center gap-3">
                 <Avatar className="h-9 w-9 shrink-0">
-                  {userImage && (
-                    <AvatarImage src={userImage} alt={userName} />
-                  )}
-                  <AvatarFallback
-                    className={cn(
-                      "text-xs text-white",
-                      getAvatarColor(userName),
-                    )}
-                  >
+                  {userImage && <AvatarImage src={userImage} alt={userName} />}
+                  <AvatarFallback className={cn("text-xs text-white", getAvatarColor(userName))}>
                     {userInitial}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">
-                    {userName}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {userEmail}
-                  </p>
+                  <p className="text-sm font-medium text-foreground truncate">{userName}</p>
+                  <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
                 </div>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      type="button"
                       onClick={() => signOut({ callbackUrl: "/login" })}
                       aria-label="Sign out"
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors shrink-0"
                     >
-                      <LogOut
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                        strokeWidth={1.5}
-                      />
+                      <LogOut className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="top">Sign out</TooltipContent>
@@ -385,6 +336,6 @@ export function Sidebar() {
   );
 }
 
+export type { NavGroup, NavItem };
 // Export for testing
-export { navGroups, allNavItems, isActive };
-export type { NavItem, NavGroup };
+export { allNavItems, isActive, navGroups };

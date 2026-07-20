@@ -2,8 +2,8 @@
 // Returns process + database health for uptime monitors.
 // No auth, no cache.
 
-import { APP_VERSION } from "@/lib/version";
 import { getD1Config, isLocalMode, query } from "@/lib/d1";
+import { APP_VERSION } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +54,7 @@ export async function GET(): Promise<Response> {
       },
     );
   } catch (err) {
-    const message = sanitise(
-      err instanceof Error ? err.message : "unexpected failure",
-    );
+    const message = sanitise(err instanceof Error ? err.message : "unexpected failure");
 
     return Response.json(
       {

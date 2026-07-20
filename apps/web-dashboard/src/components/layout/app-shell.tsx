@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Breadcrumbs } from "./breadcrumbs";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { ThemeToggle } from "./theme-toggle";
-import { Breadcrumbs } from "./breadcrumbs";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -18,12 +18,12 @@ interface AppShellProps {
 function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
   const isMobile = useIsMobile();
   const { mobileOpen, setMobileOpen } = useSidebar();
-  const pathname = usePathname();
+  const _pathname = usePathname();
 
   // Close mobile sidebar on route change
   useEffect(() => {
     setMobileOpen(false);
-  }, [pathname, setMobileOpen]);
+  }, [setMobileOpen]);
 
   // Prevent body scroll when mobile sidebar is open
   useEffect(() => {
@@ -61,20 +61,15 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
           <div className="flex items-center gap-3">
             {isMobile && (
               <button
+                type="button"
                 onClick={() => setMobileOpen(true)}
                 aria-label="Open navigation menu"
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               >
-                <Menu
-                  className="h-5 w-5"
-                  aria-hidden="true"
-                  strokeWidth={1.5}
-                />
+                <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
               </button>
             )}
-            <Breadcrumbs
-              items={[{ label: "Home", href: "/" }, ...breadcrumbs]}
-            />
+            <Breadcrumbs items={[{ label: "Home", href: "/" }, ...breadcrumbs]} />
           </div>
           <div className="flex items-center gap-1">
             <a

@@ -2,8 +2,8 @@
 // Provides auth extraction, JSON response helpers, and common patterns.
 
 import { auth } from "@/auth";
-import { query } from "@/lib/d1";
 import { hashApiKey } from "@/lib/api-key";
+import { query } from "@/lib/d1";
 import { settingsRepo } from "@/lib/settings-repo";
 import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/timezone";
 
@@ -52,10 +52,8 @@ export async function requireSession(): Promise<
 
 /** Require a valid API key. Returns userId + deviceId or an error Response. */
 export async function requireApiKey(
-  req: Request
-): Promise<
-  { user: ApiKeyUser; error?: never } | { user?: never; error: Response }
-> {
+  req: Request,
+): Promise<{ user: ApiKeyUser; error?: never } | { user?: never; error: Response }> {
   if (isSkipAuth()) {
     return { user: { userId: E2E_TEST_USER_ID, deviceId: "e2e-test-device" } };
   }
@@ -71,10 +69,7 @@ export async function requireApiKey(
     user_id: string;
     device_id: string;
     id: string;
-  }>(
-    "SELECT id, user_id, device_id FROM api_keys WHERE key_hash = ?",
-    [keyHash]
-  );
+  }>("SELECT id, user_id, device_id FROM api_keys WHERE key_hash = ?", [keyHash]);
 
   if (rows.length === 0) {
     return { error: jsonError("Invalid API key", 401) };
@@ -90,12 +85,11 @@ export async function requireApiKey(
   const { user_id, device_id, id } = row;
 
   // Update last_used timestamp (fire-and-forget)
-  query("UPDATE api_keys SET last_used = ? WHERE id = ?", [
-    new Date().toISOString(),
-    id,
-  ]).catch(() => {
-    // Ignore update errors — non-critical
-  });
+  query("UPDATE api_keys SET last_used = ? WHERE id = ?", [new Date().toISOString(), id]).catch(
+    () => {
+      // Ignore update errors — non-critical
+    },
+  );
 
   return { user: { userId: user_id, deviceId: device_id } };
 }
@@ -110,7 +104,7 @@ export function extractBearerToken(req: Request): string | null {
   if (!header) return null;
 
   const match = header.match(/^bearer\s+(.+)$/i);
-  if (!match || !match[1]?.trim()) return null;
+  if (!match?.[1]?.trim()) return null;
 
   return match[1].trim();
 }

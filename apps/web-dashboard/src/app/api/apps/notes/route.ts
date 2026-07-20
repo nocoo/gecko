@@ -2,8 +2,8 @@
 // PUT    /api/apps/notes — Upsert a note for an app (bundle_id + note)
 // DELETE /api/apps/notes — Delete a note for an app (bundle_id)
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { query, execute } from "@/lib/d1";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { execute, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 
@@ -62,10 +62,10 @@ export async function PUT(req: Request): Promise<Response> {
 
   // If note is empty, delete the record instead of storing blank data
   if (note.length === 0) {
-    await execute(
-      "DELETE FROM app_notes WHERE user_id = ? AND bundle_id = ?",
-      [user.userId, bundleId],
-    );
+    await execute("DELETE FROM app_notes WHERE user_id = ? AND bundle_id = ?", [
+      user.userId,
+      bundleId,
+    ]);
     return jsonOk({ bundleId, note: "", deleted: true });
   }
 
@@ -97,10 +97,10 @@ export async function DELETE(req: Request): Promise<Response> {
     return jsonError("bundleId is required", 400);
   }
 
-  const result = await execute(
-    "DELETE FROM app_notes WHERE user_id = ? AND bundle_id = ?",
-    [user.userId, bundleId],
-  );
+  const result = await execute("DELETE FROM app_notes WHERE user_id = ? AND bundle_id = ?", [
+    user.userId,
+    bundleId,
+  ]);
 
   return jsonOk({ deleted: result.meta.changes > 0 });
 }

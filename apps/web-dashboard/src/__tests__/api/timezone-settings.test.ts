@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/settings/timezone route handler tests
@@ -57,7 +57,14 @@ describe("/api/settings/timezone", () => {
   describe("GET", () => {
     test("returns saved timezone for user", async () => {
       mockD1([
-        [{ user_id: "e2e-test-user", key: "timezone", value: "America/New_York", updated_at: 1000 }],
+        [
+          {
+            user_id: "e2e-test-user",
+            key: "timezone",
+            value: "America/New_York",
+            updated_at: 1000,
+          },
+        ],
       ]);
       const { GET } = await import("../../app/api/settings/timezone/route");
 

@@ -2,7 +2,7 @@
 // Keys use format: gk_<64 hex chars> (32 random bytes).
 // Only the SHA-256 hash is stored server-side.
 
-import { randomBytes, createHash } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 
 export const API_KEY_PREFIX = "gk_";
 

@@ -12,7 +12,7 @@
  */
 
 import { Database } from "bun:sqlite";
-import { mkdirSync, rmSync, existsSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { dirname } from "node:path";
 
 const dbPath = process.argv[2] || ".local/gecko-test.db";

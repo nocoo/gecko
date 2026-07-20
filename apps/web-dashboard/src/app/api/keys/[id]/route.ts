@@ -1,8 +1,8 @@
 // PATCH  /api/keys/[id] — Rename an API key
 // DELETE /api/keys/[id] — Revoke an API key
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { query, execute } from "@/lib/d1";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { execute, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 
@@ -55,10 +55,11 @@ export async function PATCH(
     return jsonError("API key not found", 404);
   }
 
-  await execute(
-    "UPDATE api_keys SET name = ? WHERE id = ? AND user_id = ?",
-    [name, id, user.userId],
-  );
+  await execute("UPDATE api_keys SET name = ? WHERE id = ? AND user_id = ?", [
+    name,
+    id,
+    user.userId,
+  ]);
 
   return jsonOk({ id, name });
 }
@@ -81,10 +82,7 @@ export async function DELETE(
     return jsonError("API key not found", 404);
   }
 
-  await execute("DELETE FROM api_keys WHERE id = ? AND user_id = ?", [
-    id,
-    user.userId,
-  ]);
+  await execute("DELETE FROM api_keys WHERE id = ? AND user_id = ?", [id, user.userId]);
 
   return jsonOk({ deleted: true });
 }

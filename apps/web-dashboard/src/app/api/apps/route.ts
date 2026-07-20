@@ -1,7 +1,7 @@
 // GET /api/apps — List unique apps (bundle_id + app_name) the user has tracked.
 // Used by the category/tag mapping UI to show available apps.
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { jsonOk, requireSession } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";

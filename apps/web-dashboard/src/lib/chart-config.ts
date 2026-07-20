@@ -2,7 +2,7 @@
  * Shared recharts configuration — axis, tooltip, bar radius, responsive container.
  */
 
-import { CHART_COLORS as PALETTE_COLORS, chartAxis } from "./palette";
+import { chartAxis, CHART_COLORS as PALETTE_COLORS } from "./palette";
 
 export { PALETTE_COLORS };
 

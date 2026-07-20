@@ -10,7 +10,7 @@
  *   backy.pullKey     — Pull webhook key (for Backy to call us)
  */
 
-import { query, execute } from "@/lib/d1";
+import { execute, query } from "@/lib/d1";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,11 +51,7 @@ export const backyRepo = {
   },
 
   /** Save (upsert) the push config. */
-  async savePushConfig(
-    userId: string,
-    webhookUrl: string,
-    apiKey: string,
-  ): Promise<void> {
+  async savePushConfig(userId: string, webhookUrl: string, apiKey: string): Promise<void> {
     const now = Date.now();
     // Two upserts — simple and clear
     await execute(

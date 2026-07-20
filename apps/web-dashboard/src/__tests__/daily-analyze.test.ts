@@ -5,7 +5,7 @@
  * modules are awkward to import in unit tests).
  */
 
-import { describe, test, expect } from "vitest";
+import { describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Types (mirrored from route)
@@ -32,9 +32,7 @@ interface AiAnalysisResult {
 function parseAiResponse(text: string): AiAnalysisResult {
   let cleaned = text.trim();
   if (cleaned.startsWith("```")) {
-    cleaned = cleaned
-      .replace(/^```(?:json)?\s*\n?/, "")
-      .replace(/\n?```\s*$/, "");
+    cleaned = cleaned.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
   }
 
   const parsed = JSON.parse(cleaned) as Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/live route handler tests (surety standard)
@@ -63,8 +63,8 @@ function mockD1Probe(success = true, error?: string) {
           ],
           errors: [],
         }),
-        { status: 200 }
-      )
+        { status: 200 },
+      ),
     );
   }) as unknown as typeof fetch;
 }
@@ -107,14 +107,7 @@ describe("/api/live (surety standard)", () => {
     const res = await callGET();
     const data = await res.json();
     const keys = Object.keys(data).sort();
-    expect(keys).toEqual([
-      "component",
-      "database",
-      "status",
-      "timestamp",
-      "uptime",
-      "version",
-    ]);
+    expect(keys).toEqual(["component", "database", "status", "timestamp", "uptime", "version"]);
   });
 
   // --- Database unhealthy ---

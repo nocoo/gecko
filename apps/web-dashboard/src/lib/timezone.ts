@@ -24,10 +24,7 @@ export const DEFAULT_TIMEZONE = "Asia/Shanghai";
  *
  * On DST transition days the interval may be 23h or 25h — this is correct.
  */
-export function getDateBoundsEpoch(
-  dateStr: string,
-  tz: string,
-): { start: number; end: number } {
+export function getDateBoundsEpoch(dateStr: string, tz: string): { start: number; end: number } {
   const start = localDateToUTCEpoch(dateStr, tz);
 
   // Compute next day's date string, then get its midnight epoch
@@ -97,12 +94,12 @@ function offsetAtEpoch(epochSec: number, tz: string): number {
     hour12: false,
   });
   const parts = fmt.formatToParts(new Date(ms));
-  // Intl.DateTimeFormat always emits every requested field — assert non-null.
-  const get = (type: string) =>
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    parseInt(parts.find((p) => p.type === type)!.value, 10);
+  // Intl.DateTimeFormat always emits every requested field.
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
 
-  const lY = get("year"), lM = get("month"), lD = get("day");
+  const lY = get("year"),
+    lM = get("month"),
+    lD = get("day");
   // Intl may return hour 24 for midnight on some platforms — normalize to 0.
   const lH = get("hour") % 24;
   const lMin = get("minute");
@@ -154,10 +151,8 @@ export function getTimezoneOffsetMinutes(
   });
 
   const parts = fmt.formatToParts(new Date(utcRef));
-  // Intl.DateTimeFormat always emits every requested field — assert non-null.
-  const get = (type: string) =>
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    parseInt(parts.find((p) => p.type === type)!.value, 10);
+  // Intl.DateTimeFormat always emits every requested field.
+  const get = (type: string) => parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
 
   const localYear = get("year");
   const localMonth = get("month");
@@ -167,8 +162,7 @@ export function getTimezoneOffsetMinutes(
   const localMinute = get("minute");
 
   // Reconstruct what UTC timestamp this local time represents
-  const localAsUTC =
-    Date.UTC(localYear, localMonth - 1, localDay, localHour, localMinute, 0);
+  const localAsUTC = Date.UTC(localYear, localMonth - 1, localDay, localHour, localMinute, 0);
 
   // Offset = local - UTC (in minutes)
   return (localAsUTC - utcRef) / 60_000;
@@ -228,11 +222,7 @@ export function yesterdayInTz(tz: string): string {
   const todayParts = today.split("-").map(Number);
   const [y, m, d] = todayParts as [number, number, number];
   const prev = new Date(Date.UTC(y, m - 1, d - 1));
-  return formatDateParts(
-    prev.getUTCFullYear(),
-    prev.getUTCMonth() + 1,
-    prev.getUTCDate(),
-  );
+  return formatDateParts(prev.getUTCFullYear(), prev.getUTCMonth() + 1, prev.getUTCDate());
 }
 
 /**
@@ -272,10 +262,7 @@ export function epochToDateStr(epoch: number, tz: string): string {
  * the transition may be grouped into the wrong local date (off by at most
  * 1 hour). For single-day queries, use getDateBoundsEpoch() which is exact.
  */
-export function sqlDateExpr(
-  tz: string,
-  refDateStr?: string,
-): { expr: string; offsetSec: number } {
+export function sqlDateExpr(tz: string, refDateStr?: string): { expr: string; offsetSec: number } {
   let y: number, m: number, d: number;
   if (refDateStr) {
     const refParts = refDateStr.split("-").map(Number);

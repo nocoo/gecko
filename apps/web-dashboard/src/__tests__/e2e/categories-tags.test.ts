@@ -6,8 +6,8 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard
@@ -59,7 +59,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -178,10 +178,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Categories CRUD", () => {
   });
 
   test("DELETE /api/categories removes the custom category", async () => {
-    const { status, body } = await api(
-      "/api/categories",
-      del({ id: customCategoryId }),
-    );
+    const { status, body } = await api("/api/categories", del({ id: customCategoryId }));
     expect(status).toBe(200);
     expect(body.deleted).toBe(true);
 
@@ -206,10 +203,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Tags CRUD", () => {
   });
 
   test("POST /api/tags creates a tag", async () => {
-    const { status, body } = await api(
-      "/api/tags",
-      json({ name: "E2E Work" }),
-    );
+    const { status, body } = await api("/api/tags", json({ name: "E2E Work" }));
     expect(status).toBe(201);
     expect(body.id).toBeDefined();
     expect(body.name).toBe("E2E Work");
@@ -227,10 +221,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Tags CRUD", () => {
   });
 
   test("PUT /api/tags renames the tag", async () => {
-    const { status, body } = await api(
-      "/api/tags",
-      put({ id: tagId, name: "E2E Renamed Tag" }),
-    );
+    const { status, body } = await api("/api/tags", put({ id: tagId, name: "E2E Renamed Tag" }));
     expect(status).toBe(200);
     expect(body.name).toBe("E2E Renamed Tag");
   });
@@ -414,10 +405,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Tag Mappings", () => {
   });
 
   test("POST /api/tags/mappings with empty tagIds removes all tags", async () => {
-    const { status } = await api(
-      "/api/tags/mappings",
-      json({ apps: [{ bundleId, tagIds: [] }] }),
-    );
+    const { status } = await api("/api/tags/mappings", json({ apps: [{ bundleId, tagIds: [] }] }));
     expect(status).toBe(200);
 
     // Verify no mappings for this app

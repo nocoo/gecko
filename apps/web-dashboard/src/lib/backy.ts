@@ -6,7 +6,7 @@
  * file naming, and gzip compression.
  */
 
-import { gzipSync, gunzipSync } from "node:zlib";
+import { gunzipSync, gzipSync } from "node:zlib";
 import { APP_VERSION } from "@/lib/version";
 
 // ---------------------------------------------------------------------------
@@ -167,11 +167,7 @@ export function envelopeStats(env: BackupEnvelope): BackupStats {
  * Format: v{version}-{YYYY-MM-DD}-{N}sess-{N}cat-{N}tag
  * Example: v1.1.2-2026-03-02-60000sess-4cat-5tag
  */
-export function buildBackupTag(
-  version: string,
-  date: string,
-  stats: BackupStats,
-): string {
+export function buildBackupTag(version: string, date: string, stats: BackupStats): string {
   return `v${version}-${date}-${stats.sessions}sess-${stats.categories}cat-${stats.tags}tag`;
 }
 
@@ -214,11 +210,7 @@ export function decompressEnvelope(buf: Buffer): BackupEnvelope {
 }
 
 /** Settings keys that belong to backy itself — excluded from backup. */
-export const BACKY_SETTING_KEYS = [
-  "backy.webhookUrl",
-  "backy.apiKey",
-  "backy.pullKey",
-] as const;
+export const BACKY_SETTING_KEYS = ["backy.webhookUrl", "backy.apiKey", "backy.pullKey"] as const;
 
 /** Check if a settings key is a backy-internal key (excluded from backup). */
 export function isBackySettingKey(key: string): boolean {

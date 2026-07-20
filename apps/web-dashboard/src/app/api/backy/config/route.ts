@@ -3,7 +3,7 @@
  * PUT  /api/backy/config — Save backy push configuration
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { backyRepo } from "@/lib/backy-repo";
 
 export const dynamic = "force-dynamic";

@@ -1,7 +1,9 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 test.describe("Dashboard — BDD Smoke", () => {
-  test("Given the app is running, When I visit the dashboard, Then I see the page heading", async ({ page }) => {
+  test("Given the app is running, When I visit the dashboard, Then I see the page heading", async ({
+    page,
+  }) => {
     // Given: app is running (webServer handles this)
 
     // When: visit dashboard

@@ -7,16 +7,16 @@
  * AI is still thinking.
  */
 
-import { requireSession, jsonOk, jsonError, getUserTimezone } from "@/lib/api-helpers";
+import { getUserTimezone, jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { fetchSessionsForDate } from "@/lib/session-queries";
 import { todayInTz } from "@/lib/timezone";
 import {
-  loadAiSettings,
-  loadAppContext,
   buildPrompt,
   type CustomPromptSections,
+  loadAiSettings,
+  loadAppContext,
 } from "@/services/analyze-core";
 import { computeDailyStats } from "@/services/daily-stats";
-import { fetchSessionsForDate } from "@/lib/session-queries";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,12 @@ function validateDate(dateStr: string, tz: string): string | null {
     return "Invalid date.";
   }
   const test = new Date(Date.UTC(y, m - 1, d));
-  if (Number.isNaN(test.getTime()) || test.getUTCFullYear() !== y || test.getUTCMonth() !== m - 1 || test.getUTCDate() !== d) {
+  if (
+    Number.isNaN(test.getTime()) ||
+    test.getUTCFullYear() !== y ||
+    test.getUTCMonth() !== m - 1 ||
+    test.getUTCDate() !== d
+  ) {
     return "Invalid date.";
   }
   const today = todayInTz(tz);
@@ -79,7 +84,10 @@ export async function POST(
   if (settings.promptSection4) customSections.section4 = settings.promptSection4;
 
   const prompt = buildPrompt(
-    date, stats, appContext, tz,
+    date,
+    stats,
+    appContext,
+    tz,
     Object.keys(customSections).length > 0 ? customSections : undefined,
   );
 

@@ -1,8 +1,5 @@
-import { describe, test, expect } from "vitest";
-import {
-  DEFAULT_CATEGORIES,
-  BUNDLE_ID_MAPPINGS,
-} from "../../lib/default-categories";
+import { describe, expect, test } from "vitest";
+import { BUNDLE_ID_MAPPINGS, DEFAULT_CATEGORIES } from "../../lib/default-categories";
 
 describe("default-categories constants", () => {
   test("has exactly 4 default categories", () => {

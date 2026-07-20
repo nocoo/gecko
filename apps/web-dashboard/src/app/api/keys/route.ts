@@ -2,9 +2,9 @@
 // GET  /api/keys — List current user's API keys
 
 import { randomUUID } from "node:crypto";
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
 import { generateApiKey, hashApiKey } from "@/lib/api-key";
-import { query, execute } from "@/lib/d1";
+import { execute, query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +34,7 @@ export async function POST(req: Request): Promise<Response> {
   await execute(
     `INSERT INTO api_keys (id, user_id, name, key_hash, device_id, created_at)
      VALUES (?, ?, ?, ?, ?, ?)`,
-    [keyId, user.userId, name, keyHash, deviceId, now]
+    [keyId, user.userId, name, keyHash, deviceId, now],
   );
 
   return jsonOk(
@@ -45,7 +45,7 @@ export async function POST(req: Request): Promise<Response> {
       name,
       createdAt: now,
     },
-    201
+    201,
   );
 }
 
@@ -63,7 +63,7 @@ export async function GET(_req: Request): Promise<Response> {
   }>(
     `SELECT id, name, device_id, created_at, last_used
      FROM api_keys WHERE user_id = ? ORDER BY created_at DESC`,
-    [user.userId]
+    [user.userId],
   );
 
   return jsonOk({

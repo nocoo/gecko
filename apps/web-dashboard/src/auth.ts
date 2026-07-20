@@ -41,9 +41,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     },
     callbackUrl: {
-      name: useSecureCookies
-        ? "__Secure-authjs.callback-url"
-        : "authjs.callback-url",
+      name: useSecureCookies ? "__Secure-authjs.callback-url" : "authjs.callback-url",
       options: {
         httpOnly: true,
         sameSite: "lax",
@@ -52,9 +50,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
     },
     sessionToken: {
-      name: useSecureCookies
-        ? "__Secure-authjs.session-token"
-        : "authjs.session-token",
+      name: useSecureCookies ? "__Secure-authjs.session-token" : "authjs.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",

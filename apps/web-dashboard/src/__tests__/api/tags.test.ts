@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
 // /api/tags route handler tests
@@ -141,10 +141,7 @@ describe("/api/tags", () => {
 
   describe("PUT /api/tags", () => {
     test("renames a tag", async () => {
-      mockD1([
-        [{ id: "tag-1", user_id: "e2e-test-user" }],
-        [],
-      ]);
+      mockD1([[{ id: "tag-1", user_id: "e2e-test-user" }], []]);
       const { PUT } = await import("../../app/api/tags/route");
 
       const req = new Request("http://localhost/api/tags", {
@@ -219,9 +216,7 @@ describe("/api/tags", () => {
     });
 
     test("returns 404 when tag belongs to another user", async () => {
-      mockD1([
-        [{ id: "tag-1", user_id: "other-user" }],
-      ]);
+      mockD1([[{ id: "tag-1", user_id: "other-user" }]]);
       const { PUT } = await import("../../app/api/tags/route");
 
       const req = new Request("http://localhost/api/tags", {
@@ -302,9 +297,7 @@ describe("/api/tags", () => {
     });
 
     test("returns 404 when tag belongs to another user", async () => {
-      mockD1([
-        [{ id: "tag-1", user_id: "other-user" }],
-      ]);
+      mockD1([[{ id: "tag-1", user_id: "other-user" }]]);
       const { DELETE } = await import("../../app/api/tags/route");
 
       const req = new Request("http://localhost/api/tags", {

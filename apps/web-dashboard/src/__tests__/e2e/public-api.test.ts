@@ -3,8 +3,8 @@
 // Runs against the dev:e2e server (port 17018, E2E_SKIP_AUTH=true).
 // IMPORTANT: Skipped unless RUN_E2E=true.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess } from "bun";
+import { type Subprocess, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 
 // ---------------------------------------------------------------------------
 // Skip guard — only run when explicitly requested
@@ -52,7 +52,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   server = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -72,8 +72,7 @@ afterAll(() => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const api = (path: string, init?: RequestInit) =>
-  fetch(`${BASE_URL}${path}`, init);
+const api = (path: string, init?: RequestInit) => fetch(`${BASE_URL}${path}`, init);
 
 const authHeaders = { Authorization: "Bearer gk_test_e2e_key" };
 
@@ -88,119 +87,104 @@ describe("E2E: GET /api/v1/snapshot", () => {
   // Scenario 1: Seed data via /api/sync so snapshot has something to return
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "First sync some sessions so snapshot has data",
-    async () => {
-      const now = Math.floor(Date.now() / 1000);
-      const res = await api("/api/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sessions: [
-            {
-              id: crypto.randomUUID(),
-              app_name: "Safari",
-              bundle_id: "com.apple.Safari",
-              start_time: now - 300,
-              duration: 300,
-              url: "https://example.com",
-              window_title: "Example",
-            },
-          ],
-        }),
-      });
+  test.skipIf(!SHOULD_RUN)("First sync some sessions so snapshot has data", async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const res = await api("/api/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sessions: [
+          {
+            id: crypto.randomUUID(),
+            app_name: "Safari",
+            bundle_id: "com.apple.Safari",
+            start_time: now - 300,
+            duration: 300,
+            url: "https://example.com",
+            window_title: "Example",
+          },
+        ],
+      }),
+    });
 
-      expect(res.status).toBe(202);
-      const body = await res.json();
-      expect(body.accepted).toBe(1);
+    expect(res.status).toBe(202);
+    const body = await res.json();
+    expect(body.accepted).toBe(1);
 
-      // Wait for async queue drain (interval is 2s, give it 4s)
-      await new Promise((r) => setTimeout(r, 4000));
-    },
-  );
+    // Wait for async queue drain (interval is 2s, give it 4s)
+    await new Promise((r) => setTimeout(r, 4000));
+  });
 
   // -------------------------------------------------------------------------
   // Scenario 2: Successful snapshot for today
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "returns snapshot for today",
-    async () => {
-      const res = await api(`/api/v1/snapshot?date=${todayStr}`, {
-        headers: authHeaders,
-      });
+  test.skipIf(!SHOULD_RUN)("returns snapshot for today", async () => {
+    const res = await api(`/api/v1/snapshot?date=${todayStr}`, {
+      headers: authHeaders,
+    });
 
-      expect(res.status).toBe(200);
+    expect(res.status).toBe(200);
 
-      const body = (await res.json()) as {
-        date: string;
-        timezone: string;
-        stats: {
-          totalSessions: number;
-          totalDuration: number;
-          topApps: unknown[];
-        };
-        ai: null | object;
+    const body = (await res.json()) as {
+      date: string;
+      timezone: string;
+      stats: {
+        totalSessions: number;
+        totalDuration: number;
+        topApps: unknown[];
       };
+      ai: null | object;
+    };
 
-      expect(body.date).toBe(todayStr);
-      expect(body.timezone).toBeDefined();
-      expect(body.stats).toBeDefined();
-      expect(typeof body.stats.totalSessions).toBe("number");
-      expect(typeof body.stats.totalDuration).toBe("number");
-      expect(Array.isArray(body.stats.topApps)).toBe(true);
-      // AI may or may not be populated
-    },
-  );
+    expect(body.date).toBe(todayStr);
+    expect(body.timezone).toBeDefined();
+    expect(body.stats).toBeDefined();
+    expect(typeof body.stats.totalSessions).toBe("number");
+    expect(typeof body.stats.totalDuration).toBe("number");
+    expect(Array.isArray(body.stats.topApps)).toBe(true);
+    // AI may or may not be populated
+  });
 
   // -------------------------------------------------------------------------
   // Scenario 3: Missing date param → 400
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "returns 400 for missing date param",
-    async () => {
-      const res = await api("/api/v1/snapshot", {
-        headers: authHeaders,
-      });
+  test.skipIf(!SHOULD_RUN)("returns 400 for missing date param", async () => {
+    const res = await api("/api/v1/snapshot", {
+      headers: authHeaders,
+    });
 
-      expect(res.status).toBe(400);
-      const body = (await res.json()) as { error: string };
-      expect(body.error).toBeDefined();
-    },
-  );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBeDefined();
+  });
 
   // -------------------------------------------------------------------------
   // Scenario 4: Invalid date format → 400
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "returns 400 for invalid date format",
-    async () => {
-      const res = await api("/api/v1/snapshot?date=not-a-date", {
-        headers: authHeaders,
-      });
+  test.skipIf(!SHOULD_RUN)("returns 400 for invalid date format", async () => {
+    const res = await api("/api/v1/snapshot?date=not-a-date", {
+      headers: authHeaders,
+    });
 
-      expect(res.status).toBe(400);
-      const body = (await res.json()) as { error: string };
-      expect(body.error).toBeDefined();
-    },
-  );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBeDefined();
+  });
 
   // -------------------------------------------------------------------------
   // Scenario 5: Future date → 400
   // -------------------------------------------------------------------------
 
-  test.skipIf(!SHOULD_RUN)(
-    "returns 400 for future date",
-    async () => {
-      const res = await api("/api/v1/snapshot?date=2099-01-01", {
-        headers: authHeaders,
-      });
+  test.skipIf(!SHOULD_RUN)("returns 400 for future date", async () => {
+    const res = await api("/api/v1/snapshot?date=2099-01-01", {
+      headers: authHeaders,
+    });
 
-      expect(res.status).toBe(400);
-      const body = (await res.json()) as { error: string };
-      expect(body.error).toBeDefined();
-    },
-  );
+    expect(res.status).toBe(400);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBeDefined();
+  });
 });

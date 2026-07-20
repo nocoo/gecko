@@ -2,7 +2,7 @@
  * Tests for backy-repo.ts — backy config CRUD via D1 settings table.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { backyRepo } from "@/lib/backy-repo";
 
 const originalFetch = globalThis.fetch;
@@ -32,7 +32,13 @@ function mockD1(responses: Array<{ results: unknown[]; meta?: { changes: number 
       new Response(
         JSON.stringify({
           success: true,
-          result: [{ results: resp.results, success: true, meta: resp.meta ?? { changes: 0, last_row_id: 0 } }],
+          result: [
+            {
+              results: resp.results,
+              success: true,
+              meta: resp.meta ?? { changes: 0, last_row_id: 0 },
+            },
+          ],
           errors: [],
         }),
         { status: 200 },
@@ -49,12 +55,14 @@ function mockD1(responses: Array<{ results: unknown[]; meta?: { changes: number 
 
 describe("backyRepo.getPushConfig", () => {
   test("returns config when both keys exist", async () => {
-    const { calls } = mockD1([{
-      results: [
-        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-        { key: "backy.apiKey", value: "sk-test-123" },
-      ],
-    }]);
+    const { calls } = mockD1([
+      {
+        results: [
+          { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
+          { key: "backy.apiKey", value: "sk-test-123" },
+        ],
+      },
+    ]);
 
     const config = await backyRepo.getPushConfig("u1");
 
@@ -70,11 +78,11 @@ describe("backyRepo.getPushConfig", () => {
   });
 
   test("returns null when only webhookUrl exists", async () => {
-    mockD1([{
-      results: [
-        { key: "backy.webhookUrl", value: "https://backy.example.com/webhook" },
-      ],
-    }]);
+    mockD1([
+      {
+        results: [{ key: "backy.webhookUrl", value: "https://backy.example.com/webhook" }],
+      },
+    ]);
 
     const config = await backyRepo.getPushConfig("u1");
     expect(config).toBeNull();

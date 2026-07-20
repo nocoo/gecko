@@ -2,9 +2,9 @@
  * Tests for backy-export.ts — full data export with pagination.
  */
 
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
-import { PAGE_SIZE, exportUserData } from "@/lib/backy-export";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/backy";
+import { exportUserData, PAGE_SIZE } from "@/lib/backy-export";
 
 const originalFetch = globalThis.fetch;
 
@@ -103,13 +103,47 @@ describe("exportUserData", () => {
 
   test("collects data from all tables", async () => {
     mockD1Router({
-      "focus_sessions": () => [makeSession("s1"), makeSession("s2")],
-      "categories": () => [{ id: "c1", user_id: "u1", title: "Dev", icon: "code", is_default: 0, slug: "dev", created_at: "2026-01-01" }],
-      "app_category_mappings": () => [{ user_id: "u1", bundle_id: "com.app", category_id: "c1", created_at: "2026-01-01" }],
+      focus_sessions: () => [makeSession("s1"), makeSession("s2")],
+      categories: () => [
+        {
+          id: "c1",
+          user_id: "u1",
+          title: "Dev",
+          icon: "code",
+          is_default: 0,
+          slug: "dev",
+          created_at: "2026-01-01",
+        },
+      ],
+      app_category_mappings: () => [
+        { user_id: "u1", bundle_id: "com.app", category_id: "c1", created_at: "2026-01-01" },
+      ],
       "FROM tags": () => [{ id: "t1", user_id: "u1", name: "work", created_at: "2026-01-01" }],
-      "app_tag_mappings": () => [{ user_id: "u1", bundle_id: "com.app", tag_id: "t1", created_at: "2026-01-01" }],
-      "app_notes": () => [{ user_id: "u1", bundle_id: "com.app", note: "test", created_at: "2026-01-01", updated_at: "2026-01-01" }],
-      "daily_summaries": () => [{ id: "ds1", user_id: "u1", date: "2026-03-01", ai_score: 85, ai_result_json: "{}", ai_model: "test", ai_generated_at: "2026-03-01", created_at: "2026-03-01", updated_at: "2026-03-01" }],
+      app_tag_mappings: () => [
+        { user_id: "u1", bundle_id: "com.app", tag_id: "t1", created_at: "2026-01-01" },
+      ],
+      app_notes: () => [
+        {
+          user_id: "u1",
+          bundle_id: "com.app",
+          note: "test",
+          created_at: "2026-01-01",
+          updated_at: "2026-01-01",
+        },
+      ],
+      daily_summaries: () => [
+        {
+          id: "ds1",
+          user_id: "u1",
+          date: "2026-03-01",
+          ai_score: 85,
+          ai_result_json: "{}",
+          ai_model: "test",
+          ai_generated_at: "2026-03-01",
+          created_at: "2026-03-01",
+          updated_at: "2026-03-01",
+        },
+      ],
       "FROM settings": () => [
         { user_id: "u1", key: "timezone", value: "Asia/Shanghai", updated_at: 1000 },
         { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 2000 },
@@ -117,8 +151,28 @@ describe("exportUserData", () => {
         { user_id: "u1", key: "backy.apiKey", value: "sk-secret", updated_at: 3000 },
         { user_id: "u1", key: "backy.pullKey", value: "bpk_secret", updated_at: 3000 },
       ],
-      "api_keys": () => [{ id: "ak1", user_id: "u1", name: "Mac", key_hash: "abc", device_id: "d1", created_at: "2026-01-01", last_used: null }],
-      "sync_logs": () => [{ id: "sl1", user_id: "u1", device_id: "d1", session_count: 10, first_start: 100, last_start: 200, synced_at: "2026-01-01" }],
+      api_keys: () => [
+        {
+          id: "ak1",
+          user_id: "u1",
+          name: "Mac",
+          key_hash: "abc",
+          device_id: "d1",
+          created_at: "2026-01-01",
+          last_used: null,
+        },
+      ],
+      sync_logs: () => [
+        {
+          id: "sl1",
+          user_id: "u1",
+          device_id: "d1",
+          session_count: 10,
+          first_start: 100,
+          last_start: 200,
+          synced_at: "2026-01-01",
+        },
+      ],
     });
 
     const env = await exportUserData("u1");
@@ -160,7 +214,7 @@ describe("exportUserData — session pagination", () => {
   test("fetches single page when sessions < PAGE_SIZE", async () => {
     const sessions = Array.from({ length: 100 }, (_, i) => makeSession(`s-${i}`));
     const { calls } = mockD1Router({
-      "focus_sessions": () => sessions,
+      focus_sessions: () => sessions,
     });
 
     const env = await exportUserData("u1");
@@ -177,7 +231,7 @@ describe("exportUserData — session pagination", () => {
   test("paginates when sessions = PAGE_SIZE (needs second query to confirm end)", async () => {
     const fullPage = Array.from({ length: PAGE_SIZE }, (_, i) => makeSession(`s-${i}`));
     const { calls } = mockD1Router({
-      "focus_sessions": (params) => {
+      focus_sessions: (params) => {
         const offset = params[2] as number;
         if (offset === 0) return fullPage;
         return []; // second page is empty
@@ -201,7 +255,7 @@ describe("exportUserData — session pagination", () => {
       Array.from({ length: count }, (_, i) => makeSession(`s-${offset + i}`));
 
     mockD1Router({
-      "focus_sessions": (params) => {
+      focus_sessions: (params) => {
         const offset = params[2] as number;
         if (offset === 0) return makePage(0, PAGE_SIZE);
         if (offset === PAGE_SIZE) return makePage(PAGE_SIZE, PAGE_SIZE);

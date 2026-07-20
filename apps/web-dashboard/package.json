@@ -10,8 +10,10 @@
     "db:init": "bun run scripts/init-local-db.ts",
     "dev:e2e": "bun run db:init && E2E_SKIP_AUTH=true AUTH_SECRET=e2e-test-secret D1_LOCAL_PATH=.local/gecko-test.db vinext dev --port 17018",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --max-warnings 0",
+    "lint": "biome check --error-on-warnings --max-diagnostics=500 .",
+    "lint:fix": "biome check --write --error-on-warnings --max-diagnostics=500 .",
     "lint:staged": "lint-staged",
+    "format": "biome format --write .",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -22,6 +24,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.4",
     "@playwright/test": "^1.61.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/better-sqlite3": "^7.6.13",
@@ -32,13 +35,11 @@
     "@vitejs/plugin-rsc": "^0.5.28",
     "@vitest/coverage-v8": "4.1.10",
     "better-sqlite3": "^12.11.1",
-    "eslint": "^10.7.0",
     "husky": "^9.1.7",
     "lint-staged": "^17.1.0",
     "shadcn": "^4.13.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
-    "typescript-eslint": "8.64.0",
     "vite": "^8.1.5",
     "vitest": "4.1.10"
   },

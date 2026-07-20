@@ -1,5 +1,5 @@
-import { describe, test, expect } from "vitest";
-import { generateApiKey, hashApiKey, API_KEY_PREFIX } from "../../lib/api-key";
+import { describe, expect, test } from "vitest";
+import { API_KEY_PREFIX, generateApiKey, hashApiKey } from "../../lib/api-key";
 
 describe("api-key", () => {
   // ---------------------------------------------------------------------------

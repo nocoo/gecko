@@ -17,7 +17,7 @@ export interface SessionRow {
   window_title: string;
   url: string | null;
   start_time: number; // Unix epoch seconds
-  duration: number;   // seconds
+  duration: number; // seconds
 }
 
 /** Camel-case session for API responses / Gantt chart. */
@@ -39,11 +39,11 @@ export interface AppSummary {
 }
 
 export interface DailyScores {
-  focus: number;         // 0-100
-  deepWork: number;      // 0-100
-  switchRate: number;    // 0-100
+  focus: number; // 0-100
+  deepWork: number; // 0-100
+  switchRate: number; // 0-100
   concentration: number; // 0-100
-  overall: number;       // weighted average
+  overall: number; // weighted average
 }
 
 export interface DailyStats {
@@ -118,9 +118,7 @@ const WEIGHTS = {
  * Merge adjacent sessions of the same app with gap < 5min into segments.
  * Sessions must be sorted by start_time ascending (done internally).
  */
-export function mergeAdjacentSessions(
-  rows: SessionRow[],
-): MergedSegment[] {
+export function mergeAdjacentSessions(rows: SessionRow[]): MergedSegment[] {
   const sorted = [...rows].sort((a, b) => a.start_time - b.start_time);
   const [first, ...rest] = sorted;
   if (!first) return [];
@@ -175,9 +173,7 @@ export function computeScores(rows: SessionRow[]): DailyScores {
   const activeSpan = lastEnd - firstStart;
 
   // 1. Focus: totalDuration / activeSpan
-  const focus = activeSpan > 0
-    ? Math.min(100, Math.round((totalDuration / activeSpan) * 100))
-    : 0;
+  const focus = activeSpan > 0 ? Math.min(100, Math.round((totalDuration / activeSpan) * 100)) : 0;
 
   // 2. Deep Work: count merged segments >= 30min
   const merged = mergeAdjacentSessions(sorted);
@@ -193,8 +189,10 @@ export function computeScores(rows: SessionRow[]): DailyScores {
   let prevWasDevUrl = isDevWorkflowUrl(firstSession.url);
 
   for (let i = 0; i < rest.length; i++) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const s = rest[i]!;
+    const s = rest[i];
+    if (!s) {
+      continue;
+    }
 
     const currIsDevUrl = isDevWorkflowUrl(s.url);
 
@@ -212,8 +210,10 @@ export function computeScores(rows: SessionRow[]): DailyScores {
       let prevEnd = s.start_time + s.duration;
 
       for (let j = i + 1; j < rest.length; j++) {
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        const next = rest[j]!;
+        const next = rest[j];
+        if (!next) {
+          break;
+        }
 
         const gap = next.start_time - prevEnd;
         if (gap >= DWELL_GAP_THRESHOLD) break; // Gap too large, stop accumulating
@@ -251,16 +251,14 @@ export function computeScores(rows: SessionRow[]): DailyScores {
     .sort((a, b) => b - a)
     .slice(0, 3)
     .reduce((sum, d) => sum + d, 0);
-  const concentration = totalDuration > 0
-    ? Math.round((top3Duration / totalDuration) * 100)
-    : 0;
+  const concentration = totalDuration > 0 ? Math.round((top3Duration / totalDuration) * 100) : 0;
 
   // Overall
   const overall = Math.round(
     focus * WEIGHTS.focus +
-    deepWork * WEIGHTS.deepWork +
-    switchRate * WEIGHTS.switchRate +
-    concentration * WEIGHTS.concentration,
+      deepWork * WEIGHTS.deepWork +
+      switchRate * WEIGHTS.switchRate +
+      concentration * WEIGHTS.concentration,
   );
 
   return { focus, deepWork, switchRate, concentration, overall };
@@ -290,13 +288,19 @@ export function computeDailyStats(date: string, rows: SessionRow[]): DailyStats 
   const totalDuration = sorted.reduce((sum, r) => sum + r.duration, 0);
   const uniqueApps = new Set(sorted.map((r) => r.app_name));
   // rows.length > 0 guarded above, so sorted[0] is defined.
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const firstStart = sorted[0]!.start_time;
+  const first = sorted[0];
+  if (!first) {
+    throw new Error("unreachable: sorted sessions empty after length guard");
+  }
+  const firstStart = first.start_time;
   const lastEnd = Math.max(...sorted.map((r) => r.start_time + r.duration));
   const activeSpan = lastEnd - firstStart;
 
   // Top apps
-  const appMap = new Map<string, { bundleId: string | null; totalDuration: number; sessionCount: number }>();
+  const appMap = new Map<
+    string,
+    { bundleId: string | null; totalDuration: number; sessionCount: number }
+  >();
   for (const r of sorted) {
     const existing = appMap.get(r.app_name);
     if (existing) {

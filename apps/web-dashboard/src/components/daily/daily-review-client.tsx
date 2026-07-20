@@ -13,39 +13,35 @@
 
 "use client";
 
-import * as React from "react";
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Markdown from "react-markdown";
-import { AppShell } from "@/components/layout";
-import { GanttChart } from "@/components/daily/gantt-chart";
-import { ScoreCards } from "@/components/daily/score-cards";
 import {
+  AlertCircle,
+  Calendar,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
-  Calendar,
-  Sparkles,
-  Loader2,
-  AlertCircle,
   Clock,
   Cpu,
-  Zap,
-  Info,
-  RefreshCw,
   FileText,
+  Info,
+  Loader2,
+  RefreshCw,
+  Sparkles,
+  Zap,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type * as React from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { CalendarDay } from "react-day-picker";
+import Markdown from "react-markdown";
+import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
+import { GanttChart } from "@/components/daily/gantt-chart";
+import { ScoreCards } from "@/components/daily/score-cards";
+import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { CalendarDay } from "react-day-picker";
 import type { DailyStats } from "@/services/daily-stats";
-import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -157,13 +153,7 @@ function scoreColorClass(score: number): string {
  * `score` is 0–100, mapped to fraction of the circle filled clockwise from 12 o'clock.
  * Color follows the same thresholds as the score number used to.
  */
-function ScoreRing({
-  score,
-  selected,
-}: {
-  score: number;
-  selected?: boolean;
-}) {
+function ScoreRing({ score, selected }: { score: number; selected?: boolean }) {
   const size = 56;
   const stroke = 4;
   const r = (size - stroke) / 2;
@@ -184,9 +174,7 @@ function ScoreRing({
         cy={size / 2}
         r={r}
         fill="none"
-        className={
-          selected ? "stroke-primary-foreground/30" : "stroke-muted-foreground/15"
-        }
+        className={selected ? "stroke-primary-foreground/30" : "stroke-muted-foreground/15"}
         strokeWidth={stroke}
       />
       <circle
@@ -233,9 +221,7 @@ function DateNavigator({
     const toStr = formatYMD(to);
 
     try {
-      const res = await fetch(
-        `/api/daily/summaries?from=${fromStr}&to=${toStr}`,
-      );
+      const res = await fetch(`/api/daily/summaries?from=${fromStr}&to=${toStr}`);
       if (!res.ok) return;
       const body = (await res.json()) as SummariesResponse;
       setBadges((prev) => {
@@ -273,10 +259,7 @@ function DateNavigator({
       const isOutside = modifiers.outside;
       const isSelected = modifiers.selected;
       return (
-        <button
-          {...buttonProps}
-          className={cn(className, "relative")}
-        >
+        <button {...buttonProps} className={cn(className, "relative")}>
           {!isOutside && badge?.hasAi && badge.score != null && (
             <ScoreRing score={badge.score} selected={isSelected} />
           )}
@@ -300,11 +283,7 @@ function DateNavigator({
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="font-medium"
-          >
+          <Button variant="ghost" size="sm" className="font-medium">
             <Calendar className="size-4 text-muted-foreground" />
             <span>{formatDateDisplay(date)}</span>
           </Button>
@@ -319,9 +298,7 @@ function DateNavigator({
                 setOpen(false);
               }
             }}
-            disabled={[
-              { from: dateToObj(addDays(today, 1)), to: new Date(2099, 11, 31) },
-            ]}
+            disabled={[{ from: dateToObj(addDays(today, 1)), to: new Date(2099, 11, 31) }]}
             defaultMonth={dateToObj(date)}
             onMonthChange={fetchMonth}
             components={{
@@ -387,9 +364,7 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
     <div className="rounded-card bg-secondary p-4 md:p-5">
       <div className="flex items-center gap-2 mb-3">
         <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-        <h3 className="text-sm font-normal text-muted-foreground">
-          Model Details
-        </h3>
+        <h3 className="text-sm font-normal text-muted-foreground">Model Details</h3>
         {ai.cached && (
           <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
             Cached
@@ -430,13 +405,12 @@ function PromptCard({
   return (
     <div className="rounded-card bg-secondary overflow-hidden">
       <button
+        type="button"
         onClick={onToggle}
         className="w-full flex items-center gap-2 p-4 md:p-5 text-left hover:bg-accent/50 transition-colors"
       >
         <FileText className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
-        <h3 className="text-sm font-normal text-muted-foreground">
-          Prompt
-        </h3>
+        <h3 className="text-sm font-normal text-muted-foreground">Prompt</h3>
         <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
           {Math.round(prompt.length / 1000)}k chars
         </span>
@@ -481,11 +455,7 @@ function AiAnalysisPanel({
 }) {
   // Show prompt card when we have a prompt (either during loading or after result)
   const promptCard = prompt ? (
-    <PromptCard
-      prompt={prompt}
-      collapsed={promptCollapsed}
-      onToggle={onTogglePrompt}
-    />
+    <PromptCard prompt={prompt} collapsed={promptCollapsed} onToggle={onTogglePrompt} />
   ) : null;
 
   if (loading) {
@@ -507,19 +477,12 @@ function AiAnalysisPanel({
         <div className="rounded-card bg-secondary p-4 md:p-5">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="h-4 w-4 text-destructive" strokeWidth={1.5} />
-            <h3 className="text-sm font-normal text-destructive">
-              Analysis failed
-            </h3>
+            <h3 className="text-sm font-normal text-destructive">Analysis failed</h3>
           </div>
           <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-72 overflow-auto font-mono leading-relaxed">
             {error}
           </pre>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onGenerate()}
-            className="mt-3"
-          >
+          <Button variant="outline" size="sm" onClick={() => onGenerate()} className="mt-3">
             Retry
           </Button>
         </div>
@@ -551,9 +514,7 @@ function AiAnalysisPanel({
       <div className="rounded-card bg-secondary p-4 md:p-5">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-          <h3 className="text-sm font-normal text-muted-foreground">
-            AI Analysis
-          </h3>
+          <h3 className="text-sm font-normal text-muted-foreground">AI Analysis</h3>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -569,15 +530,10 @@ function AiAnalysisPanel({
         {/* Highlights */}
         {ai.result.highlights.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">
-              Highlights
-            </h4>
+            <h4 className="text-xs text-muted-foreground mb-2">Highlights</h4>
             <ul className="space-y-1.5">
               {ai.result.highlights.map((h, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-sm text-foreground"
-                >
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="text-success mt-0.5 shrink-0">+</span>
                   <span>{h}</span>
                 </li>
@@ -589,15 +545,10 @@ function AiAnalysisPanel({
         {/* Improvements */}
         {ai.result.improvements.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">
-              Improvements
-            </h4>
+            <h4 className="text-xs text-muted-foreground mb-2">Improvements</h4>
             <ul className="space-y-1.5">
               {ai.result.improvements.map((imp, i) => (
-                <li
-                  key={i}
-                  className="flex items-start gap-2 text-sm text-foreground"
-                >
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                   <span className="text-warning mt-0.5 shrink-0">-</span>
                   <span>{imp}</span>
                 </li>
@@ -609,17 +560,15 @@ function AiAnalysisPanel({
         {/* Time Segments */}
         {ai.result.timeSegments && ai.result.timeSegments.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">
-              Time Segments
-            </h4>
+            <h4 className="text-xs text-muted-foreground mb-2">Time Segments</h4>
             <div className="space-y-2">
               {ai.result.timeSegments.map((seg, i) => (
-                <div
-                  key={i}
-                  className="rounded-widget bg-secondary px-3 py-2.5"
-                >
+                <div key={i} className="rounded-widget bg-secondary px-3 py-2.5">
                   <div className="flex items-center gap-2 mb-1">
-                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+                    <Clock
+                      className="h-3.5 w-3.5 text-muted-foreground shrink-0"
+                      strokeWidth={1.5}
+                    />
                     <span className="text-xs font-medium text-muted-foreground font-display tracking-tight">
                       {seg.timeRange}
                     </span>
@@ -627,9 +576,7 @@ function AiAnalysisPanel({
                       {seg.label}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed">
-                    {seg.description}
-                  </p>
+                  <p className="text-sm text-foreground leading-relaxed">{seg.description}</p>
                 </div>
               ))}
             </div>
@@ -639,9 +586,7 @@ function AiAnalysisPanel({
         {/* Summary (Markdown rendered) */}
         {ai.result.summary && (
           <div className="pt-3 border-t border-border/50">
-            <h4 className="text-xs text-muted-foreground mb-2">
-              Summary
-            </h4>
+            <h4 className="text-xs text-muted-foreground mb-2">Summary</h4>
             <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
               <Markdown>{ai.result.summary}</Markdown>
             </div>
@@ -736,58 +681,61 @@ export function DailyReviewClient({ date }: { date: string }) {
   }, [date, fetchData]);
 
   // Generate AI analysis — calls preview-prompt (fast) + analyze (slow) in parallel
-  const generateAi = useCallback(async (force?: boolean) => {
-    try {
-      setAiLoading(true);
-      setAiError(null);
-      setPromptCollapsed(false); // Expand prompt during loading
+  const generateAi = useCallback(
+    async (force?: boolean) => {
+      try {
+        setAiLoading(true);
+        setAiError(null);
+        setPromptCollapsed(false); // Expand prompt during loading
 
-      // Fire both requests in parallel:
-      // - preview-prompt returns instantly with the prompt text
-      // - analyze calls the AI provider (slow)
-      const qs = force ? "?force=true" : "";
-      const promptFetch = fetch(`/api/daily/${date}/preview-prompt`, {
-        method: "POST",
-      });
-      const analyzeFetch = fetch(`/api/daily/${date}/analyze${qs}`, {
-        method: "POST",
-      });
-
-      // Handle prompt response as soon as it arrives
-      promptFetch
-        .then(async (res) => {
-          if (res.ok) {
-            const body = (await res.json()) as { prompt: string };
-            setAiPrompt(body.prompt);
-          }
-        })
-        .catch(() => {
-          // Non-critical: prompt preview is nice-to-have
+        // Fire both requests in parallel:
+        // - preview-prompt returns instantly with the prompt text
+        // - analyze calls the AI provider (slow)
+        const qs = force ? "?force=true" : "";
+        const promptFetch = fetch(`/api/daily/${date}/preview-prompt`, {
+          method: "POST",
+        });
+        const analyzeFetch = fetch(`/api/daily/${date}/analyze${qs}`, {
+          method: "POST",
         });
 
-      // Wait for the analyze response
-      const res = await analyzeFetch;
+        // Handle prompt response as soon as it arrives
+        promptFetch
+          .then(async (res) => {
+            if (res.ok) {
+              const body = (await res.json()) as { prompt: string };
+              setAiPrompt(body.prompt);
+            }
+          })
+          .catch(() => {
+            // Non-critical: prompt preview is nice-to-have
+          });
 
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        throw new Error(body.error ?? `AI analysis failed (${res.status})`);
-      }
+        // Wait for the analyze response
+        const res = await analyzeFetch;
 
-      const body = (await res.json()) as AnalyzeResponse;
-      setAi(body);
-      // Use prompt from analyze response if preview-prompt didn't return one
-      if (body.prompt) {
-        setAiPrompt(body.prompt);
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(body.error ?? `AI analysis failed (${res.status})`);
+        }
+
+        const body = (await res.json()) as AnalyzeResponse;
+        setAi(body);
+        // Use prompt from analyze response if preview-prompt didn't return one
+        if (body.prompt) {
+          setAiPrompt(body.prompt);
+        }
+        setPromptCollapsed(true); // Collapse prompt once result arrives
+      } catch (err) {
+        setAiError(err instanceof Error ? err.message : "AI analysis failed");
+      } finally {
+        setAiLoading(false);
       }
-      setPromptCollapsed(true); // Collapse prompt once result arrives
-    } catch (err) {
-      setAiError(err instanceof Error ? err.message : "AI analysis failed");
-    } finally {
-      setAiLoading(false);
-    }
-  }, [date]);
+    },
+    [date],
+  );
 
   // Navigate to a new date
   const handleDateChange = (newDate: string) => {
@@ -798,10 +746,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
   return (
     <AppShell
-      breadcrumbs={[
-        { label: "Daily Review", href: "/daily" },
-        { label: formatDateDisplay(date) },
-      ]}
+      breadcrumbs={[{ label: "Daily Review", href: "/daily" }, { label: formatDateDisplay(date) }]}
     >
       <div className="space-y-4">
         {/* Header: Date navigation */}
@@ -843,8 +788,7 @@ export function DailyReviewClient({ date }: { date: string }) {
             <Calendar className="size-8 text-muted-foreground mb-4" strokeWidth={1.5} />
             <h2 className="text-lg font-semibold">No Data</h2>
             <p className="mt-2 max-w-md text-sm text-muted-foreground">
-              No sessions recorded on {formatDateDisplay(date)}.
-              Try selecting a different date.
+              No sessions recorded on {formatDateDisplay(date)}. Try selecting a different date.
             </p>
           </div>
         )}
@@ -887,7 +831,9 @@ export function DailyReviewClient({ date }: { date: string }) {
 
 function LoadingSkeleton({ height = "h-[200px]" }: { height?: string }) {
   return (
-    <div className={`rounded-card bg-secondary p-4 md:p-5 ${height} flex items-center justify-center`}>
+    <div
+      className={`rounded-card bg-secondary p-4 md:p-5 ${height} flex items-center justify-center`}
+    >
       <Loader2 className="size-6 animate-spin text-muted-foreground" />
     </div>
   );

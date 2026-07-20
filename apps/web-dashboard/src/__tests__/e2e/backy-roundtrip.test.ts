@@ -6,9 +6,9 @@
 // IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
 // Set RUN_E2E=true to run these in the general test suite.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { spawn, type Subprocess, serve, type Server } from "bun";
 import { gunzipSync } from "node:zlib";
+import { type Server, type Subprocess, serve, spawn } from "bun";
+import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { BackupEnvelope } from "@/lib/backy";
 
 // ---------------------------------------------------------------------------
@@ -150,7 +150,7 @@ beforeAll(async () => {
   console.log("[E2E] Starting dev:e2e server...");
   appServer = spawn({
     cmd: ["bun", "run", "dev:e2e"],
-    cwd: import.meta.dir + "/../..",
+    cwd: `${import.meta.dir}/../..`,
     stdout: "ignore",
     stderr: "ignore",
   });
@@ -249,9 +249,7 @@ describe.skipIf(!SHOULD_RUN)("E2E: Backy backup round-trip", () => {
       expect(received.envelope.schemaVersion).toBe(1);
       expect(received.envelope.exportedAt).toBeTruthy();
       // Backy settings should be excluded
-      const backySettings = received.envelope.settings.filter(
-        (s) => s.key.startsWith("backy."),
-      );
+      const backySettings = received.envelope.settings.filter((s) => s.key.startsWith("backy."));
       expect(backySettings).toHaveLength(0);
     });
 

@@ -7,12 +7,10 @@
  */
 
 /** Section 1 — Role & context (no template variables). */
-export const DEFAULT_PROMPT_SECTION_1 =
-  `你是一位专业的生产力分析师。请根据以下用户的电脑使用数据，给出深度分析报告。`;
+export const DEFAULT_PROMPT_SECTION_1 = `你是一位专业的生产力分析师。请根据以下用户的电脑使用数据，给出深度分析报告。`;
 
 /** Section 2 — Data injection (supports {{variable}} expansion). */
-export const DEFAULT_PROMPT_SECTION_2 =
-  `## 数据概览
+export const DEFAULT_PROMPT_SECTION_2 = `## 数据概览
 - 分析日期：{{date}}
 - 总活跃时长：{{totalDuration}} 分钟
 - 总会话数：{{totalSessions}}
@@ -37,8 +35,7 @@ export const DEFAULT_PROMPT_SECTION_2 =
 {{timeline}}`;
 
 /** Section 3 — Analysis rules (no template variables). */
-export const DEFAULT_PROMPT_SECTION_3 =
-  `## 分析要求
+export const DEFAULT_PROMPT_SECTION_3 = `## 分析要求
 
 ### 重要规则
 1. **loginwindow / ScreenSaver 等闲置进程**：这些代表电脑在锁屏或无人操作状态，评价生产力时应排除，不作为前台积极工作。
@@ -54,8 +51,7 @@ export const DEFAULT_PROMPT_SECTION_3 =
    - 如果用户已对应用设置了分类或标签，优先使用这些信息判断切换性质`;
 
 /** Section 4 — Output format (no template variables). */
-export const DEFAULT_PROMPT_SECTION_4 =
-  `### 输出格式
+export const DEFAULT_PROMPT_SECTION_4 = `### 输出格式
 请以 JSON 格式返回分析结果，包含以下字段：
 - score: 你给出的综合评分（1-100整数，基于实际有效工作，排除闲置时间）
 - highlights: 今日亮点（字符串数组，2-4条，中文）
@@ -81,13 +77,32 @@ export const PROMPT_TEMPLATE_VARIABLES = [
   { key: "totalSessions", description: "总会话数", example: "47" },
   { key: "totalApps", description: "使用应用数", example: "12" },
   { key: "activeSpan", description: "活跃时间跨度（分钟）", example: "540" },
-  { key: "idleNote", description: "闲置时间说明（可为空）", example: "\n- 闲置/锁屏时间：30 分钟..." },
+  {
+    key: "idleNote",
+    description: "闲置时间说明（可为空）",
+    example: "\n- 闲置/锁屏时间：30 分钟...",
+  },
   { key: "scores.focus", description: "专注度评分", example: "75" },
   { key: "scores.deepWork", description: "深度工作评分", example: "60" },
   { key: "scores.switchRate", description: "切换频率评分", example: "80" },
   { key: "scores.concentration", description: "集中度评分", example: "70" },
   { key: "scores.overall", description: "综合评分", example: "71" },
-  { key: "topApps", description: "Top 10 应用列表（多行）", example: "1. VS Code — 120min (8 sessions)\n2. Chrome — 45min (12 sessions)\n3. Slack — 20min (5 sessions)" },
-  { key: "appContext", description: "应用上下文标注（可为空）", example: "## 应用上下文（用户标注）\n以下是用户对部分应用的分类、标签和备注说明：\n- **com.google.Chrome** | 分类: 浏览器 | 标签: 工作, 摸鱼\n- **com.tinyspeck.slackmacgap** | 分类: 沟通 | 备注: 团队日常沟通" },
-  { key: "timeline", description: "详细会话时间线（多行）", example: "[09:00] VS Code (30min) — \"main.ts\"\n[09:32] Chrome (5min) — \"Stack Overflow\" | URL: stackoverflow.com/...\n[09:37] loginwindow (15min) [IDLE/锁屏]" },
+  {
+    key: "topApps",
+    description: "Top 10 应用列表（多行）",
+    example:
+      "1. VS Code — 120min (8 sessions)\n2. Chrome — 45min (12 sessions)\n3. Slack — 20min (5 sessions)",
+  },
+  {
+    key: "appContext",
+    description: "应用上下文标注（可为空）",
+    example:
+      "## 应用上下文（用户标注）\n以下是用户对部分应用的分类、标签和备注说明：\n- **com.google.Chrome** | 分类: 浏览器 | 标签: 工作, 摸鱼\n- **com.tinyspeck.slackmacgap** | 分类: 沟通 | 备注: 团队日常沟通",
+  },
+  {
+    key: "timeline",
+    description: "详细会话时间线（多行）",
+    example:
+      '[09:00] VS Code (30min) — "main.ts"\n[09:32] Chrome (5min) — "Stack Overflow" | URL: stackoverflow.com/...\n[09:37] loginwindow (15min) [IDLE/锁屏]',
+  },
 ] as const;

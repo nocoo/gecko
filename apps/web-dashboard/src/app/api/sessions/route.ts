@@ -1,6 +1,6 @@
 // GET /api/sessions — List user's focus sessions (paginated).
 
-import { requireSession, jsonOk } from "@/lib/api-helpers";
+import { jsonOk, requireSession } from "@/lib/api-helpers";
 import { query } from "@/lib/d1";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function GET(req: Request): Promise<Response> {
   const url = new URL(req.url);
   const limit = Math.min(
     parseInt(url.searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT,
-    MAX_LIMIT
+    MAX_LIMIT,
   );
   const offset = parseInt(url.searchParams.get("offset") ?? "0", 10) || 0;
 
@@ -45,7 +45,7 @@ export async function GET(req: Request): Promise<Response> {
      WHERE user_id = ?
      ORDER BY start_time DESC
      LIMIT ? OFFSET ?`,
-    [user.userId, limit, offset]
+    [user.userId, limit, offset],
   );
 
   return jsonOk({

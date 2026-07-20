@@ -4,14 +4,11 @@
  * Sends a minimal prompt to verify the API key and endpoint work.
  */
 
-import { requireSession, jsonOk, jsonError } from "@/lib/api-helpers";
-import { settingsRepo } from "@/lib/settings-repo";
-import {
-  resolveAiConfig,
-  createAiModel,
-} from "@nocoo/next-ai/server";
 import type { AiSettingsInput } from "@nocoo/next-ai";
+import { createAiModel, resolveAiConfig } from "@nocoo/next-ai/server";
 import { generateText } from "ai";
+import { jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
+import { settingsRepo } from "@/lib/settings-repo";
 
 export const dynamic = "force-dynamic";
 
@@ -40,8 +37,7 @@ export async function POST(): Promise<Response> {
       model,
       baseURL: baseURL || undefined,
       sdkType: sdkType ? (sdkType as "anthropic" | "openai") : undefined,
-      authType:
-        authType === "bearer" || authType === "apiKey" ? authType : undefined,
+      authType: authType === "bearer" || authType === "apiKey" ? authType : undefined,
     };
 
     const config = resolveAiConfig(settings);
@@ -80,15 +76,12 @@ export async function POST(): Promise<Response> {
         const inner =
           typeof parsed.error === "string"
             ? parsed.error
-            : parsed.error?.message ?? parsed.message;
+            : (parsed.error?.message ?? parsed.message);
         if (inner) detail = inner;
       } catch {
         // responseBody not JSON — keep baseMessage
       }
     }
-    return jsonError(
-      e.url ? `${detail} (upstream: ${e.url})` : detail,
-      statusCode,
-    );
+    return jsonError(e.url ? `${detail} (upstream: ${e.url})` : detail, statusCode);
   }
 }

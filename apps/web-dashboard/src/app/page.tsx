@@ -1,32 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useSession } from "next-auth/react";
-import { AppShell } from "@/components/layout";
-import { Button } from "@/components/ui/button";
 import {
-  Monitor,
-  Clock,
   AppWindow,
-  Timer,
-  RefreshCw,
   BarChart3,
+  Clock,
   Loader2,
+  Monitor,
   PieChart as PieChartIcon,
+  RefreshCw,
+  Timer,
   TrendingUp,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  BarChart,
   Bar,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
+  XAxis,
+  YAxis,
 } from "recharts";
+import { AppShell } from "@/components/layout";
+import { Button } from "@/components/ui/button";
 import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact } from "@/lib/chart-config";
 import { CHART_COLORS, chartPrimary, withAlpha } from "@/lib/palette";
 import { cn } from "@/lib/utils";
@@ -90,10 +90,7 @@ export default function DashboardPage() {
       if (!statsRes.ok) throw new Error("Failed to load stats");
       if (!timelineRes.ok) throw new Error("Failed to load timeline");
 
-      const [statsData, timelineData] = await Promise.all([
-        statsRes.json(),
-        timelineRes.json(),
-      ]);
+      const [statsData, timelineData] = await Promise.all([statsRes.json(), timelineRes.json()]);
 
       setStats(statsData);
       setTimeline(timelineData.timeline ?? []);
@@ -129,9 +126,7 @@ export default function DashboardPage() {
               onClick={() => fetchData(period)}
               disabled={loading}
             >
-              <RefreshCw
-                className={`size-4 ${loading ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
@@ -213,17 +208,12 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "all", label: "All Time" },
 ];
 
-function PeriodSelector({
-  value,
-  onChange,
-}: {
-  value: Period;
-  onChange: (p: Period) => void;
-}) {
+function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   return (
     <div className="flex rounded-lg bg-secondary p-1">
       {PERIODS.map((p) => (
         <button
+          type="button"
           key={p.value}
           onClick={() => onChange(p.value)}
           className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
@@ -287,7 +277,7 @@ function DailyChart({
 }) {
   // Format dates for display: "Mon 24", "Tue 25", etc.
   const chartData = timeline.map((entry) => {
-    const d = new Date(entry.date + "T00:00:00");
+    const d = new Date(`${entry.date}T00:00:00`);
     const dayName = d.toLocaleDateString("en-US", { weekday: "short" });
     const dayNum = d.getDate();
     return {
@@ -313,21 +303,13 @@ function DailyChart({
               vertical={false}
               stroke={withAlpha("chart-muted", 0.5)}
             />
-            <XAxis
-              dataKey="label"
-              {...AXIS_CONFIG}
-            />
+            <XAxis dataKey="label" {...AXIS_CONFIG} />
             <YAxis
               {...AXIS_CONFIG}
               tickFormatter={(v: number) => formatDurationCompact(v * 3600)}
             />
             <RechartsTooltip content={<DailyTooltip />} isAnimationActive={false} />
-            <Bar
-              dataKey="hours"
-              fill={chartPrimary}
-              radius={BAR_RADIUS.vertical}
-              maxBarSize={48}
-            />
+            <Bar dataKey="hours" fill={chartPrimary} radius={BAR_RADIUS.vertical} maxBarSize={48} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -361,13 +343,7 @@ function DailyTooltip({
 // App Usage Donut Chart
 // =============================================================================
 
-function AppDonut({
-  apps,
-  className = "",
-}: {
-  apps: TopApp[];
-  className?: string;
-}) {
+function AppDonut({ apps, className = "" }: { apps: TopApp[]; className?: string }) {
   // Take top 5, merge rest into "Other"
   const top = apps.slice(0, 5);
   const rest = apps.slice(5);
@@ -412,7 +388,10 @@ function AppDonut({
                 <Cell key={i} fill={entry.color} />
               ))}
             </Pie>
-            <RechartsTooltip content={<DonutTooltip total={totalDuration} />} isAnimationActive={false} />
+            <RechartsTooltip
+              content={<DonutTooltip total={totalDuration} />}
+              isAnimationActive={false}
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -424,9 +403,7 @@ function AppDonut({
               className="inline-block size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-muted-foreground truncate max-w-[100px]">
-              {entry.name}
-            </span>
+            <span className="text-muted-foreground truncate max-w-[100px]">{entry.name}</span>
           </div>
         ))}
       </div>
@@ -478,33 +455,20 @@ function ChartSkeleton({ className = "" }: { className?: string }) {
 // Top Apps Table
 // =============================================================================
 
-function TopAppsTable({
-  apps,
-  totalDuration,
-}: {
-  apps: TopApp[];
-  totalDuration: number;
-}) {
+function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: number }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <BarChart3
-          className="size-5 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+        <BarChart3 className="size-5 text-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Top Apps</h2>
       </div>
 
       <div className="space-y-2">
         {apps.map((app, i) => {
-          const pct =
-            totalDuration > 0 ? (app.totalDuration / totalDuration) * 100 : 0;
+          const pct = totalDuration > 0 ? (app.totalDuration / totalDuration) * 100 : 0;
 
           return (
-            <div
-              key={app.appName}
-              className="flex items-center gap-3 rounded-2xl bg-secondary p-3"
-            >
+            <div key={app.appName} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
               {/* Rank */}
               <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background text-xs font-medium ring-1 ring-border">
                 {i + 1}
@@ -513,9 +477,7 @@ function TopAppsTable({
               {/* App info + bar */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium truncate">
-                    {app.appName}
-                  </span>
+                  <span className="text-sm font-medium truncate">{app.appName}</span>
                   <span className="text-xs text-muted-foreground shrink-0">
                     {formatDuration(app.totalDuration)}
                   </span>
@@ -551,10 +513,7 @@ function EmptyState({ period }: { period: Period }) {
   return (
     <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-16 px-6 text-center">
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background ring-1 ring-border mb-4">
-        <Monitor
-          className="size-7 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+        <Monitor className="size-7 text-muted-foreground" strokeWidth={1.5} />
       </div>
       <h2 className="text-lg font-semibold">No Data Yet</h2>
       <p className="mt-2 max-w-md text-sm text-muted-foreground">

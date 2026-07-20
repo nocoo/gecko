@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { AlertTriangle, Pencil, Plus, Tags as TagsIcon, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { TagBadge } from "@/components/tag-badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -14,13 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Tags as TagsIcon,
-  Plus,
-  Pencil,
-  Trash2,
-  AlertTriangle,
-} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,12 +55,7 @@ export default function TagsPage() {
   }, [fetchTags]);
 
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Settings", href: "/settings" },
-        { label: "Tags" },
-      ]}
-    >
+    <AppShell breadcrumbs={[{ label: "Settings", href: "/settings" }, { label: "Tags" }]}>
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">Tags</h1>
@@ -220,13 +209,8 @@ function TagsSection({
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TagsIcon
-            className="size-4 text-muted-foreground"
-            strokeWidth={1.5}
-          />
-          <h2 className="text-sm font-medium text-muted-foreground">
-            Your Tags
-          </h2>
+          <TagsIcon className="size-4 text-muted-foreground" strokeWidth={1.5} />
+          <h2 className="text-sm font-medium text-muted-foreground">Your Tags</h2>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
           <Plus className="size-4" />
@@ -241,10 +225,7 @@ function TagsSection({
       ) : tags.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-            <TagsIcon
-              className="size-4 text-muted-foreground"
-              strokeWidth={1.5}
-            />
+            <TagsIcon className="size-4 text-muted-foreground" strokeWidth={1.5} />
           </div>
           <p className="text-sm font-medium">No tags yet</p>
           <p className="mt-1 text-xs text-muted-foreground max-w-xs">
@@ -269,9 +250,7 @@ function TagsSection({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create Tag</DialogTitle>
-            <DialogDescription>
-              Add a new tag to label your apps.
-            </DialogDescription>
+            <DialogDescription>Add a new tag to label your apps.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
@@ -297,17 +276,10 @@ function TagsSection({
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCreateOpen(false)}
-              disabled={creating}
-            >
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
               Cancel
             </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={creating || !createName.trim()}
-            >
+            <Button onClick={handleCreate} disabled={creating || !createName.trim()}>
               {creating ? "Creating..." : "Create"}
             </Button>
           </DialogFooter>
@@ -351,17 +323,10 @@ function TagsSection({
             )}
           </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditTarget(null)}
-              disabled={editing}
-            >
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={editing}>
               Cancel
             </Button>
-            <Button
-              onClick={handleEdit}
-              disabled={editing || !editName.trim()}
-            >
+            <Button onClick={handleEdit} disabled={editing || !editName.trim()}>
               {editing ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -384,18 +349,10 @@ function TagsSection({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setDeleteTarget(null)}
-              disabled={deleting}
-            >
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
               {deleting ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
@@ -409,15 +366,7 @@ function TagsSection({
 // Tag Row
 // =============================================================================
 
-function TagRow({
-  tag,
-  onEdit,
-  onDelete,
-}: {
-  tag: Tag;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
+function TagRow({ tag, onEdit, onDelete }: { tag: Tag; onEdit: () => void; onDelete: () => void }) {
   return (
     <div className="flex items-center justify-between rounded-2xl bg-secondary p-4">
       <TagBadge name={tag.name} />

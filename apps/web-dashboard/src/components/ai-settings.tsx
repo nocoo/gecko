@@ -1,19 +1,31 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { Bot, Save, Plug, Loader2, Check, X, FileText, RotateCcw, Plus, AlertTriangle, ChevronDown } from "lucide-react";
+import {
+  type AuthType,
+  BUILTIN_PROVIDERS,
+  type BuiltinProvider,
+  CUSTOM_PROVIDER_INFO,
+  type SdkType,
+} from "@nocoo/next-ai";
+import {
+  AlertTriangle,
+  Bot,
+  Check,
+  ChevronDown,
+  FileText,
+  Loader2,
+  Plug,
+  Plus,
+  RotateCcw,
+  Save,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
-import {
-  BUILTIN_PROVIDERS,
-  CUSTOM_PROVIDER_INFO,
-  type BuiltinProvider,
-  type AuthType,
-  type SdkType,
-} from "@nocoo/next-ai";
 import {
   DEFAULT_PROMPT_SECTION_1,
   DEFAULT_PROMPT_SECTION_2,
@@ -168,7 +180,14 @@ export function AiSettingsSection() {
     setCustomModelInput("");
 
     if (!provider) {
-      setSettings((s) => ({ ...s, provider: "", model: "", baseURL: "", sdkType: "", authType: "" }));
+      setSettings((s) => ({
+        ...s,
+        provider: "",
+        model: "",
+        baseURL: "",
+        sdkType: "",
+        authType: "",
+      }));
       return;
     }
 
@@ -224,9 +243,7 @@ export function AiSettingsSection() {
           <Bot className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-sm font-medium text-foreground">
-            AI Configuration
-          </h2>
+          <h2 className="text-sm font-medium text-foreground">AI Configuration</h2>
           <p className="text-xs text-muted-foreground">
             Configure LLM provider for AI-powered features.
           </p>
@@ -263,11 +280,7 @@ export function AiSettingsSection() {
             <Label className="text-sm">Model</Label>
             {presetModels.length > 0 && !isCustomModel ? (
               <Select
-                value={
-                  presetModels.includes(settings.model)
-                    ? settings.model
-                    : CUSTOM_MODEL_VALUE
-                }
+                value={presetModels.includes(settings.model) ? settings.model : CUSTOM_MODEL_VALUE}
                 onChange={(e) => handleModelSelect(e.target.value)}
                 className="mt-1 h-9"
               >
@@ -308,12 +321,8 @@ export function AiSettingsSection() {
             ) : (
               <Input
                 value={settings.model}
-                onChange={(e) =>
-                  setSettings((s) => ({ ...s, model: e.target.value }))
-                }
-                placeholder={
-                  providerInfo?.defaultModel ?? "Select provider first"
-                }
+                onChange={(e) => setSettings((s) => ({ ...s, model: e.target.value }))}
+                placeholder={providerInfo?.defaultModel ?? "Select provider first"}
                 className="mt-1"
               />
             )}
@@ -326,9 +335,7 @@ export function AiSettingsSection() {
             <Label className="text-sm">Model</Label>
             <Input
               value={settings.model}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, model: e.target.value }))
-              }
+              onChange={(e) => setSettings((s) => ({ ...s, model: e.target.value }))}
               placeholder="Enter model name"
               className="mt-1"
             />
@@ -341,9 +348,7 @@ export function AiSettingsSection() {
             <Label className="text-sm">Base URL</Label>
             <Input
               value={settings.baseURL}
-              onChange={(e) =>
-                setSettings((s) => ({ ...s, baseURL: e.target.value }))
-              }
+              onChange={(e) => setSettings((s) => ({ ...s, baseURL: e.target.value }))}
               placeholder="https://api.example.com/v1"
               className="mt-1"
             />
@@ -405,7 +410,6 @@ export function AiSettingsSection() {
             className="mt-1"
           />
         </div>
-
       </div>
 
       {/* Actions */}
@@ -515,10 +519,7 @@ function insertAtCursor(textarea: HTMLTextAreaElement, text: string) {
   const after = textarea.value.slice(end);
   const newValue = before + text + after;
   // We need to set value via native setter to trigger React's onChange
-  const nativeSet = Object.getOwnPropertyDescriptor(
-    HTMLTextAreaElement.prototype,
-    "value",
-  )?.set;
+  const nativeSet = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
   nativeSet?.call(textarea, newValue);
   textarea.dispatchEvent(new Event("input", { bubbles: true }));
   // Restore cursor position after the inserted text
@@ -552,15 +553,22 @@ export function PromptTemplateSection() {
   useEffect(() => {
     fetch("/api/settings/ai")
       .then((r) => r.json())
-      .then((data: { promptSection1: string; promptSection2: string; promptSection3: string; promptSection4: string }) => {
-        setSections({
-          section1: data.promptSection1 || DEFAULT_PROMPT_SECTION_1,
-          section2: data.promptSection2 || DEFAULT_PROMPT_SECTION_2,
-          section3: data.promptSection3 || DEFAULT_PROMPT_SECTION_3,
-          section4: data.promptSection4 || DEFAULT_PROMPT_SECTION_4,
-        });
-        setLoaded(true);
-      })
+      .then(
+        (data: {
+          promptSection1: string;
+          promptSection2: string;
+          promptSection3: string;
+          promptSection4: string;
+        }) => {
+          setSections({
+            section1: data.promptSection1 || DEFAULT_PROMPT_SECTION_1,
+            section2: data.promptSection2 || DEFAULT_PROMPT_SECTION_2,
+            section3: data.promptSection3 || DEFAULT_PROMPT_SECTION_3,
+            section4: data.promptSection4 || DEFAULT_PROMPT_SECTION_4,
+          });
+          setLoaded(true);
+        },
+      )
       .catch(() => setLoaded(true));
   }, []);
 
@@ -574,7 +582,7 @@ export function PromptTemplateSection() {
     setSaved(false);
     try {
       // Send empty string when content matches default (tells API to delete override)
-      const toPayload = (value: string, def: string) => value === def ? "" : value;
+      const toPayload = (value: string, def: string) => (value === def ? "" : value);
       const res = await fetch("/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -635,12 +643,8 @@ export function PromptTemplateSection() {
           <FileText className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-sm font-medium text-foreground">
-            Prompt Template
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Customize the AI analysis prompt.
-          </p>
+          <h2 className="text-sm font-medium text-foreground">Prompt Template</h2>
+          <p className="text-xs text-muted-foreground">Customize the AI analysis prompt.</p>
         </div>
       </div>
 
@@ -725,7 +729,9 @@ export function PromptTemplateSection() {
 
             {/* Textarea — shows actual text (default or custom) */}
             <textarea
-              ref={(el) => { textareaRefs.current[meta.key] = el; }}
+              ref={(el) => {
+                textareaRefs.current[meta.key] = el;
+              }}
               value={sections[meta.key]}
               onChange={(e) => handleChange(meta.key, e.target.value)}
               rows={meta.key === "section2" ? 12 : meta.key === "section4" ? 8 : 4}
@@ -737,12 +743,7 @@ export function PromptTemplateSection() {
 
       {/* Save button */}
       <div className="mt-4 flex items-center gap-2">
-        <Button
-          onClick={handleSave}
-          disabled={saving || !dirty}
-          className="gap-2"
-          size="sm"
-        >
+        <Button onClick={handleSave} disabled={saving || !dirty} className="gap-2" size="sm">
           {saving ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : saved ? (
