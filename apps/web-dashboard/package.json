@@ -79,6 +79,7 @@
     "postcss": "^8.5.10",
     "flatted": "^3.4.0",
     "serialize-javascript": "^7.0.5",
+    "body-parser": "^2.3.0",
     "brace-expansion": "^2.0.2",
     "path-to-regexp": "^8.4.0",
     "picomatch": "^4.0.4",
