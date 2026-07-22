@@ -3,6 +3,9 @@
   "version": "1.11.0",
   "description": "Gecko screen time dashboard",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "vinext dev --port 7018",
     "build": "vinext build",
