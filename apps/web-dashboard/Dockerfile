@@ -2,10 +2,11 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
-# --ignore-scripts: skip native-module post-install (e.g. better-sqlite3).
-# better-sqlite3 is a dev-only dep loaded behind D1_LOCAL_PATH; production
-# uses the Cloudflare D1 REST API and never imports it. Skipping install
-# scripts avoids fetching prebuilt binaries we won't run at runtime.
+# --ignore-scripts: skip `postinstall`/`prepare` lifecycle scripts for the
+# ~30 transitive deps that declare them. better-sqlite3@13 ships prebuilt
+# binaries in the tarball and has no install script — its `prebuilds/**`
+# arrive regardless of this flag. We keep it for install determinism (no
+# arbitrary script execution in the image) and to shave build time.
 RUN bun install --frozen-lockfile --ignore-scripts
 
 # --- Stage 2: Build ---
