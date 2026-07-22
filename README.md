@@ -12,7 +12,8 @@
   <img src="https://img.shields.io/badge/macOS-14.0%2B-2d8553?logo=apple&logoColor=white" alt="macOS 14.0+" />
   <img src="https://img.shields.io/badge/Swift-5.10-F05138?logo=swift&logoColor=white" alt="Swift" />
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React 19" />
-  <img src="https://img.shields.io/badge/Bun-runtime-FBF0DF?logo=bun&logoColor=black" alt="Bun" />
+  <img src="https://img.shields.io/badge/Node-%E2%89%A522-339933?logo=node.js&logoColor=white" alt="Node 22+" />
+  <img src="https://img.shields.io/badge/Bun-build%20tool-FBF0DF?logo=bun&logoColor=black" alt="Bun (dev/build)" />
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
 </p>
 
@@ -66,7 +67,8 @@ Gecko is a lightweight menu bar app that silently tracks which application and w
 | Xcode | 16.0+ | Mac client build |
 | [XcodeGen](https://github.com/yonaskolb/XcodeGen) | latest | Xcode project generation |
 | [SwiftLint](https://github.com/realm/SwiftLint) | latest | Swift linting |
-| [Bun](https://bun.sh) | latest | Web dashboard runtime & package manager |
+| [Node.js](https://nodejs.org) | 22+ | Web dashboard runtime (production Docker image, `vinext start` / `vinext dev`) |
+| [Bun](https://bun.sh) | latest | Web dashboard package manager, `vinext build`, and script runner |
 
 ## 🚀 Getting Started
 
