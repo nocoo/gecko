@@ -10,7 +10,7 @@ Gecko follows the personal **六维质量体系 (6DQ)** — not the legacy “fo
 | **L1** | Unit / component | `apps/web-dashboard` `test:coverage` (vitest ≥95.5%); mac `xcodebuild test` | pre-commit |
 | **L2** | Integration / API | `test:e2e` — real HTTP against `vinext dev` on **17018**, local SQLite (`D1_LOCAL_PATH`) | pre-push |
 | **L3** | System / browser E2E | `test:bdd` — Playwright on **27018** | CI / on-demand |
-| **G1** | Static analysis | Web: `typecheck` + Biome (`lint` / lint-staged); Mac: `swiftlint --strict` | pre-commit |
+| **G1** | Static analysis | Web: `typecheck` + Biome (`lint` / lint-staged) + `gate:toolchain` (import-time smoke); Mac: `swiftlint --strict` | pre-commit |
 | **G2** | Security | `gate:security` (osv-scanner + gitleaks) | pre-push |
 | **D1** | Test isolation | E2E/BDD use `.local/gecko-test.db` (or `*-test` cloud resources). Dev may use prod D1 for manual debug; automated E2E must not. | always for L2/L3 |
 
