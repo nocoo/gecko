@@ -42,7 +42,7 @@
     "@vitest/coverage-v8": "4.1.10",
     "better-sqlite3": "^13.0.1",
     "husky": "^9.1.7",
-    "lint-staged": "^17.1.0",
+    "lint-staged": "^17.1.1",
     "shadcn": "^4.14.0",
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
