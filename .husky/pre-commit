@@ -1,5 +1,5 @@
 # pre-commit (6DQ): G1 + L1 (web ∥ mac)
-# Web G1: typecheck + Biome (lint-staged write, then full check)
+# Web G1: typecheck + Biome (lint-staged write, then full check) + toolchain smoke
 # Web L1: vitest coverage (≥95.5%)
 # Mac G1: swiftlint --strict
 # Mac L1: xcodebuild test
@@ -9,9 +9,10 @@
 #   1. typecheck (tsc 7.0.2) — G1
 #   2. lint-staged — Biome --write on staged files (auto-format accepted) — G1
 #   3. lint — full-tree `biome check --error-on-warnings` — G1
-#   4. test:coverage — L1
+#   4. gate:toolchain — import-time smoke for shadcn/minimatch ABI — G1 (STU-2090)
+#   5. test:coverage — L1
 
-(cd apps/web-dashboard && bun run typecheck && bun run lint:staged && bun run lint && bun run test:coverage) &
+(cd apps/web-dashboard && bun run typecheck && bun run lint:staged && bun run lint && bun run gate:toolchain && bun run test:coverage) &
 PID_WEB=$!
 
 (
