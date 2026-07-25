@@ -22,6 +22,13 @@ jobs:
       enable-l2: "true"
       l2-command: "bun run test:l2"
       enable-l3: "true"
-      l3-command: "bun run test:e2e:bdd"
+      # base-ci's `Install Playwright browsers` step runs `bunx playwright install`
+      # at repo root; `bunx` resolves the LATEST playwright from npm (currently
+      # v1.55 → chromium v1234), but apps/web-dashboard pins @playwright/test
+      # ^1.61.1 (chromium v1228). Tests then fail with "Executable doesn't exist
+      # at .cache/ms-playwright/chromium_headless_shell-1228/…" (nocoo/gecko#286).
+      # Re-run install from apps/web-dashboard so bunx picks the locked local
+      # playwright and downloads the matching browser alongside base-ci's copy.
+      l3-command: "(cd apps/web-dashboard && bunx playwright install --with-deps chromium) && bun run test:e2e:bdd"
       l3-browser: "chromium"
     secrets: inherit
