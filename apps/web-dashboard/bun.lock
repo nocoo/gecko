@@ -7,7 +7,7 @@
       "dependencies": {
         "@ai-sdk/anthropic": "4.0.19",
         "@ai-sdk/openai": "4.0.20",
-        "@hono/node-server": "^2.0.11",
+        "@hono/node-server": "^2.0.12",
         "@nocoo/next-ai": "^0.4.0",
         "ai": "7.0.37",
         "class-variance-authority": "^0.7.1",
@@ -53,7 +53,7 @@
   },
   "overrides": {
     "@babel/core": "^7.29.6",
-    "@hono/node-server": "^2.0.11",
+    "@hono/node-server": "^2.0.12",
     "body-parser": "^2.3.0",
     "brace-expansion": "^5.0.8",
     "esbuild": "^0.28.1",
@@ -183,7 +183,7 @@
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.11", "", {}, "sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg=="],
 
-    "@hono/node-server": ["@hono/node-server@2.0.11", "", { "peerDependencies": { "hono": "^4" } }, "sha512-bjD221KPLoJTWUwso1J6fGKiTXEUFedG/s0visavY4zakFPkeGURMRNly+FhBHs7T8Dz4qHaZIMX9ZoJHSJtKA=="],
+    "@hono/node-server": ["@hono/node-server@2.0.12", "", { "peerDependencies": { "hono": "^4" } }, "sha512-eWpQYr67tqJLeaSUl0Q+TquuYfUdTibpOJlUMV2FfUP7+KqCC5TufnwnlXL6mobZBJbGAYRd7ZvEBDCbLInjhg=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 
