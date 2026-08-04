@@ -42,7 +42,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "@vitejs/plugin-rsc": "0.5.32",
     "@vitest/coverage-v8": "4.1.10",
-    "better-sqlite3": "^13.0.1",
+    "better-sqlite3": "^13.0.2",
     "husky": "^9.1.7",
     "lint-staged": "17.3.0",
     "shadcn": "4.16.1",
