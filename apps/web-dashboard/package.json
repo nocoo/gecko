@@ -40,7 +40,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "^6.0.5",
-    "@vitejs/plugin-rsc": "0.5.30",
+    "@vitejs/plugin-rsc": "0.5.32",
     "@vitest/coverage-v8": "4.1.10",
     "better-sqlite3": "^13.0.1",
     "husky": "^9.1.7",
