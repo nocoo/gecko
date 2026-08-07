@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@aec4adc1a817c56790d1698329ef9398a15a754a  # v2026.5
+    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@1e1000a018d75c7e73024448c669c215b90410e1  # post-v2026.6
     with:
       # L2 API E2E uses local SQLite via better-sqlite3. Native install scripts
       # must run; --ignore-scripts leaves the binding missing and every DB
