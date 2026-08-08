@@ -1,2 +1,12 @@
 # OSV-Scanner configuration
 # https://google.github.io/osv-scanner/configuration/
+
+[[IgnoredVulns]]
+id = "GHSA-5p2g-fcmc-qvqq"
+ignoreUntil = 2026-09-08
+reason = "image-size has no fixed release; patched HEIF/JXL zero-length box loops via patchedDependencies"
+
+[[IgnoredVulns]]
+id = "GHSA-w3rx-r6r6-pgpr"
+ignoreUntil = 2026-09-08
+reason = "image-size has no fixed release; patched ICNS zero-length entry loop via patchedDependencies"
