@@ -51,6 +51,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "image-size@2.0.2": "patches/image-size@2.0.2.patch",
+  },
   "overrides": {
     "@babel/core": "^7.29.6",
     "@hono/node-server": "^2.1.0",
