@@ -2,6 +2,7 @@
 FROM oven/bun:1 AS deps
 WORKDIR /app
 COPY package.json bun.lock ./
+COPY patches ./patches
 # --ignore-scripts: skip `postinstall`/`prepare` lifecycle scripts for the
 # ~30 transitive deps that declare them. better-sqlite3@13 ships prebuilt
 # binaries in the tarball and has no install script — its `prebuilds/**`
