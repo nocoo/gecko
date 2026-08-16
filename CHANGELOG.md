@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.11.1] - 2026-08-16
+
+### Fixed
+- point header github link to nocoo
+- **web-dashboard**: copy patches before bun install in Docker
+- **deps**: patch image-size parser loops
+- **ci**: build native modules for L2 e2e
+
+### Tests
+- cover image-size parser loops
+- **g1**: add toolchain import-time smoke to catch transitive ABI regressions
+
+### Documentation
+- clarify Web dashboard runtime is Node 22+; Bun is build tooling only
+
+### CI
+- pin hardened base-ci workflow
+- install Playwright from apps/web-dashboard to match locked version
+
+### Maintenance
+- pin Node engine >=22 and refresh Dockerfile note for better-sqlite3 v13
+- **security**: bump G2/OSV baseline advisories; override postcss, brace-expansion, body-parser, js-yaml, sharp, nanoid
+- **deps**: next 16.3.1, vinext stack (vite 8.2.1, @vitejs/plugin-rsc 0.5.34), hono 4.13.2, better-sqlite3 13.0.3
+- **deps**: ai 7.0.65, @ai-sdk/openai 4.0.41, @ai-sdk/anthropic 4.0.38
+- **deps**: shadcn 4.18.0, lucide-react 1.31.0, radix-ui 1.6.7, recharts 3.10.1
+- **deps**: biome 2.5.8, lint-staged 17.3.0, playwright 1.62.1, react 19.2.8
+
 ## [1.11.0] - 2026-07-20
 
 ### Fixed
