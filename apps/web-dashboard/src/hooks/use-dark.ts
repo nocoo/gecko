@@ -12,7 +12,8 @@ import { useSyncExternalStore } from "react";
  */
 
 function subscribe(callback: () => void) {
-  // Re-check when the custom theme-toggle fires
+  // Re-check when the theme changes (storage event from basalt ThemeProvider or custom event)
+  window.addEventListener("storage", callback);
   window.addEventListener("theme-change", callback);
 
   // Re-check when the OS dark-mode preference changes
@@ -20,6 +21,7 @@ function subscribe(callback: () => void) {
   mq.addEventListener("change", callback);
 
   return () => {
+    window.removeEventListener("storage", callback);
     window.removeEventListener("theme-change", callback);
     mq.removeEventListener("change", callback);
   };

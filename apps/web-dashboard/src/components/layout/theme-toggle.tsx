@@ -1,88 +1,13 @@
 "use client";
 
-import { Monitor, Moon, Sun } from "lucide-react";
-import { useCallback, useSyncExternalStore } from "react";
-import { Button } from "@/components/ui/button";
+import { ThemeToggle as BasaltThemeToggle } from "@nocoo/basalt/components/theme-toggle";
+import type { ComponentProps } from "react";
 
-type Theme = "light" | "dark" | "system";
+export type { BasaltTheme as Theme } from "@nocoo/basalt/providers/theme";
 
-const THEME_CHANGE_EVENT = "theme-change";
-
-function getStoredTheme(): Theme {
-  if (typeof window === "undefined") return "system";
-  return (localStorage.getItem("theme") as Theme) || "system";
+export function ThemeToggle({
+  "aria-label": ariaLabel = "Toggle theme",
+  ...props
+}: Partial<ComponentProps<typeof BasaltThemeToggle>>) {
+  return <BasaltThemeToggle aria-label={ariaLabel} {...props} />;
 }
-
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-}
-
-function applyTheme(theme: Theme) {
-  const applied = theme === "system" ? getSystemTheme() : theme;
-  const isDark = applied === "dark";
-  document.documentElement.classList.toggle("dark", isDark);
-  document.documentElement.classList.toggle("light", !isDark);
-  document.documentElement.dataset.mode = isDark ? "dark" : "light";
-  localStorage.setItem("theme", theme);
-  window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
-}
-
-function subscribeToTheme(callback: () => void) {
-  window.addEventListener(THEME_CHANGE_EVENT, callback);
-  const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
-  const handler = () => {
-    if (getStoredTheme() === "system") {
-      applyTheme("system");
-    }
-    callback();
-  };
-  mediaQuery.addEventListener("change", handler);
-  return () => {
-    window.removeEventListener(THEME_CHANGE_EVENT, callback);
-    mediaQuery.removeEventListener("change", handler);
-  };
-}
-
-function getSnapshot(): Theme {
-  return getStoredTheme();
-}
-
-function getServerSnapshot(): Theme {
-  return "system";
-}
-
-const ICON_PROPS = {
-  className: "h-4 w-4",
-  "aria-hidden": true as const,
-  strokeWidth: 1.5,
-};
-
-export function ThemeToggle() {
-  const theme = useSyncExternalStore(subscribeToTheme, getSnapshot, getServerSnapshot);
-
-  const cycleTheme = useCallback(() => {
-    let next: Theme;
-    if (theme === "system") next = "light";
-    else if (theme === "light") next = "dark";
-    else next = "system";
-    applyTheme(next);
-  }, [theme]);
-
-  return (
-    <Button variant="ghost" size="icon" onClick={cycleTheme}>
-      {theme === "system" ? (
-        <Monitor {...ICON_PROPS} />
-      ) : theme === "dark" ? (
-        <Moon {...ICON_PROPS} />
-      ) : (
-        <Sun {...ICON_PROPS} />
-      )}
-      <span className="sr-only">Toggle theme</span>
-    </Button>
-  );
-}
-
-export type { Theme };
-// Export for testing
-export { applyTheme, getStoredTheme, getSystemTheme };
