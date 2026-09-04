@@ -1,5 +1,9 @@
+@import "@nocoo/basalt/styles/tailwind";
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@source "../../../../node_modules/@nocoo/basalt/dist/**/*.{js,jsx,ts,tsx}";
+@source "../../../node_modules/@nocoo/basalt/dist/**/*.{js,jsx,ts,tsx}";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -113,7 +117,9 @@
  * 3-tier luminance: L0 (background) > L1 (card) > L2 (secondary)
  * Primary: Green (#2d8553 → HSL 146 49% 35%)
  */
-:root {
+:root,
+.light,
+[data-mode="light"] {
   /* Sidebar widths */
   --sidebar-width: 260px;
   --sidebar-collapsed: 68px;
@@ -161,6 +167,28 @@
   --sidebar-border: 140 13% 88%;
   --sidebar-ring: 146 49% 35%;
 
+  /* Basalt token mappings to Gecko's green nature theme */
+  --basalt-background: 140 14% 94%;
+  --basalt-foreground: 0 0% 12%;
+  --basalt-card: 140 14% 97%;
+  --basalt-card-foreground: 0 0% 12%;
+  --basalt-secondary: 0 0% 100%;
+  --basalt-secondary-foreground: 0 0% 12%;
+  --basalt-popover: 0 0% 100%;
+  --basalt-popover-foreground: 0 0% 12%;
+  --basalt-bright: 0 0% 100%;
+  --basalt-primary: 146 49% 35%;
+  --basalt-primary-foreground: 0 0% 100%;
+  --basalt-muted: 140 14% 92%;
+  --basalt-muted-foreground: 0 0% 45%;
+  --basalt-accent: 140 14% 92%;
+  --basalt-accent-foreground: 0 0% 12%;
+  --basalt-destructive: 0 72% 51%;
+  --basalt-destructive-foreground: 0 0% 100%;
+  --basalt-border: 140 13% 88%;
+  --basalt-input: 140 13% 88%;
+  --basalt-ring: 146 49% 35%;
+
   /* Semantic badge colors */
   --success: 142 71% 35%;
   --success-foreground: 0 0% 100%;
@@ -186,7 +214,8 @@
   --chart-muted: 0 0% 90%;
 }
 
-.dark {
+.dark,
+[data-mode="dark"] {
   /* L0 body: #171717 */
   --background: 0 0% 9%;
   --foreground: 0 0% 93%;
@@ -227,6 +256,28 @@
   --sidebar-accent-foreground: 0 0% 93%;
   --sidebar-border: 0 0% 16%;
   --sidebar-ring: 146 42% 32%;
+
+  /* Basalt token mappings to Gecko's dark theme */
+  --basalt-background: 0 0% 9%;
+  --basalt-foreground: 0 0% 93%;
+  --basalt-card: 0 0% 10.6%;
+  --basalt-card-foreground: 0 0% 93%;
+  --basalt-secondary: 0 0% 12.2%;
+  --basalt-secondary-foreground: 0 0% 93%;
+  --basalt-popover: 0 0% 10.6%;
+  --basalt-popover-foreground: 0 0% 93%;
+  --basalt-bright: 0 0% 14%;
+  --basalt-primary: 146 42% 32%;
+  --basalt-primary-foreground: 146 42% 92%;
+  --basalt-muted: 0 0% 12.2%;
+  --basalt-muted-foreground: 0 0% 48%;
+  --basalt-accent: 0 0% 14%;
+  --basalt-accent-foreground: 0 0% 93%;
+  --basalt-destructive: 0 65% 45%;
+  --basalt-destructive-foreground: 0 65% 92%;
+  --basalt-border: 0 0% 16%;
+  --basalt-input: 0 0% 18%;
+  --basalt-ring: 146 42% 32%;
 
   /* Semantic badge colors (dark mode) */
   --success: 142 65% 38%;

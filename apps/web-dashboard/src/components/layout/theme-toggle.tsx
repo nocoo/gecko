@@ -20,7 +20,10 @@ function getSystemTheme(): "light" | "dark" {
 
 function applyTheme(theme: Theme) {
   const applied = theme === "system" ? getSystemTheme() : theme;
-  document.documentElement.classList.toggle("dark", applied === "dark");
+  const isDark = applied === "dark";
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.classList.toggle("light", !isDark);
+  document.documentElement.dataset.mode = isDark ? "dark" : "light";
   localStorage.setItem("theme", theme);
   window.dispatchEvent(new Event(THEME_CHANGE_EVENT));
 }
