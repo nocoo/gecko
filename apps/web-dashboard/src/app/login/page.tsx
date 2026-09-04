@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
@@ -35,21 +36,21 @@ function LoginContent() {
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-background p-4 overflow-hidden">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-basalt-background p-4 overflow-hidden">
       {/* Radial glow */}
       <div
         className="pointer-events-none absolute inset-0"
         style={{
           background: [
             "radial-gradient(ellipse 70% 55% at 50% 50%,",
-            "hsl(var(--foreground) / 0.045) 0%,",
-            "hsl(var(--foreground) / 0.042) 10%,",
-            "hsl(var(--foreground) / 0.036) 20%,",
-            "hsl(var(--foreground) / 0.028) 32%,",
-            "hsl(var(--foreground) / 0.020) 45%,",
-            "hsl(var(--foreground) / 0.012) 58%,",
-            "hsl(var(--foreground) / 0.006) 72%,",
-            "hsl(var(--foreground) / 0.002) 86%,",
+            "hsl(var(--basalt-foreground) / 0.045) 0%,",
+            "hsl(var(--basalt-foreground) / 0.042) 10%,",
+            "hsl(var(--basalt-foreground) / 0.036) 20%,",
+            "hsl(var(--basalt-foreground) / 0.028) 32%,",
+            "hsl(var(--basalt-foreground) / 0.020) 45%,",
+            "hsl(var(--basalt-foreground) / 0.012) 58%,",
+            "hsl(var(--basalt-foreground) / 0.006) 72%,",
+            "hsl(var(--basalt-foreground) / 0.002) 86%,",
             "transparent 100%)",
           ].join(" "),
         }}
@@ -62,7 +63,7 @@ function LoginContent() {
           target="_blank"
           rel="noopener noreferrer"
           aria-label="GitHub repository"
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors"
         >
           <Github className="h-[18px] w-[18px]" aria-hidden="true" strokeWidth={1.5} />
         </a>
@@ -72,7 +73,8 @@ function LoginContent() {
       <div className="flex flex-col items-center flex-1 justify-center">
         {/* Badge card — vertical card (54/86 aspect) */}
         <div
-          className="relative aspect-[54/86] w-72 overflow-hidden rounded-2xl bg-card flex flex-col ring-1 ring-foreground/[0.08]"
+          data-basalt-surface-root=""
+          className="relative aspect-[54/86] w-72 overflow-hidden rounded-2xl bg-basalt-card flex flex-col ring-1 ring-black/[0.08] dark:ring-white/[0.06]"
           style={{
             boxShadow: [
               "0 1px 2px rgba(0,0,0,0.06)",
@@ -85,11 +87,11 @@ function LoginContent() {
           }}
         >
           {/* Header strip with barcode */}
-          <div className="relative bg-primary px-5 py-4">
+          <div className="relative bg-basalt-primary px-5 py-4">
             <div className="flex items-center justify-between">
               {/* Punch hole */}
               <div
-                className="h-4 w-8 rounded-full bg-background/80"
+                className="h-4 w-8 rounded-full bg-basalt-background/80"
                 style={{
                   boxShadow:
                     "inset 0 1.5px 3px rgba(0,0,0,0.35), inset 0 -0.5px 1px rgba(255,255,255,0.1)",
@@ -97,15 +99,15 @@ function LoginContent() {
               />
               <div className="flex items-center gap-2">
                 <Image src="/logo-24.png" alt="Gecko" width={16} height={16} unoptimized />
-                <span className="text-sm font-semibold text-primary-foreground">Gecko</span>
+                <span className="text-sm font-semibold text-basalt-primary-foreground">Gecko</span>
               </div>
-              <span className="text-micro font-medium uppercase tracking-widest text-primary-foreground/60">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-basalt-primary-foreground/60">
                 v{APP_VERSION}
               </span>
             </div>
             {/* Barcode row */}
             <div className="mt-3 flex items-center justify-between">
-              <span className="text-micro font-mono text-primary-foreground/40 tracking-wider">
+              <span className="text-[10px] font-mono text-basalt-primary-foreground/40 tracking-wider">
                 ID 2026-{today.slice(4)}
               </span>
               <div className="h-6">
@@ -117,7 +119,7 @@ function LoginContent() {
           {/* Body */}
           <div className="flex flex-1 flex-col items-center px-6 pt-6 pb-14">
             {/* Logo */}
-            <div className="h-24 w-24 overflow-hidden rounded-full bg-secondary dark:bg-background ring-1 ring-border p-2.5">
+            <div className="h-24 w-24 overflow-hidden rounded-full bg-basalt-secondary dark:bg-basalt-background ring-1 ring-basalt-border p-2.5">
               <Image
                 src="/logo-80.png"
                 alt="Gecko"
@@ -128,14 +130,14 @@ function LoginContent() {
               />
             </div>
 
-            <p className="mt-5 text-lg font-semibold text-foreground">Welcome</p>
-            <p className="mt-1 text-xs text-muted-foreground text-center">
+            <p className="mt-5 text-lg font-semibold text-basalt-foreground">Welcome</p>
+            <p className="mt-1 text-xs text-basalt-muted-foreground text-center">
               Sign in to view your screen time analytics
             </p>
 
             {/* Error message */}
             {error && (
-              <div className="mt-4 w-full rounded-lg bg-destructive/10 px-3 py-2 text-xs text-destructive text-center">
+              <div className="mt-4 w-full rounded-lg bg-basalt-destructive/10 px-3 py-2 text-xs text-basalt-destructive text-center">
                 {error === "AccessDenied"
                   ? "Access denied. Your account is not on the allowlist."
                   : "Authentication failed. Please try again."}
@@ -143,16 +145,17 @@ function LoginContent() {
             )}
 
             {/* Divider */}
-            <div className="mt-5 h-px w-full bg-border" />
+            <div className="mt-5 h-px w-full bg-basalt-border" />
 
             {/* Push button toward bottom */}
             <div className="flex-1" />
 
             {/* Google Sign-in button */}
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleGoogleLogin}
-              className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-secondary px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-accent cursor-pointer"
+              className="w-full rounded-xl py-3 cursor-pointer"
             >
               <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
                 <path
@@ -173,26 +176,28 @@ function LoginContent() {
                 />
               </svg>
               Sign in with Google
-            </button>
+            </Button>
 
             {/* Footer note */}
-            <p className="mt-3 text-center text-micro leading-relaxed text-muted-foreground/60">
+            <p className="mt-3 text-center text-[10px] leading-relaxed text-basalt-muted-foreground/60">
               Only authorized email addresses can access this application
             </p>
           </div>
 
           {/* Footer strip */}
-          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center border-t border-border bg-secondary/50 py-2.5">
+          <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center border-t border-basalt-border bg-basalt-secondary/50 py-2.5">
             <div className="flex items-center gap-1.5">
-              <div className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-              <span className="text-micro text-muted-foreground font-mono">Secure Connection</span>
+              <div className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-basalt-muted-foreground font-mono">
+                Secure Connection
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Site footer */}
-      <footer className="py-4 text-center text-xs text-muted-foreground/50">
+      <footer className="py-4 text-center text-xs text-basalt-muted-foreground/50">
         &copy; {new Date().getFullYear()} Gecko
       </footer>
     </div>
