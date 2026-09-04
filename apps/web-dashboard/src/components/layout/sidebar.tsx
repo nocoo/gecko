@@ -7,8 +7,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
-  SidebarIconItem,
-  SidebarItem,
   SidebarNav,
   SidebarUser,
 } from "@nocoo/basalt/components/sidebar";
@@ -36,7 +34,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { getAvatarColor } from "@/lib/utils";
+import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { useSidebar } from "./sidebar-context";
 
@@ -164,10 +162,17 @@ export function Sidebar() {
                 return (
                   <Tooltip key={item.href}>
                     <TooltipTrigger asChild>
-                      <Link href={item.href}>
-                        <SidebarIconItem active={active}>
-                          <item.icon className="h-4 w-4" strokeWidth={1.5} />
-                        </SidebarIconItem>
+                      <Link
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
+                          active
+                            ? "bg-basalt-accent text-basalt-foreground"
+                            : "text-basalt-muted-foreground hover:bg-basalt-accent hover:text-basalt-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4" strokeWidth={1.5} />
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="right" sideOffset={8}>
@@ -247,11 +252,19 @@ export function Sidebar() {
                   {group.items.map((item) => {
                     const active = isActive(pathname, item.href, item.exact);
                     return (
-                      <Link key={item.href} href={item.href}>
-                        <SidebarItem active={active}>
-                          <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-                          <span className="flex-1 text-left">{item.label}</span>
-                        </SidebarItem>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={active ? "page" : undefined}
+                        className={cn(
+                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
+                          active
+                            ? "bg-basalt-accent text-basalt-foreground"
+                            : "text-basalt-muted-foreground hover:bg-basalt-accent hover:text-basalt-foreground",
+                        )}
+                      >
+                        <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
+                        <span className="flex-1 text-left">{item.label}</span>
                       </Link>
                     );
                   })}
