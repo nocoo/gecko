@@ -14,6 +14,7 @@
     "test:e2e:bdd": "bun run test:l3"
   },
   "devDependencies": {
+    "@nocoo/basalt": "2.0.3",
     "husky": "^9.1.7"
   }
 }
