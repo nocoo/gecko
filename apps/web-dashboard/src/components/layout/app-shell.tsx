@@ -67,10 +67,11 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
 
   // AppHeader separates ancestors (breadcrumbs) from the active page (title).
   // If breadcrumbs are provided, the last item is the page title and earlier items are parents.
-  // If no breadcrumbs are passed (e.g. Home), "Home" is the page title.
+  // If no breadcrumbs are passed (e.g. Home), neither parent breadcrumbs nor header title is shown
+  // to avoid redundant header title when the page already renders its main heading.
   const parentBreadcrumbs =
     breadcrumbs.length > 0 ? [{ label: "Home", href: "/" }, ...breadcrumbs.slice(0, -1)] : [];
-  const pageTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.label : "Home";
+  const pageTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.label : undefined;
 
   return (
     <LinkProvider render={NextLinkAdapter}>
