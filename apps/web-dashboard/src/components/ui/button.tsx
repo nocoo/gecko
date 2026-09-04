@@ -25,9 +25,9 @@ export interface ButtonVariantProps {
 
 const EXTENDED_SIZE_CLASSES: Record<string, string> = {
   xs: "h-6 gap-1 rounded-md px-2 text-xs [&_svg]:size-3",
-  "icon-xs": "size-6 rounded-md [&_svg]:size-3",
-  "icon-sm": "size-8",
-  "icon-lg": "size-10",
+  "icon-xs": "size-6 p-0 rounded-md [&_svg]:size-3",
+  "icon-sm": "size-8 p-0",
+  "icon-lg": "size-10 p-0",
 };
 
 export function buttonVariants({
@@ -39,16 +39,16 @@ export function buttonVariants({
   const chosenSize = size ?? "default";
 
   let basaltSize: "default" | "sm" | "lg" | "icon" = "default";
-  if (
-    chosenSize === "sm" ||
-    chosenSize === "xs" ||
-    chosenSize === "icon-sm" ||
-    chosenSize === "icon-xs"
-  ) {
+  if (chosenSize === "sm" || chosenSize === "xs") {
     basaltSize = "sm";
-  } else if (chosenSize === "lg" || chosenSize === "icon-lg") {
+  } else if (chosenSize === "lg") {
     basaltSize = "lg";
-  } else if (chosenSize === "icon") {
+  } else if (
+    chosenSize === "icon" ||
+    chosenSize === "icon-xs" ||
+    chosenSize === "icon-sm" ||
+    chosenSize === "icon-lg"
+  ) {
     basaltSize = "icon";
   }
 
@@ -73,16 +73,16 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
     let basaltSize: "default" | "sm" | "lg" | "icon" = "default";
     const chosenSize = size ?? "default";
-    if (
-      chosenSize === "sm" ||
-      chosenSize === "xs" ||
-      chosenSize === "icon-sm" ||
-      chosenSize === "icon-xs"
-    ) {
+    if (chosenSize === "sm" || chosenSize === "xs") {
       basaltSize = "sm";
-    } else if (chosenSize === "lg" || chosenSize === "icon-lg") {
+    } else if (chosenSize === "lg") {
       basaltSize = "lg";
-    } else if (chosenSize === "icon") {
+    } else if (
+      chosenSize === "icon" ||
+      chosenSize === "icon-xs" ||
+      chosenSize === "icon-sm" ||
+      chosenSize === "icon-lg"
+    ) {
       basaltSize = "icon";
     }
 
