@@ -14,6 +14,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Breadcrumbs } from "./breadcrumbs";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { ThemeToggle } from "./theme-toggle";
@@ -65,13 +66,9 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
     };
   }, [mobileOpen]);
 
-  // AppHeader separates ancestors (breadcrumbs) from the active page (title).
-  // If breadcrumbs are provided, the last item is the page title and earlier items are parents.
-  // If no breadcrumbs are passed (e.g. Home), neither parent breadcrumbs nor header title is shown
-  // to avoid redundant header title when the page already renders its main heading.
-  const parentBreadcrumbs =
-    breadcrumbs.length > 0 ? [{ label: "Home", href: "/" }, ...breadcrumbs.slice(0, -1)] : [];
-  const pageTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1]?.label : undefined;
+  // Render breadcrumbs into AppHeader leading area using Breadcrumbs component directly,
+  // rather than passing title to AppHeader (which renders an <h1> and conflicts with page headings).
+  const allBreadcrumbs = [{ label: "Home", href: "/" }, ...breadcrumbs];
 
   return (
     <LinkProvider render={NextLinkAdapter}>
@@ -98,19 +95,20 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
           {/* Header */}
           <AppHeader
             leading={
-              isMobile ? (
-                <button
-                  type="button"
-                  onClick={() => setMobileOpen(true)}
-                  aria-label="Open navigation menu"
-                  className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors cursor-pointer"
-                >
-                  <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
-                </button>
-              ) : undefined
+              <div className="flex items-center gap-3">
+                {isMobile && (
+                  <button
+                    type="button"
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="Open navigation menu"
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors cursor-pointer"
+                  >
+                    <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
+                  </button>
+                )}
+                <Breadcrumbs items={allBreadcrumbs} />
+              </div>
             }
-            breadcrumbs={parentBreadcrumbs}
-            title={pageTitle}
             actions={
               <>
                 <a
