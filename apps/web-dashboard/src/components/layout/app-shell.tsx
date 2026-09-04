@@ -1,11 +1,17 @@
 "use client";
 
+import { AppHeader } from "@nocoo/basalt/components/app-header";
+import {
+  AppMain,
+  AppSkipLink,
+  AppShell as BasaltAppShell,
+} from "@nocoo/basalt/components/app-shell";
+import { ContentIsland } from "@nocoo/basalt/components/sidebar";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Breadcrumbs } from "./breadcrumbs";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { ThemeToggle } from "./theme-toggle";
@@ -40,8 +46,12 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
     };
   }, [mobileOpen]);
 
+  const allBreadcrumbs = [{ label: "Home", href: "/" }, ...breadcrumbs];
+
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <BasaltAppShell>
+      <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
+
       {/* Desktop sidebar */}
       {!isMobile && <Sidebar />}
 
@@ -58,44 +68,44 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
         </>
       )}
 
-      <main className="flex flex-1 flex-col min-h-screen min-w-0">
+      <AppMain>
         {/* Header */}
-        <header className="flex h-14 shrink-0 items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            {isMobile && (
+        <AppHeader
+          leading={
+            isMobile ? (
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
                 aria-label="Open navigation menu"
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors cursor-pointer"
               >
                 <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
               </button>
-            )}
-            <Breadcrumbs items={[{ label: "Home", href: "/" }, ...breadcrumbs]} />
-          </div>
-          <div className="flex items-center gap-1">
-            <a
-              href="https://github.com/nocoo/gecko"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="GitHub repository"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-            >
-              <Github className="h-[18px] w-[18px]" aria-hidden="true" strokeWidth={1.5} />
-            </a>
-            <ThemeToggle />
-          </div>
-        </header>
+            ) : undefined
+          }
+          breadcrumbs={allBreadcrumbs}
+          actions={
+            <>
+              <a
+                href="https://github.com/nocoo/gecko"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="GitHub repository"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors"
+              >
+                <Github className="h-[18px] w-[18px]" aria-hidden="true" strokeWidth={1.5} />
+              </a>
+              <ThemeToggle aria-label="Toggle theme" />
+            </>
+          }
+        />
 
         {/* Floating island content area */}
-        <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3">
-          <div className="h-full rounded-card md:rounded-card bg-card p-3 md:p-5 overflow-y-auto">
-            {children}
-          </div>
+        <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
+          <ContentIsland>{children}</ContentIsland>
         </div>
-      </main>
-    </div>
+      </AppMain>
+    </BasaltAppShell>
   );
 }
 
