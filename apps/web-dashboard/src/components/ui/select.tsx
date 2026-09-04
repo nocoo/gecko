@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
 import type * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 function Select({ className, children, ...props }: React.ComponentProps<"select">) {
@@ -9,7 +8,7 @@ function Select({ className, children, ...props }: React.ComponentProps<"select"
       <select
         data-slot="select"
         className={cn(
-          "flex h-10 w-full appearance-none rounded-md border border-border hover:border-foreground/20 bg-secondary px-3 pr-9 py-1.5 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:border-transparent disabled:hover:border-transparent disabled:text-muted-foreground/38 md:text-sm",
+          "flex h-9 w-full appearance-none rounded-lg border border-basalt-border bg-basalt-secondary px-3 pr-9 py-1.5 text-sm text-basalt-foreground transition-colors hover:border-basalt-border/80 focus-visible:outline-hidden focus-visible:border-basalt-ring focus-visible:ring-1 focus-visible:ring-basalt-ring disabled:cursor-not-allowed disabled:border-transparent disabled:opacity-50",
           className,
         )}
         {...props}
@@ -17,7 +16,7 @@ function Select({ className, children, ...props }: React.ComponentProps<"select"
         {children}
       </select>
       <ChevronDown
-        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-basalt-muted-foreground"
         strokeWidth={1.5}
       />
     </div>
