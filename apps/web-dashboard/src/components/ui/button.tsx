@@ -30,6 +30,27 @@ const EXTENDED_SIZE_CLASSES: Record<string, string> = {
   "icon-lg": "size-10 p-0",
 };
 
+type BasaltBaseSize = "default" | "sm" | "lg" | "icon";
+
+function resolveBasaltSize(size: ExtendedButtonSize | null | undefined): BasaltBaseSize {
+  const chosenSize = size ?? "default";
+  if (chosenSize === "sm" || chosenSize === "xs") {
+    return "sm";
+  }
+  if (chosenSize === "lg") {
+    return "lg";
+  }
+  if (
+    chosenSize === "icon" ||
+    chosenSize === "icon-xs" ||
+    chosenSize === "icon-sm" ||
+    chosenSize === "icon-lg"
+  ) {
+    return "icon";
+  }
+  return "default";
+}
+
 export function buttonVariants({
   variant = "default",
   size = "default",
@@ -37,20 +58,7 @@ export function buttonVariants({
 }: ButtonVariantProps = {}): string {
   const chosenVariant = variant ?? "default";
   const chosenSize = size ?? "default";
-
-  let basaltSize: "default" | "sm" | "lg" | "icon" = "default";
-  if (chosenSize === "sm" || chosenSize === "xs") {
-    basaltSize = "sm";
-  } else if (chosenSize === "lg") {
-    basaltSize = "lg";
-  } else if (
-    chosenSize === "icon" ||
-    chosenSize === "icon-xs" ||
-    chosenSize === "icon-sm" ||
-    chosenSize === "icon-lg"
-  ) {
-    basaltSize = "icon";
-  }
+  const basaltSize = resolveBasaltSize(chosenSize);
 
   const base = basaltButtonVariants({
     variant: chosenVariant,
@@ -71,21 +79,8 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = "default", size = "default", ...props }, ref) => {
-    let basaltSize: "default" | "sm" | "lg" | "icon" = "default";
     const chosenSize = size ?? "default";
-    if (chosenSize === "sm" || chosenSize === "xs") {
-      basaltSize = "sm";
-    } else if (chosenSize === "lg") {
-      basaltSize = "lg";
-    } else if (
-      chosenSize === "icon" ||
-      chosenSize === "icon-xs" ||
-      chosenSize === "icon-sm" ||
-      chosenSize === "icon-lg"
-    ) {
-      basaltSize = "icon";
-    }
-
+    const basaltSize = resolveBasaltSize(chosenSize);
     const extraClass = EXTENDED_SIZE_CLASSES[chosenSize];
 
     return (
