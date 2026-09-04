@@ -2,8 +2,8 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@source "../../node_modules/@nocoo/basalt/dist/**/*.{js,jsx,ts,tsx}";
 @source "../../../../node_modules/@nocoo/basalt/dist/**/*.{js,jsx,ts,tsx}";
-@source "../../../node_modules/@nocoo/basalt/dist/**/*.{js,jsx,ts,tsx}";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
