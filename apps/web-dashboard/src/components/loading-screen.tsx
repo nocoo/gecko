@@ -1,22 +1,27 @@
+"use client";
+
+import { LoadingScreen as BasaltLoadingScreen } from "@nocoo/basalt/components/loading-screen";
+import Image from "next/image";
+
 /**
- * Full-screen loading overlay with orbital spinner and gecko logo.
+ * Full-screen loading overlay with basalt loading screen and gecko logo mark.
  */
 export default function LoadingScreen() {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background animate-in fade-in duration-300">
-      <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary dark:bg-background ring-1 ring-border overflow-hidden p-2">
-          <img
+    <BasaltLoadingScreen
+      label="Loading Gecko"
+      mark={
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-basalt-secondary ring-1 ring-basalt-border p-2.5">
+          <Image
             src="/logo-24.png"
             alt="Gecko"
             width={24}
             height={24}
+            unoptimized
             className="h-full w-full object-contain"
           />
         </div>
-        {/* Orbital spinner */}
-        <div className="absolute inset-[-4px] rounded-full border-[3px] border-transparent border-t-primary animate-spin" />
-      </div>
-    </div>
+      }
+    />
   );
 }
