@@ -5,6 +5,100 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.12.0] - 2026-09-04
+
+### Added
+- **layout**: use basalt AppShell, AppHeader, AppSkipLink and ContentIsland
+- **sidebar**: integrate basalt Sidebar components and styling
+- **login**: migrate login badge card to basalt surface and button
+
+### Fixed
+- **app-shell**: render Breadcrumbs in leading slot to avoid duplicate h1 on non-root pages
+- **button**: map icon-* sizes to basalt icon base to preserve square aspect ratio and font size
+- **app-shell**: omit redundant header title on root dashboard page
+- **app-shell**: provide LinkProvider with next/link and set active title cleanly without trailing arrow
+- **button**: compose buttonVariants with basalt styles and remove forced !size overrides
+- **sidebar**: render direct styled Link instead of nesting button inside link
+- **styles**: fix relative @source path for basalt package dist
+- **deps**: patch postcss selector parser
+- **deps**: patch fflate vulnerability
+- **deps**: upgrade fast-uri to 3.1.6
+- **deps**: pin browserslist 4.28.7
+- lockfile importer version should match package.json
+- update bun.lock with correct @types/react-dom 19.2.5 entry
+
+### Changed
+- **button**: extract shared resolveBasaltSize helper
+- **ui**: delegate Button to basalt Button with backward-compatible sizes
+- **ui**: delegate Popover to basalt and remove redundant Skeleton
+- **ui**: delegate Badge to basalt Badge
+- **ui**: delegate dialog, input, label, select, separator to basalt
+- **ui**: delegate LoadingScreen to basalt LoadingScreen
+- **theme**: integrate basalt ThemeProvider and ThemeToggle
+- **layout**: switch breadcrumbs, avatar, collapsible, and tooltip to basalt
+
+### Maintenance
+- **deps**: add @nocoo/basalt dependency
+- **deps**: bump qs to 6.16.0
+- **deps**: bump express-rate-limit to 8.7.0
+- **deps**: bump @ai-sdk/anthropic to 4.0.46
+- **deps**: bump @ai-sdk/openai to 4.0.53
+- **deps**: bump ai to 7.0.87
+- **deps**: upgrade express-rate-limit to 8.7.0
+- **deps**: bump ai to 7.0.87
+- **deps**: bump vite react plugin to 6.1.1
+- **deps**: bump next to 16.3.4
+- **deps**: upgrade lucide-react to 1.38.0
+- **deps**: bump shadcn to 4.19.1
+- **deps**: bump lint-staged to 17.4.1
+- **deps**: bump biome to 2.5.11
+- **deps**: lock hono override to 4.13.5
+- **deps**: bump hono to 4.13.5
+- **deps**: bump ai to 7.0.82
+- **deps**: bump @ai-sdk/openai to 4.0.49
+- **deps**: bump @ai-sdk/anthropic to 4.0.44
+- **deps**: bump next to 16.3.3
+- **deps**: bump lucide-react to 1.34.0
+- **deps**: bump ai from 7.0.76 to 7.0.77
+- **deps**: bump @ai-sdk/openai from 4.0.45 to 4.0.46
+- **deps**: bump @ai-sdk/anthropic from 4.0.40 to 4.0.41
+- **deps**: bump shadcn from 4.18.0 to 4.19.0
+- **deps**: bump next from 16.3.1 to 16.3.2
+- **deps**: bump ai from 7.0.71 to 7.0.76
+- **deps**: bump @biomejs/biome from 2.5.9 to 2.5.10
+- **deps**: bump next from 16.3.1 to 16.3.2
+- **deps**: bump shadcn from 4.18.0 to 4.19.0
+- **deps**: bump @ai-sdk/openai from 4.0.44 to 4.0.45
+- **deps**: bump @types/bun from 1.3.14 to 1.4.0
+- **deps**: bump @vitejs/plugin-react to 6.1.0
+- **deps**: bump ai to 7.0.71
+- **deps**: bump vite to 8.2.2
+- **deps**: bump lucide-react to 1.33.0
+- **deps**: bump ai to 7.0.70
+- **deps**: bump @ai-sdk/openai to 4.0.44
+- **deps**: bump @ai-sdk/anthropic to 4.0.40
+- **deps**: bump lucide-react to 1.32.0 (#457)
+- **deps**: bump @ai-sdk/openai to 4.0.43 (#459)
+- **deps**: bump ai to 7.0.68 (#458)
+- **deps**: bump hono to 4.13.3 (#456)
+- **deps**: bump @vitest/coverage-v8 to 4.1.11
+- **deps**: bump vitest to 4.1.11
+- **deps**: bump @biomejs/biome to 2.5.9
+- **deps**: bump @hono/node-server to 2.1.1
+- **deps**: bump @ai-sdk/openai to 4.0.42
+- **deps**: bump @ai-sdk/anthropic to 4.0.39
+- **deps**: bump ai to 7.0.66 (#445)
+
+### Other
+- sync main into fflate security fix
+- sync main into next upgrade branch
+- upgrade hono 4.13.3 → 4.13.4
+- upgrade ai 7.0.77 → 7.0.78 (#502)
+- **web-dashboard**: upgrade @types/react-dom 19.2.4 → 19.2.5
+
+### Style
+- **theme**: apply basalt css imports and map green nature theme to basalt tokens
+
 ## [1.11.1] - 2026-08-16
 
 ### Fixed
