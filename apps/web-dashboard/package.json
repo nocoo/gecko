@@ -95,7 +95,7 @@
     "@babel/core": "^7.29.6",
     "vite": "^8.2.2",
     "sharp": "^0.35.0",
-    "fast-uri": "3.1.5",
+    "fast-uri": "3.1.6",
     "undici": "7.29.0"
   },
   "patchedDependencies": {
