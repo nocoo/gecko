@@ -1,0 +1,46 @@
+{
+	"study": "gecko/2026-09-07-01",
+	"finishing": "01",
+	"method": "retained-original",
+	"generationCalls": 0,
+	"nativeDimensions": [2048, 2048],
+	"sourceRevisionBefore": "5297e67bfb3a3b70054b81f42652edcaa752cc1a",
+	"previous": {
+		"kind": "original",
+		"original": "/logos/originals/gecko.png",
+		"sourcePath": "logo.png",
+		"sourceUrl": "https://github.com/nocoo/gecko/blob/db35d40b4c30e115914b591ac0475f2cc8961375/logo.png",
+		"modified": false,
+		"width": 2048,
+		"height": 2048,
+		"bytes": 2799098,
+		"sha256": "8808c313490254f126fa050aee2af4d6d9496e20c007b15036a26d4c06e478d3",
+		"thumbnail": "/logos/display/gecko-160.webp",
+		"display": "/logos/display/gecko-1024.webp"
+	},
+	"masters": {
+		"logo.png": {
+			"sha256": "8808c313490254f126fa050aee2af4d6d9496e20c007b15036a26d4c06e478d3",
+			"width": 2048,
+			"height": 2048
+		},
+		"assets/brand/icon.png": {
+			"sha256": "293ebb96796478b1fe70e16a8c1b948351970b92972d819d1423946f96174e85",
+			"width": 2048,
+			"height": 2048
+		},
+		"assets/brand/icon-rounded.png": {
+			"sha256": "0f0df46ddc11d2823b0767c8a97c549cf43732580a19202a05c2d197deadda38",
+			"width": 2048,
+			"height": 2048
+		}
+	},
+	"roundedClearancePx": 114.5,
+	"acceptance": {
+		"decisionSource": "owner-retained original",
+		"ownerReviewedExactBytes": true,
+		"scope": "Named ten-project batch"
+	},
+	"review": "https://hexly.ai/logos/gecko",
+	"archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/gecko/2026-09-07-01"
+}

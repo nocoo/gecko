@@ -16,9 +16,8 @@ struct AboutView: View {
 
             Image("GeckoLogo")
                 .resizable()
-                .aspectRatio(contentMode: .fit)
+                .scaledToFit()
                 .frame(width: 96, height: 96)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
                 .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
 
             VStack(spacing: 4) {
