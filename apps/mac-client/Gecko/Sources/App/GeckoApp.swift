@@ -2,6 +2,18 @@ import SwiftUI
 import Combine
 
 @main
+enum GeckoEntryPoint {
+    @MainActor
+    static func main() {
+        // Hosted unit tests must not initialize production Keychain, database, or tracking services.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            NSApplication.shared.run()
+        } else {
+            GeckoApp.main()
+        }
+    }
+}
+
 struct GeckoApp: App {
     // MARK: - Services (internal, not passed to views directly)
     @StateObject private var permissionManager = PermissionManager()
