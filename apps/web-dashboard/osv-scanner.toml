@@ -3,10 +3,10 @@
 
 [[IgnoredVulns]]
 id = "GHSA-5p2g-fcmc-qvqq"
-ignoreUntil = 2026-09-08
-reason = "image-size has no fixed release; patched HEIF/JXL zero-length box loops via patchedDependencies"
+ignoreUntil = 2026-10-08
+reason = "Reviewed 2026-09-08: upstream still has no fixed release; installed HEIF/JXL backport must pass malformed-image tests in gate:security. See docs/11-image-size-patch-review.md."
 
 [[IgnoredVulns]]
 id = "GHSA-w3rx-r6r6-pgpr"
-ignoreUntil = 2026-09-08
-reason = "image-size has no fixed release; patched ICNS zero-length entry loop via patchedDependencies"
+ignoreUntil = 2026-10-08
+reason = "Reviewed 2026-09-08: upstream still has no fixed release; installed ICNS backport must pass malformed-image tests in gate:security. See docs/11-image-size-patch-review.md."
