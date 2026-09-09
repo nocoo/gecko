@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.12.1] - 2026-09-09
+
+### Added
+- adopt gecko family identity
+
+### Fixed
+- **deps**: upgrade js-yaml to 4.3.2
+- **deps**: upgrade sharp to 0.35.4 (#584)
+- **deps**: pin ai sdk provider utils
+- **deps**: patch baseline-browser-mapping security advisory
+- verify existing image-size security backport
+- isolate native unit test startup
+
+### Documentation
+- refresh bilingual project README
+
+### Maintenance
+- upgrade basalt to 2.1.2
+
+### Other
+- upgrade @ai-sdk/openai to 4.0.60
+
 ## [1.12.0] - 2026-09-04
 
 ### Added

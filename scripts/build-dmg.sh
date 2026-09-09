@@ -42,13 +42,6 @@ mkdir -p "$BUILD_DIR"
 
 if [ "$SKIP_BUILD" = false ]; then
   echo "==> Building ${APP_NAME} (${CONFIGURATION})..."
-  # Detect signing identity; fall back to unsigned build if none available
-  SIGNING_FLAGS=()
-  if security find-identity -v -p codesigning 2>/dev/null | grep -q '0 valid identities found'; then
-    echo "==> No codesigning identity found, building unsigned..."
-    SIGNING_FLAGS=(CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY="")
-  fi
-
   xcodebuild build \
     -project "$XCODEPROJ" \
     -scheme "$SCHEME" \
@@ -56,7 +49,6 @@ if [ "$SKIP_BUILD" = false ]; then
     -derivedDataPath "$BUILD_DIR/derived" \
     -destination 'platform=macOS' \
     ONLY_ACTIVE_ARCH=NO \
-    "${SIGNING_FLAGS[@]}" \
     2>&1 | tail -20
 
   echo "==> Build succeeded"
