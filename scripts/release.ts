@@ -321,11 +321,11 @@ async function main() {
 
   // 6. Git commit, tag, push
   console.log("\n📌 Committing and tagging...");
-  run("git add -A", { dry });
-  run(`git commit -m "release: v${nextVersion}"`, { dry });
+  run("git add package.json apps/web-dashboard/package.json bun.lock apps/web-dashboard/bun.lock CHANGELOG.md apps/mac-client/project.yml apps/mac-client/Gecko/Sources/Views/AboutView.swift apps/mac-client/Gecko.xcodeproj", { dry });
+  run(`git commit -m "chore: release v${nextVersion}"`, { dry });
   run(`git tag v${nextVersion}`, { dry });
   run("git push", { dry });
-  run("git push --tags", { dry });
+  run(`git push origin v${nextVersion}`, { dry });
 
   // 7. GitHub release
   console.log("\n🎉 Creating GitHub release...");
