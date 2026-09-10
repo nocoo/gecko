@@ -55,7 +55,7 @@
     "@ai-sdk/anthropic": "4.0.46",
     "@ai-sdk/openai": "4.0.60",
     "@hono/node-server": "2.1.1",
-    "@nocoo/basalt": "2.1.2",
+    "@nocoo/basalt": "2.1.7",
     "@nocoo/next-ai": "^0.4.0",
     "ai": "7.0.87",
     "class-variance-authority": "^0.7.1",
