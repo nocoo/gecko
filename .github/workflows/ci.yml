@@ -9,7 +9,7 @@ on:
 
 jobs:
   quality:
-    uses: nocoo/base-ci/.github/workflows/quality.yml@ab52d72877d386c9a8fd224e9ac868e88be90539
+    uses: nocoo/base-ci/.github/workflows/quality.yml@ad43150de3a2be2fa464b5cd2f921dc4fa9f8f0f
     with:
       runtime-version: "1.4.2"
       install-policy: "project"
@@ -24,4 +24,3 @@ jobs:
       l3-command: "bun run test:e2e:bdd"
       l3-browser: "chromium"
       l3-browser-directory: "apps/web-dashboard"
-    secrets: inherit
