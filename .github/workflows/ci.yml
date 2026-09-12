@@ -21,6 +21,7 @@ jobs:
       l2: true
       l2-command: "bun run test:l2"
       l3: true
-      l3-command: "(cd apps/web-dashboard && bunx playwright install --with-deps chromium) && bun run test:e2e:bdd"
+      l3-command: "bun run test:e2e:bdd"
       l3-browser: "chromium"
+      l3-browser-directory: "apps/web-dashboard"
     secrets: inherit
