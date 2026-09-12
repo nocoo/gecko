@@ -13,6 +13,7 @@ jobs:
     with:
       runtime-version: "1.4.2"
       install-policy: "project"
+      coverage-path: "apps/web-dashboard/coverage"
       extra-install-dirs: "apps/web-dashboard"
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
