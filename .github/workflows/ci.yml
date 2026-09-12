@@ -9,26 +9,17 @@ on:
 
 jobs:
   quality:
-    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@1e1000a018d75c7e73024448c669c215b90410e1  # post-v2026.6
+    uses: nocoo/base-ci/.github/workflows/quality.yml@ab52d72877d386c9a8fd224e9ac868e88be90539
     with:
-      # L2 API E2E uses local SQLite via better-sqlite3. Native install scripts
-      # must run; --ignore-scripts leaves the binding missing and every DB
-      # route returns 500 in CI (see v1.11.0 run 29714577292).
-      ignore-scripts: false
+      runtime-version: "1.4.2"
+      install-policy: "project"
       extra-install-dirs: "apps/web-dashboard"
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
-      enable-l2: "true"
+      l2: true
       l2-command: "bun run test:l2"
-      enable-l3: "true"
-      # base-ci's `Install Playwright browsers` step runs `bunx playwright install`
-      # at repo root; `bunx` resolves the LATEST playwright from npm (currently
-      # v1.55 → chromium v1234), but apps/web-dashboard pins @playwright/test
-      # ^1.61.1 (chromium v1228). Tests then fail with "Executable doesn't exist
-      # at .cache/ms-playwright/chromium_headless_shell-1228/…" (nocoo/gecko#286).
-      # Re-run install from apps/web-dashboard so bunx picks the locked local
-      # playwright and downloads the matching browser alongside base-ci's copy.
+      l3: true
       l3-command: "(cd apps/web-dashboard && bunx playwright install --with-deps chromium) && bun run test:e2e:bdd"
       l3-browser: "chromium"
     secrets: inherit
