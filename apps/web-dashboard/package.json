@@ -48,7 +48,7 @@
     "shadcn": "4.19.1",
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
-    "vite": "8.2.2",
+    "vite": "8.3.0",
     "vitest": "4.1.11"
   },
   "dependencies": {
@@ -98,7 +98,7 @@
     "js-yaml": "^4.3.2",
     "nanoid": "3.3.18",
     "@babel/core": "^7.29.6",
-    "vite": "^8.2.2",
+    "vite": "^8.3.0",
     "sharp": "0.35.4",
     "fast-uri": "3.1.6",
     "fflate": "0.7.5",
