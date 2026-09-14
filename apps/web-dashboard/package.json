@@ -61,7 +61,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "8.7.0",
-    "hono": "4.13.5",
+    "hono": "4.13.7",
     "lucide-react": "1.38.0",
     "next": "16.3.5",
     "next-auth": "^5.0.0-beta.32",
@@ -78,7 +78,7 @@
   },
   "overrides": {
     "@ai-sdk/provider-utils": "5.0.40",
-    "hono": "4.13.5",
+    "hono": "4.13.7",
     "@hono/node-server": "^2.1.0",
     "baseline-browser-mapping": "2.11.0",
     "browserslist": "4.28.7",
