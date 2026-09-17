@@ -51,26 +51,12 @@ input.write("jxlp", 32, "ascii");
 `,
 };
 
-type ParserResult =
-  | { ok: true; value: { width: number; height: number } }
-  | { ok: false; error: string };
-
-function assertTerminated(result: ParserResult, format: Format) {
-  if (format === "PNG") {
-    expect(result).toEqual({ ok: true, value: { width: 1, height: 1 } });
-    return;
-  }
-  // Malformed ICNS/HEIF/JXL must finish. Node/OS may return a finite size or
-  // throw; the DoS was an infinite loop, not a specific error string.
-  if (result.ok) {
-    expect(result.value.width).toBeGreaterThan(0);
-    expect(result.value.height).toBeGreaterThan(0);
-    expect(Number.isFinite(result.value.width)).toBe(true);
-    expect(Number.isFinite(result.value.height)).toBe(true);
-    return;
-  }
-  expect(result.error.length).toBeGreaterThan(0);
-}
+const EXPECTED_RESULTS: Record<Format, unknown> = {
+  ICNS: { ok: false, error: "TypeError: Invalid ICNS" },
+  HEIF: { ok: false, error: "TypeError: Invalid HEIF, no sizes found" },
+  JXL: { ok: false, error: "TypeError: Invalid JXL" },
+  PNG: { ok: true, value: { width: 1, height: 1 } },
+};
 
 function buildChildScript(format: Format, moduleSystem: ModuleSystem): string {
   const parserPath = `image-size/types/${format.toLowerCase()}`;
@@ -122,13 +108,13 @@ describe("image-size security regression", () => {
       });
 
       const result = JSON.parse(stdout) as {
-        publicEntry: ParserResult;
-        directEntry: ParserResult;
+        publicEntry: unknown;
+        directEntry: unknown;
       };
 
       expect(stderr).toBe("");
-      assertTerminated(result.publicEntry, format);
-      assertTerminated(result.directEntry, format);
+      expect(result.publicEntry).toEqual(EXPECTED_RESULTS[format]);
+      expect(result.directEntry).toEqual(EXPECTED_RESULTS[format]);
     },
   );
 });
