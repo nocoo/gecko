@@ -51,10 +51,13 @@ input.write("jxlp", 32, "ascii");
 `,
 };
 
+// 2.0.4 (and the retired 2.0.2 patch) must terminate on zero-length boxes.
+// ICNS/HEIF return a finite size; JXL stops at end-of-input. DoS was the hang,
+// not a TypeError reject — see docs/11-image-size-patch-review.md.
 const EXPECTED_RESULTS: Record<Format, unknown> = {
-  ICNS: { ok: false, error: "TypeError: Invalid ICNS" },
-  HEIF: { ok: false, error: "TypeError: Invalid HEIF, no sizes found" },
-  JXL: { ok: false, error: "TypeError: Invalid JXL" },
+  ICNS: { ok: true, value: { width: 16, height: 16 } },
+  HEIF: { ok: true, value: { width: 16, height: 9 } },
+  JXL: { ok: false, error: "Error: Reached end of input" },
   PNG: { ok: true, value: { width: 1, height: 1 } },
 };
 
