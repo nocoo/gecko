@@ -38,15 +38,13 @@ async function runCommand(cmd: string[], label: string): Promise<boolean> {
 async function main() {
   console.log("--- Security Gate ---\n");
 
-  // The two image-size advisories have no upstream fixed release. Their
-  // time-limited exceptions require the installed backport to pass its
-  // malformed-image regression tests on every security check.
-  const patchPassed = await runCommand(
+  // Keep checking malformed-image termination even with the released fix.
+  const imageSizePassed = await runCommand(
     ["bun", "run", "test", "src/__tests__/image-size-security.test.ts"],
-    "image-size backport regression",
+    "image-size parser regression",
   );
-  if (!patchPassed) {
-    console.error("\nSecurity gate FAILED: image-size backport did not verify.\n");
+  if (!imageSizePassed) {
+    console.error("\nSecurity gate FAILED: image-size parsers did not verify.\n");
     process.exit(1);
   }
 

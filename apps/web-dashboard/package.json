@@ -40,7 +40,7 @@
     "@types/react-dom": "19.3.0",
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "6.1.1",
-    "@vitejs/plugin-rsc": "0.5.34",
+    "@vitejs/plugin-rsc": "0.5.35",
     "@vitest/coverage-v8": "4.1.11",
     "better-sqlite3": "13.0.3",
     "husky": "^9.1.7",
@@ -52,16 +52,16 @@
     "vitest": "4.1.11"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "4.0.53",
-    "@ai-sdk/openai": "4.0.66",
+    "@ai-sdk/anthropic": "4.0.54",
+    "@ai-sdk/openai": "4.0.67",
     "@hono/node-server": "2.1.1",
     "@nocoo/basalt": "2.1.7",
     "@nocoo/next-ai": "^0.4.0",
-    "ai": "7.0.100",
+    "ai": "7.0.102",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "express-rate-limit": "8.7.0",
-    "hono": "4.13.7",
+    "hono": "4.13.8",
     "lucide-react": "1.46.0",
     "next": "16.3.5",
     "next-auth": "^5.0.0-beta.32",
@@ -77,8 +77,9 @@
     "vinext": "1.0.0-beta.0"
   },
   "overrides": {
-    "@ai-sdk/provider-utils": "5.0.40",
-    "hono": "4.13.7",
+    "@ai-sdk/provider-utils": "5.0.41",
+    "hono": "4.13.8",
+    "image-size": "2.0.4",
     "@hono/node-server": "^2.1.0",
     "baseline-browser-mapping": "2.11.0",
     "browserslist": "4.28.7",
@@ -103,8 +104,5 @@
     "fast-uri": "3.1.6",
     "fflate": "0.7.5",
     "undici": "7.29.0"
-  },
-  "patchedDependencies": {
-    "image-size@2.0.2": "patches/image-size@2.0.2.patch"
   }
 }
