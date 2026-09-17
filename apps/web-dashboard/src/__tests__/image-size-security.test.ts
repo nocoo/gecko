@@ -6,13 +6,16 @@ import { describe, expect, test } from "vitest";
 const execFileAsync = promisify(execFile);
 const CHILD_TIMEOUT_MS = 2_000;
 
-const FORMATS = ["ICNS", "HEIF", "JXL"] as const;
+const FORMATS = ["ICNS", "HEIF", "JXL", "PNG"] as const;
 const MODULE_SYSTEMS = ["cjs", "esm"] as const;
 
 type Format = (typeof FORMATS)[number];
 type ModuleSystem = (typeof MODULE_SYSTEMS)[number];
 
 const INPUT_BUILDERS: Record<Format, string> = {
+  PNG: `
+const input = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/L9sAAAAASUVORK5CYII=", "base64");
+`,
   ICNS: `
 const input = Buffer.alloc(16);
 input.write("icns", 0, "ascii");
@@ -49,9 +52,10 @@ input.write("jxlp", 32, "ascii");
 };
 
 const EXPECTED_RESULTS: Record<Format, unknown> = {
-  ICNS: { ok: true, value: { width: 16, height: 16 } },
-  HEIF: { ok: true, value: { width: 16, height: 9 } },
-  JXL: { ok: false, error: "Error: Reached end of input" },
+  ICNS: { ok: false, error: "TypeError: Invalid ICNS" },
+  HEIF: { ok: false, error: "TypeError: Invalid HEIF, no sizes found" },
+  JXL: { ok: false, error: "TypeError: Invalid JXL" },
+  PNG: { ok: true, value: { width: 1, height: 1 } },
 };
 
 function buildChildScript(format: Format, moduleSystem: ModuleSystem): string {
@@ -89,7 +93,7 @@ const TEST_CASES = FORMATS.flatMap((format) =>
   MODULE_SYSTEMS.map((moduleSystem) => ({ format, moduleSystem })),
 );
 
-describe("image-size security patch", () => {
+describe("image-size security regression", () => {
   test.each(TEST_CASES)(
     "$format $moduleSystem public and direct parsers terminate",
     async ({ format, moduleSystem }) => {
