@@ -1,7 +1,5 @@
 "use client";
 
-import { HeaderTooltip, HexlyLink } from "./header-links";
-
 import { AppHeader } from "@nocoo/basalt/components/app-header";
 import {
   AppMain,
@@ -17,6 +15,7 @@ import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Breadcrumbs } from "./breadcrumbs";
+import { HeaderTooltip, HexlyLink } from "./header-links";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { ThemeToggle } from "./theme-toggle";

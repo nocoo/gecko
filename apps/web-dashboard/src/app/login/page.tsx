@@ -1,7 +1,5 @@
 "use client";
 
-import { HeaderTooltip, HexlyLink } from "../../components/layout/header-links";
-
 import { Button } from "@nocoo/basalt/components/button";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
@@ -11,6 +9,7 @@ import { Github } from "@/components/icons/github";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import LoadingScreen from "@/components/loading-screen";
 import { APP_VERSION } from "@/lib/version";
+import { HeaderTooltip, HexlyLink } from "../../components/layout/header-links";
 
 function Barcode() {
   const bars = [2, 1, 3, 1, 2, 1, 1, 3, 1, 2, 1, 3, 2, 1, 1, 2, 3, 1, 2, 1];
