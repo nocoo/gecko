@@ -4,7 +4,7 @@
   "description": "Gecko screen time dashboard",
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "vinext dev --port 7018",
@@ -41,7 +41,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "6.1.1",
     "@vitejs/plugin-rsc": "0.5.35",
-    "@vitest/coverage-v8": "4.1.11",
+    "@vitest/coverage-v8": "5.0.1",
     "better-sqlite3": "13.0.3",
     "husky": "^9.1.7",
     "lint-staged": "17.5.1",
@@ -49,7 +49,7 @@
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.0",
-    "vitest": "4.1.11"
+    "vitest": "5.0.1"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "4.0.56",

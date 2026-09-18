@@ -5,10 +5,10 @@ export default defineConfig({
   cacheDir: "node_modules/.cache/vitest",
   resolve: {
     alias: {
-      "@": resolve(__dirname, "src"),
+      "@": resolve(import.meta.dirname, "src"),
       // Next.js doesn't ship `package.json#exports`; Node ESM strict
       // resolution can't find `next/server` without the `.js` extension.
-      "next/server": resolve(__dirname, "node_modules/next/server.js"),
+      "next/server": resolve(import.meta.dirname, "node_modules/next/server.js"),
     },
   },
   test: {
@@ -35,10 +35,6 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      // experimentalAstAwareRemapping reduces variance and slightly improves
-      // wall-clock by avoiding the legacy source-map-based remap path.
-      // (vitest v4 has this as default; flag retained for explicitness.)
-      experimentalAstAwareRemapping: true,
       reporter: ["text", "html"],
       include: ["src/**/*.ts", "src/**/*.tsx"],
       exclude: [
