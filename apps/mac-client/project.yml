@@ -25,6 +25,7 @@ targets:
         MARKETING_VERSION: "1.12.1"
         CURRENT_PROJECT_VERSION: "1"
         SWIFT_VERSION: "5.10"
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: "YES"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         INFOPLIST_FILE: Gecko/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Gecko/Resources/Gecko.entitlements
@@ -50,6 +51,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ai.hexly.gecko.tests
         SWIFT_VERSION: "5.10"
+        SWIFT_TREAT_WARNINGS_AS_ERRORS: "YES"
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         GENERATE_INFOPLIST_FILE: "YES"
     dependencies:

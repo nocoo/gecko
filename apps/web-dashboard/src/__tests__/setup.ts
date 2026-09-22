@@ -7,7 +7,18 @@
  * - ai: top-level generateText controlled per-test via __testOverrides
  */
 
-import { vi } from "vitest";
+import { afterEach, expect, vi } from "vitest";
+
+let unexpectedRequests = 0;
+globalThis.fetch = async () => {
+  unexpectedRequests += 1;
+  throw new Error("Unit tests must mock fetch; outbound network is disabled");
+};
+afterEach(() => {
+  const count = unexpectedRequests;
+  unexpectedRequests = 0;
+  expect(count, "Unmocked outbound fetch calls").toBe(0);
+});
 
 vi.mock("server-only", () => ({}));
 

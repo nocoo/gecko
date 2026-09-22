@@ -410,6 +410,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko;
 				PRODUCT_NAME = Gecko;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.10;
 			};
 			name = Debug;
@@ -428,6 +429,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko.tests;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.10;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gecko.app/Contents/MacOS/Gecko";
 			};
@@ -517,6 +519,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko;
 				PRODUCT_NAME = Gecko;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.10;
 			};
 			name = Release;
@@ -591,6 +594,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.hexly.gecko.tests;
 				SDKROOT = macosx;
+				SWIFT_TREAT_WARNINGS_AS_ERRORS = YES;
 				SWIFT_VERSION = 5.10;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Gecko.app/Contents/MacOS/Gecko";
 			};

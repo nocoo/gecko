@@ -12,7 +12,7 @@
     "start": "vinext start --port 7018",
     "db:init": "bun run scripts/init-local-db.ts",
     "dev:e2e": "bun run db:init && E2E_SKIP_AUTH=true AUTH_SECRET=e2e-test-secret D1_LOCAL_PATH=.local/gecko-test.db vinext dev --port 17018",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "vinext typegen && tsc --noEmit",
     "lint": "biome check --error-on-warnings --max-diagnostics=500 .",
     "lint:fix": "biome check --write --error-on-warnings --max-diagnostics=500 .",
     "lint:staged": "lint-staged",

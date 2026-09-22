@@ -1,5 +1,5 @@
 {
   "*.{ts,tsx,mts,cts,js,jsx,mjs,cjs,json,css}": [
-    "biome check --write --error-on-warnings --max-diagnostics=500 --no-errors-on-unmatched"
+    "biome check --error-on-warnings --max-diagnostics=500 --no-errors-on-unmatched"
   ]
 }

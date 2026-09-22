@@ -72,3 +72,8 @@ Keep hosted test startup separate from production service initialization. The ex
 - **Root cause**: Biome `useExhaustiveDependencies` (unsafe autofix / unused-var pressure) renamed `pathname` to `_pathname` and removed it from the effect deps. Only `setMobileOpen` remained; that setter is stable, so `setMobileOpen(false)` never re-ran after navigation.
 - **Fix**: Keep `pathname` in the dependency array and reference it in the effect body (`void pathname`) so the rule treats it as used.
 - **Lesson**: Effects that intentionally re-fire on a value that is not otherwise read (route key, refresh key) must **use** that value in the body. Never “fix” exhaustive-deps by dropping intentional triggers or prefixing with `_`.
+
+
+## 2026-09-23 — Keep scheduler unit tests offline
+
+The L1 repair run exercised the scheduler singleton callback without replacing its production dependencies. The test passed after the application caught an external D1 404, so assertion success hid an unintended network request. No production credentials were provided. The wiring test now spies on the singleton's tick method and asserts the callback count. The shared unit setup rejects and records every unmocked fetch, failing even when application code catches its error. Treat provider error logs as isolation defects, not harmless test output.

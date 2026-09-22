@@ -513,10 +513,13 @@ describe("singleton management", () => {
     resetEnsureAutoAnalyze();
     resetAutoAnalyze();
 
+    const onTick = vi.spyOn(getAutoAnalyze(), "onTick").mockResolvedValue(undefined);
     ensureAutoAnalyze();
     // Manually fire a tick — exercises the registered `() => service.onTick()`
     // callback, covering the arrow-body statement.
     await getHourlyScheduler().tick();
+    expect(onTick).toHaveBeenCalledTimes(1);
+    onTick.mockRestore();
 
     resetEnsureAutoAnalyze();
     resetAutoAnalyze();

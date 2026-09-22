@@ -114,7 +114,7 @@ describe("d1 client", () => {
     test("throws on D1 API error response", async () => {
       mockFetch([], false, 200);
 
-      expect(query("BAD SQL")).rejects.toThrow("D1 query failed");
+      await expect(query("BAD SQL")).rejects.toThrow("D1 query failed");
     });
 
     test("uses 'Unknown D1 error' fallback when errors array is missing", async () => {
@@ -138,7 +138,7 @@ describe("d1 client", () => {
         Promise.resolve(new Response("Internal Server Error", { status: 500 })),
       ) as unknown as typeof fetch;
 
-      expect(query("SELECT 1")).rejects.toThrow("D1 API error (500)");
+      await expect(query("SELECT 1")).rejects.toThrow("D1 API error (500)");
     });
 
     test("throws on network error", async () => {
@@ -146,7 +146,7 @@ describe("d1 client", () => {
         Promise.reject(new Error("Network error")),
       ) as unknown as typeof fetch;
 
-      expect(query("SELECT 1")).rejects.toThrow("Network error");
+      await expect(query("SELECT 1")).rejects.toThrow("Network error");
     });
   });
 

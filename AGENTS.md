@@ -60,17 +60,17 @@ The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and s
 
 ## Verification
 
-6DQ = L1/L2/L3 + G1/G2 + D1. Status: `enforced`, `planned`, `manual`, `N/A`.
+6DQ retains its name. Former G1 is merged into L1; L2/L3, G2 and D1 retain their scope. Status: `enforced`, `planned`, `manual`, `N/A`.
 
 | Dimension | Required proof | Status | Current enforcement / gap |
 |---|---|---|---|
-| L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | planned | Commit/CI enforce four 95.5% thresholds on extracted logic; skip/focus enforcement is incomplete and singleton scheduler wiring still calls external D1 without credentials |
-| L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | Commit runs `GeckoTests` when tooling exists; no native percentage gate or native CI lane |
+| L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | planned | The index-snapshot commit gate enforces four 95.5% thresholds, rejects focused/skipped/empty suites, and checks real test reports |
+| L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | Required unsigned GeckoTests use isolated DerivedData and cloned GRDB dependencies. Xccov measures all application files; interim lines 26% / functions 38% regression floors remain below the unchanged 95% target. Statements/branches are unsupported by Swift; no native CI lane |
 | L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/SQLite suites; exhaustive endpoint/method and server-identity checks are not enforced |
 | L3 web | Critical dashboard journeys in Chromium | enforced | CI and root `test:l3` / `test:e2e:bdd` use Playwright |
 | L3 native | Tracking, sleep/lock, permissions and sync as user journeys | planned | Native unit tests exist; complete desktop system acceptance is not enforced |
-| G1 web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs types/lint and import-time toolchain smoke; CI types/lint; local lint-staged still uses Biome `--write` |
-| G1 native | Warnings-as-errors compilation and strict SwiftLint | planned | Local hook runs compilation/lint but skips missing tools and does not promote compiler warnings to errors; CI covers only web |
+| L1 static web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs check-only types/lint and import-time toolchain smoke; vinext regenerates route types from the snapshot |
+| L1 static native | Warnings-as-errors compilation and strict SwiftLint | planned | Local hook requires native tools and uses compiler warnings as errors plus strict SwiftLint; CI covers only web |
 | G2 web | Dependency and secret scans; missing tools fail | enforced | Push scans the web lock/history and image-size regression; shared CI security also scans root dependencies |
 | G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |
 | D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | Web suites share a fixed test DB and may reuse servers; `db:init` removes arbitrary supplied paths without a test marker/guard |
@@ -79,10 +79,10 @@ The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and s
 
 | Hook | Current behavior | Required follow-up |
 |---|---|---|
-| pre-commit | Working-tree web types, staged autofix, full lint, toolchain smoke and coverage; native lane in parallel | Check-only G1+L1 on index snapshot, mandatory native tooling, <30s |
+| pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Raise native coverage to 95%, resolve unsupported Swift metrics, improve toward <30s |
 | pre-push | Web L2 and G2 in parallel | Validate commits named by stdin push refs, <3min |
 
-Never use `--no-verify` on commits or branch pushes. Raise the existing autofix/optional-tool gaps to the check-only contract. CI pins shared workflows at `ad43150de3a2be2fa464b5cd2f921dc4fa9f8f0f`.
+Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI pins shared workflows at `ad43150de3a2be2fa464b5cd2f921dc4fa9f8f0f`.
 
 ## Resources / Isolation
 
