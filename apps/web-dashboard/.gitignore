@@ -31,6 +31,7 @@ playwright-report/
 
 # vitest
 coverage/
+.vitest/
 
 # local test database
 .local/
