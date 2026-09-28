@@ -86,3 +86,13 @@ pending. The owner clarified that only the macOS application icon should change.
 All other edits were restored before committing. Inventory consumers first, but
 wait for a requested scope decision before changing those consumers; asking a
 question does not authorize its recommended answer.
+
+## 2026-09-29 — Verify process exit independently during installation
+
+A command-line AppKit helper requested Gecko's normal termination, then timed
+out while polling its retained `NSRunningApplication.isTerminated` value. A
+separate exact-path process check confirmed Gecko had exited. The helper's
+`fatalError` produced an unnecessary diagnostic crash; Gecko itself did not
+crash. Verify process exit independently before replacing the bundle, and use
+ordinary error exits for installer checks instead of assertions that crash the
+helper. The signed replacement was installed only after the process check.
