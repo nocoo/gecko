@@ -247,7 +247,7 @@ Two macOS permissions are required, both checked by `PermissionManager` with exp
 
 **App configuration:**
 
-- `LSUIElement: false` — Regular app with a Dock icon and a persistent menu-bar extra
+- `LSUIElement: true` — Agent app (no Dock icon, menu bar only)
 - `com.apple.security.app-sandbox: false` — Required for AX and Apple Events
 - Stable code signing identity (Apple Development certificate) — Required for TCC permission persistence across rebuilds
 
