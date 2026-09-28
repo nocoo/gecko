@@ -30,9 +30,7 @@ def main():
     social.paste(mark, (474, 189), mark)
     social.save(APP / "opengraph-image.png")
 
-    native = Image.new("RGBA", (1024, 1024))
-    native.alpha_composite(rounded.resize((824, 824), Image.Resampling.LANCZOS), (100, 100))
-    native.save(ROOT / "assets/brand/app-icon-macos.png")
+    native = Image.open(ROOT / "assets/brand/app-icon-macos.png").convert("RGBA")
     catalog = MAC / "AppIcon.appiconset"
     for entry in json.loads((catalog / "Contents.json").read_text())["images"]:
         size = int(entry["size"].split("x")[0]) * int(entry["scale"][0])

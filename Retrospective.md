@@ -77,3 +77,12 @@ Keep hosted test startup separate from production service initialization. The ex
 ## 2026-09-23 — Keep scheduler unit tests offline
 
 The L1 repair run exercised the scheduler singleton callback without replacing its production dependencies. The test passed after the application caught an external D1 404, so assertion success hid an unintended network request. No production credentials were provided. The wiring test now spies on the singleton's tick method and asserts the callback count. The shared unit setup rejects and records every unmocked fetch, failing even when application code catches its error. Treat provider error logs as isolation defects, not harmless test output.
+
+## 2026-09-29 — Confirm logo consumer scope before adoption
+
+The request to apply the latest Hexly logo was initially interpreted as replacing
+all consumers. Web and About assets were changed while a scope question was
+pending. The owner clarified that only the macOS application icon should change.
+All other edits were restored before committing. Inventory consumers first, but
+wait for a requested scope decision before changing those consumers; asking a
+question does not authorize its recommended answer.

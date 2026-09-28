@@ -3,7 +3,10 @@
 	"finishing": "01",
 	"method": "retained-original",
 	"generationCalls": 0,
-	"nativeDimensions": [2048, 2048],
+	"nativeDimensions": [
+		2048,
+		2048
+	],
 	"sourceRevisionBefore": "5297e67bfb3a3b70054b81f42652edcaa752cc1a",
 	"previous": {
 		"kind": "original",
@@ -42,5 +45,41 @@
 		"scope": "Named ten-project batch"
 	},
 	"review": "https://hexly.ai/logos/gecko",
-	"archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/gecko/2026-09-07-01"
+	"archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/gecko/2026-09-07-01",
+	"macOSAppIcon": {
+		"adopted": "2026-09-29",
+		"scope": "macOS application icon only; web, menu-bar, About and README unchanged",
+		"sourceRepository": "https://github.com/nocoo/hexly.ai",
+		"sourceRevision": "86c90f2c546edac871e96399c717082d181c4ebe",
+		"presentationVersion": "1.0.0",
+		"manifest": "public/icons/gecko/v1.0.0/manifest.json",
+		"sourceUrl": "https://h.no.mt/projects/gecko/icons/v1.0.0/rounded.png",
+		"sourceSha256": "20984eaa0d74234f8911d1751e92b4051af5a35deb73db050fceb33265e5cde0",
+		"sourceDimensions": [
+			2048,
+			2048
+		],
+		"foregroundSha256": "8808c313490254f126fa050aee2af4d6d9496e20c007b15036a26d4c06e478d3",
+		"textureSha256": "e70270e38fcb8481ea9c49a79a23b2b18b62f1919719270ef6bb69450a5b7de3",
+		"textureOpacity": 0.7,
+		"baseColor": "#f0f0e9",
+		"master": "assets/brand/app-icon-macos.png",
+		"masterSha256": "32cd8f280e2466e805289161c7f1cc40cc4fdb298a996a85f81ea48dc130095f",
+		"masterDimensions": [
+			1024,
+			1024
+		],
+		"placement": {
+			"size": [
+				824,
+				824
+			],
+			"offset": [
+				100,
+				100
+			],
+			"resampling": "Lanczos"
+		},
+		"consumer": "apps/mac-client/Gecko/Resources/Assets.xcassets/AppIcon.appiconset"
+	}
 }
