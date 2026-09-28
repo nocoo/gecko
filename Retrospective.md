@@ -96,3 +96,14 @@ separate exact-path process check confirmed Gecko had exited. The helper's
 crash. Verify process exit independently before replacing the bundle, and use
 ordinary error exits for installer checks instead of assertions that crash the
 helper. The signed replacement was installed only after the process check.
+
+## 2026-09-29 — Inspect native selection and preview sizing
+
+The first workspace captures exposed a dark system sidebar selection underneath
+custom dark text. The sidebar now owns both its selected surface and foreground,
+with a selected accessibility trait and keyboard shortcuts. Initial layout tests
+also assumed NSHostingView would retain the requested window height; intrinsic
+content sizing shrank the menu and connection fixtures. The renderer now disables
+automatic host sizing and gives the content a flexible test viewport. Inspect
+both appearances and compact states, and fix the rendering assumptions instead
+of weakening size assertions.

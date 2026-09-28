@@ -15,6 +15,8 @@
 
 Gecko combines a macOS menu bar app with a web dashboard. The Mac app records foreground applications, window titles, and page information from supported browsers as local sessions. With sync enabled, the web app groups usage time, app breakdowns, and activity timelines by day.
 
+The Mac workspace combines sidebar navigation, persistent tracking controls, and light/dark themes. Sessions use a list and detail layout; settings group everyday behavior, local storage, and cloud sync. See the [native interface guide](13-native-workspace.md).
+
 It is intended for personal time reviews and observing focus habits. Statistics come from recorded sessions. AI analysis is optional and requires your own model service; its output interprets recorded activity and does not provide a complete measure of work produced.
 
 ## Features

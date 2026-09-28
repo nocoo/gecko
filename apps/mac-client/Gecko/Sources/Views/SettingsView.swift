@@ -1,298 +1,106 @@
 import SwiftUI
 
-/// Tab 4: Settings for configuring database path and cloud sync.
 struct SettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                headerSection
-                Divider()
-                generalSection
-                Divider()
-                    .padding(.horizontal)
-                databasePathSection
-                Divider()
-                    .padding(.horizontal)
-                syncSection
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    // MARK: - Header
-
-    private var headerSection: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "gearshape.fill")
-                .font(.system(size: 24))
-                .foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Settings")
-                    .font(.title2.bold())
-                Text("Configure Gecko preferences.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+        GeometryReader { geometry in
+            let layout = geometry.size.width >= 840
+                ? AnyLayout(HStackLayout(alignment: .top, spacing: GeckoTheme.sectionGap))
+                : AnyLayout(VStackLayout(spacing: GeckoTheme.sectionGap))
+            ScrollView {
+                VStack(alignment: .leading, spacing: GeckoTheme.sectionGap) {
+                    GeckoPageHeader(
+                        title: "Settings", subtitle: "Make Gecko fit the way you work.", symbol: "slider.horizontal.3",
+                        color: GeckoTheme.amber
+                    )
+                    layout {
+                        generalSection
+                        databaseSection
+                    }
+                    SettingsSyncView(viewModel: viewModel)
+                }
+                .padding(GeckoTheme.pageInset)
+                .frame(maxWidth: 920, alignment: .leading)
+                .frame(maxWidth: .infinity)
             }
         }
-        .padding()
+        .background(GeckoTheme.canvas)
+        .foregroundStyle(GeckoTheme.ink)
+        .font(GeckoTheme.body)
+        .tint(GeckoTheme.accent)
     }
-
-    // MARK: - General
 
     private var generalSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("General", systemImage: "switch.2")
-                .font(.headline)
-
-            Toggle("Launch at login", isOn: Binding(
+        GeckoCard {
+            sectionTitle("Everyday", symbol: "sun.max", color: GeckoTheme.amber)
+            Toggle(isOn: Binding(
                 get: { viewModel.launchAtLogin },
                 set: { viewModel.launchAtLogin = $0 }
-            ))
+            )) {
+                settingLabel("Launch at login", detail: "Keep Gecko ready when you sign in to your Mac.")
+            }
             .toggleStyle(.switch)
-
-            Toggle("Auto-start tracking on launch", isOn: $viewModel.autoStartTracking)
-                .toggleStyle(.switch)
-
-            Text("When enabled, tracking starts automatically if permissions are granted.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Divider().overlay(GeckoTheme.line)
+            Toggle(isOn: $viewModel.autoStartTracking) {
+                settingLabel("Start tracking automatically", detail: "Begin on launch once the required permissions are granted.")
+            }
+            .toggleStyle(.switch)
         }
-        .padding()
     }
 
-    // MARK: - Database Path
-
-    private var databasePathSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Database Location", systemImage: "externaldrive.fill")
-                .font(.headline)
-
-            Text("The SQLite file where focus sessions are stored.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 8) {
-                TextField("Database path", text: .constant(viewModel.editingPath))
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-                    .disabled(true)
+    private var databaseSection: some View {
+        GeckoCard {
+            sectionTitle("Local storage", symbol: "internaldrive", color: GeckoTheme.violet)
+            GeckoBadge(
+                title: viewModel.isCustomPath ? "Custom location" : "Default location",
+                symbol: viewModel.isCustomPath ? "folder" : "checkmark.circle",
+                color: viewModel.isCustomPath ? GeckoTheme.amber : GeckoTheme.accent
+            )
+            Text("Your focus sessions are saved in a local SQLite database.")
+                .font(GeckoTheme.detail).foregroundStyle(GeckoTheme.secondary)
+            HStack(spacing: 10) {
+                Text(viewModel.editingPath)
+                    .font(GeckoTheme.detail.monospaced())
+                    .lineLimit(2).truncationMode(.middle).textSelection(.enabled)
+                    .frame(maxWidth: .infinity, minHeight: 32, alignment: .leading)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .background(GeckoTheme.inset, in: RoundedRectangle(cornerRadius: GeckoTheme.controlRadius))
                     .accessibilityLabel("Database file path")
-                    .help("Use the Browse button to change the database location")
-
-                Button("Browse...") {
-                    browseForPath()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("Browse for database file")
-                .accessibilityHint("Opens a file browser to choose the database location")
+                    .help(viewModel.editingPath)
+                Button(action: browseForPath) { Label("Browse…", systemImage: "folder") }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Browse for database file")
             }
-
             if viewModel.showValidationError {
-                Label(
-                    "Invalid path. The parent directory must exist or be creatable.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.red)
+                Label("The parent directory must exist or be creatable.", systemImage: "exclamationmark.triangle.fill")
+                    .font(GeckoTheme.detail).foregroundStyle(GeckoTheme.danger)
             }
-
-            HStack(spacing: 12) {
-                Button("Save") {
-                    viewModel.save()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(!viewModel.canSave)
-                .accessibilityLabel("Save database path")
-
-                Button("Reset to Default") {
-                    viewModel.resetToDefault()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(!viewModel.canReset)
-                .accessibilityLabel("Reset database path to default")
-
-                Spacer()
-
-                if viewModel.isCustomPath {
-                    Label("Custom path", systemImage: "info.circle")
-                        .font(.caption2)
-                        .foregroundStyle(.orange)
-                } else {
-                    Label("Default path", systemImage: "checkmark.circle")
-                        .font(.caption2)
-                        .foregroundStyle(.green)
-                }
+            HStack(spacing: 10) {
+                Button { viewModel.save() } label: { Label("Save location", systemImage: "checkmark") }
+                    .buttonStyle(.borderedProminent).tint(GeckoTheme.action)
+                    .disabled(!viewModel.canSave)
+                Button("Reset to default") { viewModel.resetToDefault() }
+                    .buttonStyle(.bordered).disabled(!viewModel.canReset)
             }
-        }
-        .padding()
-    }
-
-    // MARK: - Cloud Sync
-
-    private var syncSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Label("Cloud Sync", systemImage: "icloud.fill")
-                .font(.headline)
-
-            Text("Sync focus sessions to your Gecko dashboard.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            // Enable toggle
-            Toggle("Enable sync", isOn: $viewModel.syncEnabled)
-                .toggleStyle(.switch)
-
-            // API Key
-            VStack(alignment: .leading, spacing: 4) {
-                Text("API Key")
-                    .font(.subheadline.weight(.medium))
-                SecureField("Paste your API key (gk_...)", text: $viewModel.editingApiKey)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-                    .accessibilityLabel("API key")
-            }
-
-            // Server URL
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Server URL")
-                    .font(.subheadline.weight(.medium))
-                TextField("https://gecko.dev.hexly.ai", text: $viewModel.editingSyncServerUrl)
-                    .textFieldStyle(.roundedBorder)
-                    .font(.system(.body, design: .monospaced))
-                    .onChange(of: viewModel.editingSyncServerUrl) {
-                        viewModel.syncUrlValidationError = nil
-                    }
-                if let error = viewModel.syncUrlValidationError {
-                    Label(error, systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption)
-                        .foregroundStyle(.red)
-                }
-            }
-
-            // Sync status
-            syncStatusView
-
-            // Actions
-            HStack(spacing: 12) {
-                Button("Save") {
-                    viewModel.saveSyncSettings()
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.small)
-                .disabled(!viewModel.canSaveSyncSettings)
-                .accessibilityLabel("Save sync settings")
-
-                Button("Sync Now") {
-                    Task { await viewModel.syncNow() }
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(!viewModel.canSyncNow)
-                .accessibilityHint("Triggers an immediate sync of pending sessions")
-
-                Button("Reset") {
-                    viewModel.resetSyncSettings()
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .disabled(!viewModel.canResetSyncSettings)
-                .accessibilityLabel("Reset sync settings")
-            }
-        }
-        .padding()
-    }
-
-    // MARK: - Sync Status View
-
-    @ViewBuilder
-    private var syncStatusView: some View {
-        HStack(spacing: 8) {
-            syncStatusIcon
-            syncStatusText
-        }
-        .font(.caption)
-    }
-
-    @ViewBuilder
-    private var syncStatusIcon: some View {
-        switch viewModel.syncStatus {
-        case .idle:
-            if let lastErr = viewModel.syncLastError, !lastErr.isEmpty {
-                // Cycle finished but a batch failed — red icon mirrors the
-                // red text below.
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
-                    .accessibilityLabel("Last sync had failures")
-            } else {
-                Image(systemName: "checkmark.circle")
-                    .foregroundStyle(.green)
-                    .accessibilityLabel("Sync idle")
-            }
-        case .syncing:
-            ProgressView()
-                .controlSize(.small)
-                .accessibilityLabel("Syncing")
-        case .error:
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.red)
-                .accessibilityLabel("Sync error")
-        case .disabled:
-            Image(systemName: "minus.circle")
-                .foregroundStyle(.secondary)
-                .accessibilityLabel("Sync disabled")
+            .controlSize(.small)
         }
     }
 
-    @ViewBuilder
-    private var syncStatusText: some View {
-        let pending = viewModel.syncPendingCount
-        let progress = viewModel.syncCycleProgress
-        let lastErr = viewModel.syncLastError
-        switch viewModel.syncStatus {
-        case .idle:
-            if let lastErr, !lastErr.isEmpty {
-                Text("\(lastErr) — \(pending) still pending")
-                    .foregroundStyle(.red)
-            } else if pending > 0 {
-                Text("\(pending) pending — next cycle in <5 min")
-                    .foregroundStyle(.secondary)
-            } else if let lastTime = viewModel.syncLastTime {
-                Text("Last synced: \(lastTime, style: .relative) ago (\(viewModel.syncLastCount) sessions)")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Ready to sync")
-                    .foregroundStyle(.secondary)
-            }
-        case .syncing:
-            if pending + progress > 0 {
-                Text("Syncing… \(progress) of \(progress + pending)")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text("Syncing…")
-                    .foregroundStyle(.secondary)
-            }
-        case .error(let message):
-            if pending > 0 {
-                Text("\(message) — \(pending) still pending")
-                    .foregroundStyle(.red)
-            } else {
-                Text(message)
-                    .foregroundStyle(.red)
-            }
-        case .disabled:
-            Text("Sync disabled")
-                .foregroundStyle(.secondary)
+    private func sectionTitle(_ title: String, symbol: String, color: Color) -> some View {
+        HStack(spacing: 10) {
+            GeckoSymbol(symbol: symbol, color: color, size: 32)
+            Text(title).font(GeckoTheme.heading)
         }
     }
 
-    // MARK: - File Browser
+    private func settingLabel(_ title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title).font(GeckoTheme.body.weight(.medium))
+            Text(detail).font(GeckoTheme.detail).foregroundStyle(GeckoTheme.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
 
     private func browseForPath() {
         let panel = NSSavePanel()
@@ -300,9 +108,6 @@ struct SettingsView: View {
         panel.nameFieldStringValue = "gecko.sqlite"
         panel.allowedContentTypes = [.database]
         panel.canCreateDirectories = true
-
-        if panel.runModal() == .OK, let url = panel.url {
-            viewModel.setPath(url.path)
-        }
+        if panel.runModal() == .OK, let url = panel.url { viewModel.setPath(url.path) }
     }
 }

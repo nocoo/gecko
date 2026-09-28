@@ -95,7 +95,7 @@ struct GeckoApp: App {
                 await autoStartTrackingIfNeeded()
             }
         }
-        .defaultSize(width: 700, height: 600)
+        .defaultSize(width: 1080, height: 740)
 
         // Menu bar icon — always visible
         MenuBarExtra("Gecko", image: "MenuBarIcon") {
@@ -107,11 +107,12 @@ struct GeckoApp: App {
                 await autoStartTrackingIfNeeded()
             }
         }
+        .menuBarExtraStyle(.window)
 
         // Native macOS Settings window (Cmd+,)
         Settings {
             SettingsView(viewModel: settingsViewModel)
-                .frame(minWidth: 500, idealWidth: 600, minHeight: 400, idealHeight: 500)
+                .frame(minWidth: 600, idealWidth: 720, minHeight: 500, idealHeight: 700)
         }
     }
 
