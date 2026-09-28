@@ -35,8 +35,9 @@ def main():
     for entry in json.loads((catalog / "Contents.json").read_text())["images"]:
         size = int(entry["size"].split("x")[0]) * int(entry["scale"][0])
         native.resize((size, size), Image.Resampling.LANCZOS).save(catalog / entry["filename"])
+    about = Image.open(ROOT / "assets/brand/icon-rounded-macos.png").convert("RGBA")
     for filename, size in [("gecko_logo.png", 128), ("gecko_logo@2x.png", 256), ("gecko_logo@3x.png", 384)]:
-        rounded.resize((size, size), Image.Resampling.LANCZOS).save(MAC / "GeckoLogo.imageset" / filename)
+        about.resize((size, size), Image.Resampling.LANCZOS).save(MAC / "GeckoLogo.imageset" / filename)
     print("Generated transparent web marks and web/native presentations; menu templates retained.")
 
 

@@ -18,7 +18,6 @@ struct AboutView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 96, height: 96)
-                .shadow(color: .black.opacity(0.15), radius: 6, y: 3)
 
             VStack(spacing: 4) {
                 Text("Gecko")

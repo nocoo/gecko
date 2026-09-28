@@ -81,5 +81,26 @@
 			"resampling": "Lanczos"
 		},
 		"consumer": "apps/mac-client/Gecko/Resources/Assets.xcassets/AppIcon.appiconset"
+	},
+	"macOSAbout": {
+		"adopted": "2026-09-29",
+		"scope": "macOS About only; application icon, web, menu-bar and README artwork retained",
+		"sourceRepository": "https://github.com/nocoo/hexly.ai",
+		"sourceRevision": "86c90f2c546edac871e96399c717082d181c4ebe",
+		"presentationVersion": "1.0.0",
+		"sourceUrl": "https://h.no.mt/projects/gecko/icons/v1.0.0/rounded.png",
+		"master": "assets/brand/icon-rounded-macos.png",
+		"masterSha256": "20984eaa0d74234f8911d1751e92b4051af5a35deb73db050fceb33265e5cde0",
+		"masterDimensions": [
+			2048,
+			2048
+		],
+		"consumer": "apps/mac-client/Gecko/Resources/Assets.xcassets/GeckoLogo.imageset",
+		"sizes": [
+			128,
+			256,
+			384
+		],
+		"resampling": "Lanczos"
 	}
 }

@@ -11,7 +11,7 @@ A warm place to pause. The exact existing transparent source bytes and native ca
 | Web browser | `apps/web-dashboard/src/app/icon.png and favicon.ico` | Transparent 32 px PNG and 16/32/48 ICO via Next metadata |
 | Apple touch / social | `apps/web-dashboard/src/app/apple-icon.png and opengraph-image.png` | Square 180 px touch; rounded tile on existing 1200 × 630 social canvas |
 | Native app icon | `apps/mac-client/Gecko/Resources/Assets.xcassets/AppIcon.appiconset` | Ten images from `assets/brand/app-icon-macos.png`, using Hexly textured icons v1.0.0 |
-| Native About view | `GeckoLogo.imageset/gecko_logo{,@2x,@3x}.png` | Rounded presentation at 128/256/384 px; extra SwiftUI crop removed |
+| Native About view | `GeckoLogo.imageset/gecko_logo{,@2x,@3x}.png` | Hexly textured icons v1.0.0 from `assets/brand/icon-rounded-macos.png` at 128/256/384 px, without extra masking or shadow |
 | Menu-bar templates | `MenuBarIcon.imageset` | Exact existing templates retained with the unchanged animal |
 
 Root `logo.png` is the canonical 2048 × 2048 transparent foreground. `assets/brand/icon.png` and `icon-rounded.png` preserve the independent square and rounded presentation. Small UI and browser marks use the foreground with its original proportions and alpha, without a background tile, glow, color filter or additional mask. Native app and touch icons follow their platform's separate masking contract.
@@ -19,8 +19,9 @@ Root `logo.png` is the canonical 2048 × 2048 transparent foreground. `assets/br
 ## macOS application icon
 
 On 2026-09-29, the owner selected the latest Hexly presentation for the macOS
-application icon only. Web, menu-bar, About and README assets retain their
-existing artwork. The source is `icons/gecko/v1.0.0/rounded.png`, published on
+application icon, then requested the same textured artwork for About. Web,
+menu-bar and README assets retain their existing artwork. The source is
+`icons/gecko/v1.0.0/rounded.png`, published on
 2026-09-27: the unchanged gecko on a light botanical texture over `#f0f0e9`.
 
 The native master places the complete 2048 px source at 824 px, centered at
@@ -28,6 +29,10 @@ The native master places the complete 2048 px source at 824 px, centered at
 independent native master so rebuilding assets cannot restore the older
 sandstone presentation. `source.json` records the source URL, revision, checksums
 and placement.
+
+`assets/brand/icon-rounded-macos.png` preserves the exact 2048 px Hexly rounded
+source for About. It has no additional platform canvas inset; that inset belongs
+only to the application icon.
 
 ## Rebuild and evidence
 
