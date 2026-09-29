@@ -48,13 +48,6 @@ struct GeckoWorkspace<Content: View>: View {
         .frame(minWidth: GeckoTheme.minimumWidth, minHeight: GeckoTheme.minimumHeight)
         .toolbarBackground(GeckoTheme.canvas, for: .windowToolbar)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                GeckoBadge(
-                    title: isTracking ? "Tracking active" : "Tracking paused",
-                    symbol: isTracking ? "record.circle" : "pause.circle",
-                    color: isTracking ? GeckoTheme.accent : GeckoTheme.secondary
-                )
-            }
             ToolbarItem(placement: .primaryAction) {
                 GeckoTrackingButton(isTracking: isTracking, action: onToggleTracking)
             }
@@ -112,11 +105,10 @@ struct GeckoWorkspace<Content: View>: View {
             HStack(spacing: 10) {
                 Image(systemName: page.icon).font(.system(size: 15, weight: .medium))
                     .foregroundStyle(color).frame(width: 22)
-                Text(page.label).font(GeckoTheme.body.weight(selection == page ? .semibold : .regular))
+                Text(page.label).font(GeckoTheme.body)
                 Spacer(minLength: 0)
-                if selection == page {
-                    Circle().fill(GeckoTheme.accent).frame(width: 5, height: 5).accessibilityHidden(true)
-                }
+                Circle().fill(GeckoTheme.accent).frame(width: 5, height: 5)
+                    .opacity(selection == page ? 1 : 0).accessibilityHidden(true)
             }
             .foregroundStyle(selection == page ? GeckoTheme.accent : GeckoTheme.ink)
             .padding(.horizontal, 10).frame(height: 38)

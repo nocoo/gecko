@@ -23,8 +23,10 @@ enum GeckoTheme {
     static let radius: CGFloat = 14
     static let controlRadius: CGFloat = 8
     static let sidebarWidth: CGFloat = 204
-    static let minimumWidth: CGFloat = 880
-    static let minimumHeight: CGFloat = 620
+    static let minimumWidth: CGFloat = 1040
+    static let minimumHeight: CGFloat = 680
+    static let defaultWidth: CGFloat = 1200
+    static let defaultHeight: CGFloat = 780
     static let body = Font.system(size: 13)
     static let detail = Font.system(size: 12)
     static let caption = Font.system(size: 11)

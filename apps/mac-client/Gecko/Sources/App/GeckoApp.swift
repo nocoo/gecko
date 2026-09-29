@@ -95,7 +95,8 @@ struct GeckoApp: App {
                 await autoStartTrackingIfNeeded()
             }
         }
-        .defaultSize(width: 1080, height: 740)
+        .defaultSize(width: GeckoTheme.defaultWidth, height: GeckoTheme.defaultHeight)
+        .windowResizability(.contentMinSize)
 
         // Menu bar icon — always visible
         MenuBarExtra("Gecko", image: "MenuBarIcon") {

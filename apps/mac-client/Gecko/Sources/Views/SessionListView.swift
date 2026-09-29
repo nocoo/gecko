@@ -33,7 +33,7 @@ struct SessionListView: View {
                 .frame(maxHeight: .infinity)
             } else {
                 HSplitView {
-                    sessionList.frame(minWidth: 260, idealWidth: 310)
+                    sessionList.frame(minWidth: 280, idealWidth: 320, maxWidth: 340)
                     if let session = selectedSession {
                         SessionDetailView(session: session)
                             .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity)

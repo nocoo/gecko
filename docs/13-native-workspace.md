@@ -4,8 +4,9 @@ Gecko's macOS interface uses a persistent sidebar and a shared tracking toolbar.
 The visual references are Showtime's compact controls, Falcon's colored workspace
 navigation, and Lyre's native split views. Gecko keeps its own warm paper, moss,
 amber, blue and violet palette, with adaptive light and dark values in
-`GeckoTheme.swift`. The minimum content size is 880 × 620; the default is
-1080 × 740. No third-party UI dependency is required.
+`GeckoTheme.swift`. The minimum content size is 1040 × 680; the default is
+1200 × 780. The window enforces its content minimum when resized or restored.
+No third-party UI dependency is required.
 
 ## Feature map
 
@@ -28,6 +29,9 @@ Command-1 through Command-4 select sidebar pages. The native sidebar toggle,
 window controls and Settings scene remain available. Long content scrolls;
 Settings places its first two cards side by side only when they fit. Session
 selection survives refresh when its record remains in the latest 50.
+The session list stays between 280 and 340 points wide to leave room for details.
+Sidebar selection changes color and background while preserving font weight and
+indicator space. The toolbar keeps the tracking action without a central status badge.
 
 The application remains a menu-bar agent (`LSUIElement=true`). Its bundle ID,
 signature identity, AppIcon, menu-bar template, database schema, tracking engine,
@@ -51,6 +55,8 @@ Images are captured from the test's own view using AppKit, without screen-record
 or Accessibility permission. The suite covers both appearances, compact missing
 permissions, empty sessions, connection validation, and the menu panel. PNG
 attachments are retained in the Xcode test result for visual review.
+Populated Sessions also renders long titles and URLs at the minimum window size;
+split-view columns must remain inside the rendered viewport.
 
 Run from the repository root with full Xcode selected per command:
 

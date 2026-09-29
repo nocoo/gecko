@@ -30,7 +30,8 @@ final class NativeLayoutTests: XCTestCase {
             try await capture("tracking-\(scheme)", scheme: scheme) {
                 workspace(.tracking) { tracking(active: true, granted: true) }
             }
-            try await capture("permissions-compact-\(scheme)", scheme: scheme, width: 880, height: 620) {
+            try await capture("permissions-compact-\(scheme)", scheme: scheme,
+                              width: GeckoTheme.minimumWidth, height: GeckoTheme.minimumHeight) {
                 workspace(.tracking, isTracking: false) { tracking(active: false, granted: false) }
             }
             try await capture("sessions-\(scheme)", scheme: scheme) {
@@ -39,7 +40,8 @@ final class NativeLayoutTests: XCTestCase {
             try await capture("settings-\(scheme)", scheme: scheme) {
                 workspace(.settings) { SettingsView(viewModel: settings) }
             }
-            try await capture("settings-compact-\(scheme)", scheme: scheme, width: 880, height: 620) {
+            try await capture("settings-compact-\(scheme)", scheme: scheme,
+                              width: GeckoTheme.minimumWidth, height: GeckoTheme.minimumHeight) {
                 workspace(.settings) { SettingsView(viewModel: settings) }
             }
             try await capture("about-\(scheme)", scheme: scheme) {
@@ -56,7 +58,8 @@ final class NativeLayoutTests: XCTestCase {
 
     func testEmptySessionsAndConnectionValidation() async throws {
         let sessions = SessionListViewModel(db: try DatabaseManager.makeInMemory())
-        try await capture("empty-sessions", scheme: .light, width: 880, height: 620) {
+        try await capture("empty-sessions", scheme: .light,
+                          width: GeckoTheme.minimumWidth, height: GeckoTheme.minimumHeight) {
             workspace(.sessions) { SessionListView(viewModel: sessions) }
         }
         let suite = "ai.hexly.gecko.layout-tests.\(UUID().uuidString)"
@@ -70,6 +73,23 @@ final class NativeLayoutTests: XCTestCase {
             SettingsSyncView(viewModel: settings).padding(24).background(GeckoTheme.canvas)
         }
         XCTAssertNotNil(settings.syncUrlValidationError)
+    }
+
+    func testSessionsAtMinimumWindowSize() async throws {
+        let database = try DatabaseManager.makeInMemory()
+        var session = Self.session
+        session.windowTitle = String(repeating: "A long window title with multiple words — ", count: 8)
+        session.url = "https://example.invalid/" + String(repeating: "long-path-segment/", count: 20)
+        try database.insert(session)
+        let sessions = SessionListViewModel(db: database)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(sessions.sessionCount, 1)
+        for scheme in [ColorScheme.light, .dark] {
+            try await capture("sessions-compact-\(scheme)", scheme: scheme,
+                              width: GeckoTheme.minimumWidth, height: GeckoTheme.minimumHeight) {
+                workspace(.sessions) { SessionListView(viewModel: sessions) }
+            }
+        }
     }
 
     private func workspace<Content: View>(
@@ -88,7 +108,8 @@ final class NativeLayoutTests: XCTestCase {
     }
 
     private func capture<Content: View>(
-        _ name: String, scheme: ColorScheme, width: CGFloat = 1080, height: CGFloat = 740,
+        _ name: String, scheme: ColorScheme,
+        width: CGFloat = GeckoTheme.defaultWidth, height: CGFloat = GeckoTheme.defaultHeight,
         @ViewBuilder content: () -> Content
     ) async throws {
         let root = content().environment(\.colorScheme, scheme).environment(\.controlActiveState, .active)
@@ -109,6 +130,7 @@ final class NativeLayoutTests: XCTestCase {
         host.layoutSubtreeIfNeeded()
         XCTAssertEqual(host.bounds.width, width, accuracy: 1, name)
         XCTAssertEqual(host.bounds.height, height, accuracy: 1, name)
+        verifySplitViews(host, in: host)
         let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
         host.cacheDisplay(in: host.bounds, to: bitmap)
         let png = try XCTUnwrap(bitmap.representation(using: .png, properties: [:]))
@@ -117,6 +139,18 @@ final class NativeLayoutTests: XCTestCase {
         attachment.name = name
         attachment.lifetime = .keepAlways
         add(attachment)
+    }
+
+    private func verifySplitViews(_ view: NSView, in host: NSView) {
+        if let split = view as? NSSplitView {
+            for column in split.arrangedSubviews where !column.isHidden {
+                let frame = column.convert(column.bounds, to: host)
+                XCTAssertGreaterThan(frame.width, 0)
+                XCTAssertGreaterThanOrEqual(frame.minX, -1)
+                XCTAssertLessThanOrEqual(frame.maxX, host.bounds.maxX + 1)
+            }
+        }
+        for child in view.subviews { verifySplitViews(child, in: host) }
     }
 
     private static var session: FocusSession {

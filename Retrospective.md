@@ -107,3 +107,22 @@ content sizing shrank the menu and connection fixtures. The renderer now disable
 automatic host sizing and gives the content a flexible test viewport. Inspect
 both appearances and compact states, and fix the rendering assumptions instead
 of weakening size assertions.
+
+## 2026-09-29 — Verify populated sessions at the minimum window size
+
+The workspace review covered empty Sessions at compact size and populated
+Sessions only at the default size. Long titles and URLs in the nested split view
+could push columns outside the 880-point viewport; a new regression fixture
+reproduced columns starting at -44.5 and ending at 924.5. Checking only the root
+hosting view's dimensions had missed the overflow.
+
+The window now defaults to 1200 × 780, enforces a 1040 × 680 content minimum,
+and limits the session list to 280–340 points. Layout tests check split-column
+bounds and render populated compact Sessions in both appearances. Sidebar
+selection preserves font weight and indicator space to avoid label movement;
+the redundant central toolbar badge was removed.
+
+The first standalone SwiftLint invocation also omitted the per-command Xcode
+override and crashed while locating SourceKit. Re-running with
+`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` passed. Apply that
+override to SwiftLint as well as Xcode tools when Command Line Tools is selected.
