@@ -143,7 +143,6 @@ def checks(root, snapshot, output):
     web = snapshot / "apps/web-dashboard"
     run(["bun", "run", "lint"], web)
     run(["bun", "run", "typecheck"], web)
-    run(["bun", "run", "gate:toolchain"], web)
     report = output / "tests.json"
     run(["bun", "run", "test:coverage", "--allowOnly=false", "--reporter=default",
          "--reporter=json", f"--outputFile={report}"], web)

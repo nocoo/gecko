@@ -126,3 +126,14 @@ The first standalone SwiftLint invocation also omitted the per-command Xcode
 override and crashed while locating SourceKit. Re-running with
 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` passed. Apply that
 override to SwiftLint as well as Xcode tools when Command Line Tools is selected.
+
+## 2026-09-29 — Preserve retained resolutions during dependency cleanup
+
+Removing direct AI provider declarations exposed older transitive resolutions
+when Bun regenerated the lockfile offline. The providers are still used through
+`@nocoo/next-ai`, so deleting duplicate declarations must not downgrade their
+installed versions. Restore the existing package records and integrity values,
+then verify a frozen install and compare the complete resolved package set.
+Registry-specific tarball URLs must also be removed from regenerated lockfiles
+before committing. Keep cleanup separate from upgrades so each change has its
+own verification evidence.

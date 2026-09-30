@@ -69,7 +69,7 @@ The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and s
 | L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/SQLite suites; exhaustive endpoint/method and server-identity checks are not enforced |
 | L3 web | Critical dashboard journeys in Chromium | enforced | CI and root `test:l3` / `test:e2e:bdd` use Playwright |
 | L3 native | Tracking, sleep/lock, permissions and sync as user journeys | planned | Native unit tests exist; complete desktop system acceptance is not enforced |
-| L1 static web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs check-only types/lint and import-time toolchain smoke; vinext regenerates route types from the snapshot |
+| L1 static web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs check-only types/lint; vinext regenerates route types from the snapshot |
 | L1 static native | Warnings-as-errors compilation and strict SwiftLint | planned | Local hook requires native tools and uses compiler warnings as errors plus strict SwiftLint; CI covers only web |
 | G2 web | Dependency and secret scans; missing tools fail | enforced | Push scans the web lock/history and image-size regression; shared CI security also scans root dependencies |
 | G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |

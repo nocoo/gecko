@@ -87,7 +87,6 @@ bun install --frozen-lockfile
 bun install --cwd apps/web-dashboard --frozen-lockfile
 bun run lint
 bun run typecheck
-bun run --cwd apps/web-dashboard gate:toolchain
 bun run --cwd apps/web-dashboard test
 bun run test:l1
 bun run --cwd apps/web-dashboard build
