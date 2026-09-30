@@ -137,3 +137,16 @@ then verify a frozen install and compare the complete resolved package set.
 Registry-specific tarball URLs must also be removed from regenerated lockfiles
 before committing. Keep cleanup separate from upgrades so each change has its
 own verification evidence.
+
+## 2026-09-30 — Bound dependency resolution and smoke assertions
+
+Deleting provider records before an online Bun install caused unrelated
+transitive packages, including Zod, to be re-resolved. Keep the generated AI
+records and integrity values, restore unrelated resolutions, then verify a
+frozen install before testing or committing the scoped upgrade.
+
+The temporary production smoke initially assumed case-sensitive header names,
+401 responses before the authentication proxy, and a nonredirecting `/daily`
+route. Read the proxy and route contracts first: headers are case-insensitive,
+unauthenticated requests redirect to login, and Daily Review redirects to a dated
+page. Correct fixture assertions before classifying failures as regressions.
