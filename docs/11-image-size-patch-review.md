@@ -28,3 +28,24 @@
 [安全检查入口](../apps/web-dashboard/scripts/gate-security.ts)当时先执行这组现有回归测试，补丁行为不通过则立即失败；随后仍运行完整 OSV 与 Gitleaks 检查。两个已有例外在上述复核后限期续至 **2026-10-08**，其他依赖和公告照常检查。
 
 到期前重新查询上游并复测。上游发布适用的修复版本后，优先升级依赖，移除补丁和相应扫描例外，再运行正常检查。若回归测试失败，先修复安装或补丁，不延长例外。
+
+## 2026-09-30: defer the vinext 1.0.0 upgrade
+
+The published `vinext@1.0.0` tarball embeds `image-size@2.0.2` under
+`dist/deps/.pnpm/`. Its metadata builder and Worker image-import plugin import
+that embedded file directly, so the existing `image-size@2.0.4` override cannot
+replace it. The lockfile would no longer expose this parser to OSV scanning.
+
+The archive SHA-256 is
+`22c170e79cb964159c803c7c850bbd8b40b3a10ae125c718f26d8b8dda7e8e80`;
+its SHA-512 matched the Tencent mirror's package integrity metadata. The existing
+PNG fixture returned 1×1 dimensions. Each existing malformed ICNS, HEIF and JXL
+fixture exhausted a disposable Node child's 64 MB heap, with a two-second
+parent timeout. The embedded loops still advance by unchecked zero lengths.
+This establishes a parser regression, not remote exploitability in Gecko.
+
+Keep `vinext@1.0.0-beta.0` and the released parser override. The security suite now
+also exercises vinext's actual metadata-generation entrypoint with these four
+fixtures, alongside the existing CJS/ESM public and direct parser checks. A
+future upgrade must pass this consumer-level check; a clean dependency scan
+alone is insufficient when a package embeds dependencies.

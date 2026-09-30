@@ -1,5 +1,7 @@
 import { execFile } from "node:child_process";
-import { resolve } from "node:path";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { promisify } from "node:util";
 import { describe, expect, test } from "vitest";
 
@@ -117,4 +119,52 @@ describe("image-size security regression", () => {
       expect(result.directEntry).toEqual(EXPECTED_RESULTS[format]);
     },
   );
+
+  test.each(FORMATS)("%s terminates through vinext metadata generation", async (format) => {
+    const directory = await mkdtemp(join(tmpdir(), "gecko-vinext-image-"));
+    try {
+      const script = `
+import { writeFileSync } from "node:fs";
+const { createMetadataRouteEntryData } = await import(
+  new URL("./server/metadata-route-build-data.js", import.meta.resolve("vinext"))
+);
+${INPUT_BUILDERS[format]}
+writeFileSync(process.argv[1], input);
+try {
+  const entry = createMetadataRouteEntryData({
+    filePath: process.argv[1], type: "icon", isDynamic: false,
+    routePrefix: "", servedUrl: "/icon.png", contentType: "image/png",
+  });
+  console.log(JSON.stringify({ ok: true, sizes: entry.headData.sizes }));
+} catch (error) {
+  console.log(JSON.stringify({ ok: false, error: String(error) }));
+}
+`;
+      const { stdout, stderr } = await execFileAsync(
+        process.execPath,
+        [
+          "--max-old-space-size=64",
+          "--input-type=module",
+          "-e",
+          script,
+          join(directory, "icon.png"),
+        ],
+        {
+          cwd: resolve(__dirname, "../.."),
+          timeout: CHILD_TIMEOUT_MS,
+          killSignal: "SIGKILL",
+        },
+      );
+      expect(stderr).toBe("");
+      const result = JSON.parse(stdout);
+      if (format === "PNG") {
+        expect(result).toEqual({ ok: true, sizes: "1x1" });
+      } else {
+        expect(result.ok).toBe(false);
+        expect(result.error).toContain(`Invalid ${format}`);
+      }
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  });
 });
