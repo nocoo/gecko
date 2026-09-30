@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.13.0] - 2026-09-30
+
+### Added
+- Redesign the native macOS workspace with persistent navigation, shared tracking controls, session details, and reorganized settings.
+- Add Hexly project links and accessible header tooltips to the web dashboard.
+- Add native layout regression tests for light and dark appearances, compact windows, long session content, and the menu-bar panel.
+
+### Fixed
+- Enforce native window minimum dimensions and constrain session columns to prevent overflow and unstable sidebar selection.
+- Preserve menu-bar application behavior while refreshing the application icon and About artwork.
+- Replace the image-size source patch with the released 2.0.4 parser fix and remove obsolete security exceptions.
+- Update vulnerable transitive dependencies and keep scheduler unit tests offline.
+
+### Changed
+- Enforce isolated, staged-snapshot L1 commit checks with strict lint, type checks, web coverage, and native tests.
+- Remove unused web dependencies, redundant package hooks, and the obsolete toolchain smoke script.
+- Upgrade AI SDK packages, Next, Sharp, Vite, Vitest, Lucide, and Basalt while preserving the Node production runtime.
+
+### Security
+- Exercise vinext's actual metadata-generation entrypoint against malformed ICNS, HEIF, and JXL images.
+- Defer vinext 1.0.0 because its embedded image-size 2.0.2 parser fails regression checks; retain 1.0.0-beta.0 with the fixed parser override.
+
+### Documentation
+- Normalize repository instructions and document the native workspace, Vitest 5 migration, and image-parser upgrade evidence.
+
 ## [1.12.1] - 2026-09-09
 
 ### Added
