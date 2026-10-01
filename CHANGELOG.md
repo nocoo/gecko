@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.13.1] - 2026-10-01
+
+### Security
+- Update Next.js from 16.3.7 to 16.3.8 with upstream security fixes.
+
+### Maintenance
+- Update Biome from 2.5.14 to 2.5.15 and synchronize its configuration schema.
+- Update Vitest and V8 coverage from 5.0.2 to 5.0.3.
+- Update react-day-picker from 10.0.1 to 10.0.2 for calendar focus and locale-loading fixes.
+- Update AI SDK from 7.0.122 to 7.0.126, OpenAI provider to 4.0.83, Anthropic provider to 4.0.71, and their shared provider packages.
+
 ## [1.13.0] - 2026-09-30
 
 ### Added
