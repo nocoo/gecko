@@ -47,7 +47,7 @@
   "dependencies": {
     "@nocoo/basalt": "2.1.8",
     "@nocoo/next-ai": "^0.4.0",
-    "ai": "7.0.122",
+    "ai": "7.0.126",
     "clsx": "^2.1.1",
     "lucide-react": "1.49.0",
     "next": "16.3.8",
@@ -63,7 +63,7 @@
     "vinext": "1.0.0-beta.0"
   },
   "overrides": {
-    "@ai-sdk/provider-utils": "5.0.51",
+    "@ai-sdk/provider-utils": "5.0.53",
     "image-size": "2.0.4",
     "baseline-browser-mapping": "2.11.26",
     "browserslist": "4.29.3",

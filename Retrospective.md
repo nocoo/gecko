@@ -150,3 +150,11 @@ The temporary production smoke initially assumed case-sensitive header names,
 route. Read the proxy and route contracts first: headers are case-insensitive,
 unauthenticated requests redirect to login, and Daily Review redirects to a dated
 page. Correct fixture assertions before classifying failures as regressions.
+
+## 2026-10-01 — Run scoped Bun updates from the package directory
+
+Passing a relative `--cwd` to `bun update` failed with ENOENT even though the
+same option worked for `bun add`. Run updates with the process working directory
+set to the package instead. Named updates also support transitive dependencies,
+so provider upgrades need neither temporary direct dependencies nor deleted
+lockfile records. Compare the resolved package diff before committing.
