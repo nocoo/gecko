@@ -158,3 +158,17 @@ same option worked for `bun add`. Run updates with the process working directory
 set to the package instead. Named updates also support transitive dependencies,
 so provider upgrades need neither temporary direct dependencies nor deleted
 lockfile records. Compare the resolved package diff before committing.
+
+## 2026-10-01 — Scope release proxies and wait for DLP scans
+
+The release push passed its local gates but GitHub's direct connection timed
+out. Retrying with HTTP_PROXY and HTTPS_PROXY also proxied the pre-push tests'
+localhost requests, producing 502 responses. Cancel the owned failed run and
+use `git -c http.proxy=http://127.0.0.1:7890 push` so only Git uses the proxy.
+The complete pre-push gate passed again before publication.
+
+The DMG formatter completed, but Defender DLP temporarily blocked unmounting
+its writable image. Do not terminate security processes or force unmount.
+After the scan released the volume, normal `diskutil eject` succeeded; convert
+the retained image to UDZO, verify its checksum, and compare the downloaded
+release asset with the local artifact before claiming publication success.
