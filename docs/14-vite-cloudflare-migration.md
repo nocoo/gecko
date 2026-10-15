@@ -22,7 +22,7 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 
 | 来源 | 已核对内容 / 证据限制 |
 |---|---|
-| Gecko 独立复审基线 `797077d`（应用代码与 `4493bed` 一致） | `apps/web-dashboard/package.json`：vinext `1.0.0-beta.0`、Vite `8.3.1`、next-ai 实装 `0.4.0`；未安装 Cloudflare Vite 插件 |
+| Gecko 独立复审基线 `d9d4018`（含 `beca53a`；应用代码与 `4493bed` 一致） | `apps/web-dashboard/package.json`：vinext `1.0.0-beta.0`、Vite `8.3.1`、next-ai 实装 `0.4.0`；未安装 Cloudflare Vite 插件 |
 | 已安装 `apps/web-dashboard/node_modules/vinext/dist/init-cloudflare.js` | 初始化器创建/更新 **`wrangler.jsonc`**，App Router 插件设置 `name: "rsc", childEnvironments: ["ssr"]`；不能声称这个版本生成 typed config |
 | 已安装 `vinext/package.json`、`dist/server/app-router-entry.js` / `.d.ts` | 导出 `vinext/server/app-router-entry`，默认对象有 `fetch(request, env, ctx)`；自定义入口应组合该对象，而非仅增加命名 `scheduled` 导出 |
 | [vinext 当前 Cloudflare 文档](https://vinext.dev/docs/deploying/cloudflare)（本轮读取） | 已描述 `cf`、插件 v2、`cloudflare.config.ts`、`@vinext/cloudflare deploy`、`.cloudflare/types`；**比当前安装包的初始化器新**，不能直接套到锁定版本 |
@@ -141,9 +141,15 @@ export default {
 
 `src/lib/auto-analyze.ts` 当前 `onTick()` 只启动分析 Promise，不等待分析与邮件完成。必须改为返回覆盖 **模型调用、结果写入、失败释放 claim、邮件发送** 的完整 Promise；仅把旧 `onTick()` 包进 `ctx.waitUntil()` 不够。Cron await 完整任务；手工分析邮件、API key `last_used` 更新也改为明确 await（可捕获非关键失败），不留下脱离请求生命周期的 fire-and-forget。Cron 调服务层，不依赖 HTTP session / `next/headers` 请求上下文，也不经自身 HTTP 路由绕一圈。
 
-保留用户时区、“今天有会话、昨天尚无总结”规则。`src/lib/daily-summary-repo.ts` 的 D1 原子 claim 继续阻止并发重复调用；现有内存 Map 不是跨 isolate 锁。使用已有 claim 行 ID 和 `updated_at` 实现过期重领、所有权条件更新/释放，防止 isolate 终止后永久卡住或旧任务删除新 claim；手工分析也参与同一互斥规则，`force` 不覆盖运行中的任务。模型与邮件须有有界超时；多用户并发、Cron 执行限额及崩溃恢复纳入测试。不能承诺崩溃窗口下付费调用严格 exactly-once。
+保留用户时区、“今天有会话、昨天尚无总结”规则。`src/lib/daily-summary-repo.ts` 的 D1 原子 claim 继续阻止并发重复调用；现有内存 Map 不是跨 isolate 锁。当前 `claimForAnalysis` 对任何已有总结都返回 false，不能直接接到支持 `force=true` 的手工接口；也不能把旧结果的 `ai_model` 改成 `__analyzing__` 后沿用失败 DELETE，否则会丢失上一份有效分析。改为在同一总结行中分离结果与租约：新增 `migrations/0009_add_analysis_claim.sql`，增加可空的 `claim_token TEXT` / `claim_expires_at INTEGER`（Unix 秒），不再拿业务行 ID、`ai_model` 或结果更新时间充当锁。模型与邮件须有有界超时；租期覆盖已验证的模型/写入预算，以数据库当前时间判断过期，不使用可能延迟的 Cron scheduledTime 判断租约。多用户并发、Cron 执行限额及崩溃恢复纳入测试。不能承诺崩溃窗口下付费调用严格 exactly-once。
 
-`src/services/analyze-core.ts` 当前把 `upsertAiResult` 失败当作 non-fatal 并返回 `ok: true`；迁移时必须删除这一成功语义。只有持有当前 claim 且结果已持久化才算分析成功；重领时换用新的 claim ID，完成/释放都带所有权条件，旧任务迟到不能覆盖新结果或发送成功邮件。写库失败向上返回失败，手工接口给 JSON 5xx，Cron 记录失败并按所有权释放；释放也失败则靠过期恢复。邮件失败不撤销已落库的分析，也不因此再次付费调用模型。修改 `src/__tests__/services/analyze-core.test.ts` 中“cache upsert fails 仍成功”的测试，补写库失败、不发送成功邮件、旧 claim 迟到及邮件失败不重算的 L1/L2 证据。
+手工与 Cron 共享以下状态合同：
+
+- 普通手工请求已有有效结果时仍返回 `cached: true`，不领取租约、不调用模型；Cron 同样跳过。没有结果，或手工明确 `force=true` 时，才原子领取空闲/已过期租约并取得 token；非 force 的“仍无结果”条件须与领取一起原子核验，防止先查空、别人完成后又重算。并发申请只能一个成功。需要新分析但已有未过期租约时，手工返回 JSON 409，Cron 跳过；`force` 不抢占活任务。
+- 领取/重领只改租约，不清空或伪装 `ai_*` 结果字段。日览 GET、普通缓存响应及 summaries 日历徽标在重算中仍读取上一份完整结果。token 每次领取都更新；完成写入须匹配 `(user_id, date, claim_token)` 且租约未过期，原子替换全部结果字段并清空租约，检查受影响行数为 1；旧任务迟到不能覆盖新结果或发送成功邮件。
+- 模型、解析或写库失败只按 token 清空租约，不删除已有结果；初次分析失败允许保留无结果的空行，后续按“无有效结果”而非“无行”重试。释放也失败则靠过期恢复。重算失败、超时、isolate 中断均不破坏上一份有效分析及其 model/prompt/生成时间；邮件失败也不撤销已落库结果或触发再次付费调用。
+
+`src/services/analyze-core.ts` 当前把 `upsertAiResult` 失败当作 non-fatal 并返回 `ok: true`；迁移时必须删除这一成功语义。**新分析**只有上述条件写入成功才可报成功；写库失败向上返回失败，手工接口给 JSON 5xx，Cron 记录失败并按所有权释放。修改 `src/__tests__/services/analyze-core.test.ts` 中“cache upsert fails 仍成功”的测试，补普通缓存不付费、force 成功替换/失败保留、并发 409、过期重领、旧 token 完成/释放无效及邮件失败不重算的 L1/L2 证据；`src/__tests__/api/{daily-data,daily-summaries,daily-analyze-route}.test.ts` 和 `src/__tests__/e2e/daily-review.test.ts` 同时验证重算期间旧结果可读。
 
 ## 4. Access、人机边界与 NextAuth 清理
 
@@ -208,7 +214,9 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 `drizzle/0001_cloud_init.sql` 至 `0008_add_ai_prompt.sql` 原样移动到 `migrations/`，保留顺序与文件名。本地空库跑全部；现网可能是历史 `d1 execute --file` 手工执行，**账本可能为空且不等于 schema 为空**。`0002` / `0007` 重建表，`0008` ADD COLUMN 不能重复执行；只禁止重跑 `0001` 不够。
 
-远程首次迁移前，由授权实施者记录账号/库 ID、schema、索引、各表行数、迁移账本及可恢复备份点；把现网 schema 与本地完整迁移后的 schema 比对。仅对**已证明执行过**的文件登记所选工具的迁移账本，不能一律标记 0001–0008。若 schema 不符则停止并单独制定修复，不能靠再执行破坏性 SQL 试错。Wrangler/cf 的账本格式及相对文件名必须在本地副本演练；新增 `scripts/baseline-d1.ts` 默认只出检查报告，写入必须有显式目标和批准。日常 `scripts/deploy.ts` 仅允许在已确认基线后应用真正待执行的迁移。
+远程首次迁移前，由授权实施者记录账号/库 ID、schema、索引、各表行数、迁移账本及可恢复备份点；把现网 schema 与本地**历史 0001–0008** 重建的相应 schema 比对，不与已加新租约列的目标 schema 混淆。仅对**已证明执行过**的文件登记所选工具的迁移账本，不能一律标记 0001–0008，更不能把新 0009 登记成历史已执行。若 schema 不符则停止并单独制定修复，不能靠再执行破坏性 SQL 试错。Wrangler/cf 的账本格式及相对文件名必须在本地副本演练；新增 `scripts/baseline-d1.ts` 默认只出检查报告，写入必须有显式目标和批准。日常 `scripts/deploy.ts` 仅允许在已确认基线后应用真正待执行的迁移。
+
+0009 是新增前向迁移，不改写旧八份 SQL。它在第 10 节旧任务已静默后应用：添加租约列，并把旧 `ai_model='__analyzing__'` 且 `ai_result_json IS NULL` 的占位状态归一为无结果/无租约，保留行 ID 与其它业务值；`scripts/deploy.ts` 应用前若发现哨兵值却带结果的异常行则阻断并核查，不能猜原模型或清除结果。租约变更不增加含 `user_id` 的表，D3 仍映射下列 10 表。空库全量、历史库升级、异常行阻断、已登记 0009 不重跑及旧占位恢复均需本地 D1 验证。
 
 ### 5.3 D3：完整、可恢复的一次性映射
 
@@ -339,10 +347,10 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | `vite.config.ts`、选定的 `wrangler.jsonc` **或** `cloudflare.config.ts`、`worker-entry.ts`、`tsconfig.json`、`tsconfig.tools.json`（新增）、`vitest.config.ts`、`biome.json`、`package.json`、`bun.lock` | 单一 Workers target、入口/工具检查范围、类型、依赖与脚本；不留两套活跃配置 |
 | `src/lib/d1.ts`、`src/lib/sync-write.ts`（新增）、`src/app/api/sync/route.ts`、`src/app/api/sync/status/route.ts`、`src/app/api/live/route.ts` | binding、持久化 202、同步日志、健康检查 |
 | 第 4.3 节全部路径及 `src/app/api/**/route.ts` | Access、页面身份、退出、所有直接/间接 NextAuth 依赖 |
-| `src/lib/auto-analyze.ts`、`src/lib/daily-summary-repo.ts`、`src/services/analyze-core.ts`、`src/app/api/daily/[date]/analyze/route.ts`、`src/services/email-notification.ts` | Cron 完整 await、claim 所有权/过期恢复、手工分析互斥及邮件生命周期 |
+| `src/lib/auto-analyze.ts`、`src/lib/daily-summary-repo.ts`、`src/services/analyze-core.ts`、`src/app/api/daily/[date]/analyze/route.ts`、`src/app/api/daily/[date]/route.ts`、`src/app/api/daily/summaries/route.ts`、`src/services/email-notification.ts` | Cron 完整 await、独立租约/过期恢复、手工重算保留旧结果、读取合同及邮件生命周期 |
 | `src/lib/backy.ts`、`src/lib/backy-export.ts`、`src/lib/backy-push.ts`、`src/lib/backy-repo.ts` | 检查 workerd 能力与数据规模；环境标签/测试出站隔离；不强改按用户凭据存储 |
-| `drizzle/*.sql` → `migrations/*.sql`、`scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts`（新增） | 原样迁移 SQL、基线与 remap 演练、拒绝 local/test 的部署流程 |
-| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,settings-notifications}.test.ts`、`src/__tests__/services/analyze-core.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry 和 harness guards 测试 |
+| `drizzle/*.sql` → `migrations/*.sql`、`migrations/0009_add_analysis_claim.sql`（新增）、`scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts`（新增） | 原样保留历史 SQL、新增独立租约列、历史基线与目标 schema 分开演练、拒绝 local/test 的部署流程 |
+| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,daily-data,daily-summaries,settings-notifications}.test.ts`、`src/__tests__/services/analyze-core.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry 和 harness guards 测试 |
 | `Dockerfile`、`.dockerignore`、`src/lib/sync-queue.ts`、`src/instrumentation.ts`、`src/lib/hourly-scheduler.ts`、`src/__tests__/lib/hourly-scheduler.test.ts`、`scripts/init-local-db.ts` | 目标替代能力已可用后删除，不留空壳兼容 |
 | `.env.example`、`.env.e2e.example`、仓根 `.gitignore` | 去 OAuth/业务 CF tokens/真实模型 E2E 变量；只保留所选 Workers 的本地示例；忽略 `.wrangler` / `.cloudflare`、types、临时状态，不能把 secrets 加进 typed config |
 | 仓根 `package.json`、`bun.lock`（仅根依赖变化才改）、`scripts/pre-commit.py`、`scripts/test_pre_commit.py`、`.husky/pre-push`、`.github/workflows/ci.yml` | 入口、index-snapshot 生成类型/依赖隔离、L2/L3 与 CI；不降门槛、不绕 hooks、不顺手改 shared workflow pin |
@@ -353,7 +361,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 1. `docs: confirm worker migration prerequisites`\
    记录哥确认的 D3/D5、版本组合、实际配置/生成入口、隔离与 workerd 探针证据、资源/账号预检和停写方案。探针在隔离临时目录，不提前改生产或运行未审阅 init。先验证第 9 节中框架/API 可行性；完整 Gecko 回归在下一步，远程验收在第 10 节，不能把后续结果当作已具备。
 2. `feat: move dashboard runtime to workers`\
-   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期、出站适配和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
+   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
 3. `chore: add guarded d1 cutover tooling`\
    `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。
 4. `docs: record worker cutover evidence`\
@@ -372,7 +380,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | 版本分叉 | D5 确认；锁定 vinext/插件/CLI，证明 build 配置、类型、fetch/scheduled/assets 均正确。没有证据的 `--legacy-wrangler-cloudflare-init` 等参数不写成操作步骤 |
 | 大 POST / D1 配额 | 250/1000 条与长字段在本地生产 bundle 和经批准的生产 smoke 中持久化后 202；有效 Paid 配额、响应时限及安全重试证据。不用 400/413 报临时失败 |
 | 鉴权与身份 | D3 映射方案、10 表无冲突、旧 key 不变；Access 主/更具体应用的策略/audience/session 连续性、机器/Backy/健康路径及所有备用域负例验收 |
-| Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发 claim、isolate 中断后可恢复；写库失败不报成功/发邮件，旧 claim 不能覆盖新结果；本地假模型跑过 Gecko 自己的 server entry |
+| Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发租约、isolate 中断后可恢复；force 可重算且失败保留旧结果，写库失败不报成功/发邮件，旧 token 不能覆盖新结果；0009 升级/旧占位恢复与 Gecko 自己的假模型 server entry 通过 |
 | 切换静默 | 停旧入口后在途分析/HTTP/队列均已完成；新 Worker 在预备及 HTTP 阶段实际无 Cron，不能因发布最终配置提前启用；cf 若未证明移除语义则阻断 |
 | Backy / runtime | zlib/Buffer/multipart、全量导出内存/CPU、包体积/启动资源和出站超时通过；不能以 GeekHub 的成功代替 |
 | 测试工具链 | 入口/工具均在 tsc/coverage 范围，类型生成 runtime 隔离；同一 persist 的 CLI/Worker 往返，dotenv/remote 拒绝，run marker、独占端口、vinext 锁、退出清理和真实 bundle 测试通过 |
