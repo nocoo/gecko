@@ -152,7 +152,7 @@ Mac 测试需要完整 Xcode 和已生成的项目；测试无需签名的环境
 - [跟踪引擎架构](docs/06-energy-phase3-architecture.md)
 - [每日回顾](docs/07-daily-review.md)
 - [AI 集成](docs/10-next-ai-package.md)
-- [vinext 直接部署 Cloudflare，Google 迁 Access](docs/14-vite-cloudflare-migration.md)（设计审查修订；D1/D2 已定，D3/D5 待确认，尚未实施）
+- [vinext 直接部署 Cloudflare，Google 迁 Access](docs/14-vite-cloudflare-migration.md)（D1–D5 已确认；正在实施；生产 Worker 尚未创建）
 - [变更记录](CHANGELOG.md)
 
 设计文档保留了历史方案；当前运行方式和功能边界以本 README 与源码为准。
