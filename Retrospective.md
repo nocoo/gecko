@@ -172,3 +172,12 @@ its writable image. Do not terminate security processes or force unmount.
 After the scan released the volume, normal `diskutil eject` succeeded; convert
 the retained image to UDZO, verify its checksum, and compare the downloaded
 release asset with the local artifact before claiming publication success.
+
+## 2026-10-16 — 文档校验必须阻断提交
+
+本轮设计文档审查把 `git diff --check &&` 文档断言与后续提交写在同一 shell
+的不同命令段。Markdown 行尾空格使 diff 检查失败并跳过断言，但 shell 仍继续提交。
+正常 pre-commit 门通过，不代表这项额外文档校验已运行。随后单独执行断言、复读并
+修正文档，保留首个提交，不 amend。今后提交命令使用 `set -e` 或完整的 `&&`
+依赖链，全部前置校验成功后才 stage/commit；整文件替换也不在同一 patch 中对同一路径
+同时声明 delete/add。

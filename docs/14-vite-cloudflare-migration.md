@@ -1,9 +1,9 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：设计审查修订；D1 / D2 已确认，D3 / D5 待哥决策；尚未实施或完成 workerd 验收。  
-> **日期**：2026-10-16  
-> **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。  
-> **主路径**：vinext App Router + `@cloudflare/vite-plugin` + D1 binding + Access。  
+> **状态**：设计审查修订；D1 / D2 已确认，D3 / D5 待哥决策；尚未实施或完成 workerd 验收。\
+> **日期**：2026-10-16\
+> **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
+> **主路径**：vinext App Router + `@cloudflare/vite-plugin` + D1 binding + Access。\
 > **退出原则**：只有证明是 vinext 集成阻塞、且 Hono 能消除阻塞，才另审 Vite SPA + Hono 方案；不自动重写。
 
 Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本文描述迁移后的唯一运行路径，不保留 Node 服务端、D1 REST 或 NextAuth 兼容层。当前线上 Node 构建在切换验收前继续服务，不能为了接插件先破坏可运行版本。
@@ -87,6 +87,8 @@ export default defineConfig({
 
 保留现有 `@` alias，避免 TypeScript 7 路径加载回归。仅在 NextAuth / better-sqlite3 已退出服务端依赖图的同一可运行提交中，删除 `ssr.external` 中的 `@vercel/oidc`、`better-sqlite3`、`bindings`。不要执行会覆盖现有配置的初始化；临时目录审查生成物后再手工合并。安装锁定版本，不用未锁定的 `npx` 在发布时临时获取新工具。
 
+`package.json` / `bun.lock` 新增锁定的 `@cloudflare/vite-plugin` 和所选 CLI 开发依赖，`jose` 列为直接运行依赖，不能依靠将被删除的 NextAuth 间接提供。Worker 类型按所选工具生成，不盲目同时引入两代类型包。
+
 ### 3.2 两套配置只选一套
 
 | 用途 | Wrangler 候选（当前包有证据） | cf 候选（在线文档，有集成风险） |
@@ -104,6 +106,8 @@ export default defineConfig({
 字段依据：[cf typed config](https://developers.cloudflare.com/cf/projects/cloudflare-config/)、[cf agents](https://developers.cloudflare.com/cf/agents/)、[Vite plugin API](https://developers.cloudflare.com/workers/vite-plugin/reference/api/)、GeekHub 已安装 Wrangler schema。cf `d1 migrations apply <database>` 的 `<database>` 是 ID；其 `--local --persist-to --dir` 已由本机帮助确认，但它与所选插件的本地存储地址是否一致，仍须本地读写往返证明。不得凭相似命令名替换 Wrangler。
 
 三种资源模式显式分开：production 使用上述现有库和正式域；日常 local 使用独立本地 DB ID/persist、`ENVIRONMENT=local` / `RESOURCE_ENV=local`、无域名发布或 Cron；test 使用第 7 节的每轮资源。日常 `dev` 脚本必须显式选择本地配置，不能依赖 production 配置的隐式 Miniflare 模拟。Wrangler 环境的 vars/bindings 不假定继承，cf 按 mode 返回完整配置；部署脚本检查最终配置而不只检查模式名字。`compatibility_date` / `compatibilityDate` 固定为通过探针验收的日期，不在每次发布时自动漂移。
+
+新增本地 `db:local` 脚本，明确 local 配置/DB ID/persist 后只应用未执行 migrations，供 7018 首次启动准备 schema；不删除已有日常库，不使用测试 reset 脚本，不从本地回退到远程库。
 
 两种 assets 配置都必须使用此模式列表（仅键名不同）：
 
@@ -153,6 +157,8 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 [Access 路径有继承且最具体应用优先](https://developers.cloudflare.com/cloudflare-one/access-controls/policies/app-paths/)，并不是 HTTP method 过滤器。上表方法由 Worker 控制；不得声称配置了“GET-only Access bypass”。为 `/api/sync/status` 的更具体应用配置相同人的 Allow 策略，并将其 audience 纳入受信任 **路径限定** 列表（或在平台支持时复用同一应用 destinations，先验证）。不能全局接受别的应用 audience。`/api/backy/pull-key`、其它 `/api/backy/*`、`/api/keys`、`/api/me` 都是人的接口，不加通配 bypass；验证相似前缀、尾斜线及编码路径不会扩大授权。
 
+这是必须完成的 Access 集成风险：不同应用可能具有不同 audience/session，不能仅添加第二个 AUD 就声称 dashboard 的 fetch 可用。实施优先验证主应用的额外精确 destination 能覆盖 status 且保持同一会话；若采用独立应用，则须验证同域 cookie、SSO 与 AJAX 不被重定向成登录 HTML，并在页面进入时完成必要的浏览器认证。拿不到这些证据就阻断上线，不把 status 改成公开接口，也不要求 Mac 改协议。
+
 先部署 Worker 内鉴权，再开放机器路径 bypass。借用 Giraffe 的专用路径应用模式，不改动全局共享 bypass destinations；关掉 workers.dev 和 version preview URL，不能留下绕 Access 的备用入口。
 
 ### 4.2 应用内身份
@@ -163,7 +169,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 人的写操作检查固定生产 Origin `https://gecko.hexly.ai`（本地为被核准的当前测试/Caddy origin）及 `Sec-Fetch-Site`；跨站或缺少要求的 Origin 拒绝。机器接口不套用浏览器 Origin 要求，凭各自 key 授权。私有 HTML/RSC、`/api/me` 和用户 API 使用 `Cache-Control: no-store`，不缓存身份或把用户态存在模块全局。
 
-本地身份仅在**配置选择的本地运行模式**、`ENVIRONMENT=local`、`RESOURCE_ENV=local|test`、本地 DB 绑定和回环监听同时成立时启用；请求中的 Host/header 不能开启该模式。回环 URL 可用于测试；Caddy `gecko.dev.hexly.ai` 须由本机代理覆写可信 loopback peer header，并清理来路伪造值。没有该配置证据时拒绝短路，不放宽检查。本轮不修改 Caddy/证书。生产部署脚本拒绝上述本地变量、身份和资源。测试身份再要求 `_test_marker` 的 env 与本轮 run ID 匹配；测试中机器鉴权**不短路**，使用 fixture 创建并散列的真实格式 key。
+本地身份仅在**配置选择的本地运行模式**、`ENVIRONMENT=local`、`RESOURCE_ENV=local|test`、本地 DB 绑定和回环监听同时成立时启用；test 还必须显式选择第 7.2 节的 stub 模式，jwt 模式永不短路。请求中的 Host/header 不能开启该模式。回环 URL 可用于测试；Caddy `gecko.dev.hexly.ai` 须由本机代理覆写可信 loopback peer header，并清理来路伪造值。没有该配置证据时拒绝短路，不放宽检查。本轮不修改 Caddy/证书。生产部署脚本拒绝上述本地变量、身份和资源。测试身份再要求 `_test_marker` 的 env 与本轮 run ID 匹配；测试中机器鉴权**不短路**，使用 fixture 创建并散列的真实格式 key。
 
 `GET /api/me` 返回最小 `{ user: { id, email, name } }`，不返回 JWT、模型密钥或 webhook key；本轮测试身份信息只在受限 test 模式额外提供。UI logout 使用 Access 的 `/cdn-cgi/access/logout`，本地不显示虚假退出流程；缺 avatar 时沿用现有头像占位。
 
@@ -189,6 +195,8 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 ### 5.1 单一数据库访问
 
 `src/lib/d1.ts` 在 Worker 中 `import { env } from "cloudflare:workers"`，读取 `env.DB`。保留调用方需要的 `query<T>` / `execute` 返回值语义，内部改用 prepare/bind/all/run；同步批写用 `DB.batch`。删 `D1Config`、REST 重试、`getD1Config` / `isLocalMode` / `closeLocal` 和 `D1_LOCAL_PATH`，不是继续保留双驱动。`better-sqlite3` 和 `@types/better-sqlite3` 一起删除，更新 Web lockfile。
+
+同时删除业务代码/示例中的 `CF_ACCOUNT_ID`、`CF_API_TOKEN`、`CF_D1_DATABASE_ID`。部署 CLI 所需的 `CLOUDFLARE_ACCOUNT_ID` / `CLOUDFLARE_API_TOKEN` 属于运维环境，不进入 Worker 业务绑定或测试子进程；两者不能混为一谈。
 
 `cloudflare:workers` 是 workerd 内置模块，不是 npm 包。L1 的独立 `vitest.config.ts` 不加载 Cloudflare Vite 插件：给此 specifier 建测试专用 alias/mock，或在已存在的依赖注入边界注入 D1 假对象；静态解析也必须成功。`src/__tests__/lib/d1.test.ts` 验新 adapter 的 results/meta/changes/error，不再 mock REST fetch。不仅 mock 掉整个 d1.ts 后宣称 adapter 已覆盖。
 
@@ -226,11 +234,11 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 ### 5.5 出站、字体与健康
 
-`src/services/email-notification.ts` 使用 Worker 的 Dove secrets/vars；`NEXTAUTH_URL` 改成 `DASHBOARD_URL=https://gecko.hexly.ai`。`src/lib/backy-repo.ts` 当前把用户 Backy URL/API key/pull key 放在 `settings`，继续保留按用户配置，**不能全部搬成全局 Worker secrets**。AI 用户密钥同样仍在 D1，不能进入客户端 bundle 或日志。
+`src/services/email-notification.ts` 从 Worker bindings 读取 `DOVE_WEBHOOK_URL` / `DOVE_WEBHOOK_TOKEN` secrets 和 `DOVE_TEMPLATE_SLUG` var；`NEXTAUTH_URL` 改成 `DASHBOARD_URL=https://gecko.hexly.ai`。`src/lib/backy-repo.ts` 当前把用户 Backy URL/API key/pull key 放在 `settings`，继续保留按用户配置，**不能全部搬成全局 Worker secrets**。AI 用户密钥同样仍在 D1，不能进入客户端 bundle 或日志。
 
 `src/lib/backy.ts` 的 `node:zlib` + Buffer、`src/lib/backy-export.ts` 全量导出和 `src/lib/backy-push.ts` multipart 上传必须在 workerd 实测，记录代表性数据量下内存/CPU/子请求/超时，生产与测试上传标签改读明确 `ENVIRONMENT` / `RESOURCE_ENV`，不误把 test 标成 prod。`nodejs_compat` 不是所有 Node 行为都兼容的证明。
 
-`@nocoo/next-ai/react` 用于 UI，`@nocoo/next-ai/server` 用于 Route Handler/服务层；当前已是此分层，不引入 `server-next`。GeekHub `src/worker/ai.ts` 提供 Worker 集成参考，但 `patches/@nocoo%2Fnext-ai@0.4.0.patch` **只改 React 控件为 Basalt**，不能称其修复服务端兼容。以本地假模型验证 Gecko 自己的 provider、鉴权、超时、错误解析和 Cron 路径，禁止自动测试调用真实付费模型。
+`src/components/ai-settings.tsx` 当前使用自有控件和 `@nocoo/next-ai` 根入口的纯配置/类型导出，予以保留；并没有使用该包的 `/react` 控件。Route Handler/服务层继续用 `@nocoo/next-ai/server`，不引入 `server-next`，浏览器图不得导入 `/server`。GeekHub `src/worker/ai.ts` 提供 Worker 集成参考，但 `patches/@nocoo%2Fnext-ai@0.4.0.patch` **只改 React 控件为 Basalt**，不能称其修复服务端兼容。以本地假模型验证 Gecko 自己的 provider、鉴权、超时、错误解析和 Cron 路径，禁止自动测试调用真实付费模型。
 
 `next/font/google` 已安装实现支持生产构建下载并自托管字体，开发/无法静态解析时才可能 CDN 回退；当前 layout 通过默认导出别名取字体，最终走哪条路径以实际 build/network 为准。不宣称“生产始终 CDN”；本地字体缓存/离线测试策略和图片资源均需构建验收。
 
@@ -304,8 +312,8 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 4. Wrangler 候选显式传测试 `configPath`，插件 `persistState: { path: state }`、`remoteBindings: false`、`inspectorPort: false`，测试 vars 在 Worker 配置中写入 `ENVIRONMENT=local` / `RESOURCE_ENV=test`；不能只设置 shell `RESOURCE_ENV` 并假定变成 binding。cf/v2 的对应能力先由锁定类型和本地读写证明，不能硬套 v1 `config` 回调。
 5. 使用选定 CLI 的 **local-only** SQL/migration 命令，明确同一个 config、测试 DB ID 和 persist path；用“CLI 写标记 → Worker 读到 → Worker 写 fixture → CLI 读到”证明同一数据库。不直接操纵 Miniflare 私有 SQLite 文件，不接远程 `-test` 库。
 6. 空库执行全部 migrations，创建 `_test_marker(key, value)`，至少含 `env=test`、`run_id=<本轮>`；fixture/reset 前验证 marker。用测试专用散列 key 与两个用户创建数据。假 JWKS/模型/Dove/Backy 仅绑定本轮 loopback，阻止外部网络副作用；付费服务不作测试依赖。
-7. 启动真实 vinext + CF 插件（可用 `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port <lane>`），cache/报告全部在本轮目录。ready 同时要求进程存活、`/api/live` 的预期版本/存储、受限 test 身份返回的 run ID 与数据库 marker 一致；任何旧服务的 200 都不能算就绪。
-8. 单一 harness 启动 L2 或 Playwright；`playwright.config.ts` 不再自行启动/复用 server，baseURL 来自本轮环境。Access helper 的测试签名/JWKS 替换只在已验证的 test 资源模式生效，生产忽略并拒绝测试身份配置；覆盖缺 JWT、伪造、过期、错 iss/aud、跨站、冒充本地以及两个用户的数据边界。
+7. 启动真实 vinext + CF 插件（可用 `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port <lane>`），cache/报告全部在本轮目录。ready 同时要求进程存活、`/api/live` 的预期版本/存储、受限 test 身份返回的 run ID 与数据库 marker 一致；JWT 测试模式的 ready 请求必须携带有效 fixture JWT。任何旧服务的 200 都不能算就绪。
+8. 单一 harness 启动 L2 或 Playwright；`playwright.config.ts` 不再自行启动/复用 server，baseURL 来自本轮环境。新增项目自有测试变量 `TEST_AUTH_MODE=stub|jwt`：仅在本地 test 绑定/marker 已验证时读取；生产/日常配置禁止它。L3 可用固定 stub；L2 必须有独立启动的 jwt 模式，**完全禁用本地身份短路**，使用本轮签名/JWKS（只换信任材料，执行同一验签逻辑）覆盖缺 JWT、伪造、过期、错 iss/aud、跨站、冒充本地和两个用户的数据边界。生产忽略测试 JWKS 并拒绝测试模式配置；机器 key 在两模式都照常验证。
 9. Cron 通过所选插件支持的本地 scheduled 触发接口测试（当前官方说明 `/cdn-cgi/local/scheduled`；必须在锁定版本验证）；证据是完整任务已落库/失败已释放 claim，而非 HTTP 触发返回 200。独立完成一次生产 build/preview 测试，防止只验证 dev 虚拟入口。
 10. 成功、失败、超时、SIGINT/SIGTERM 都清理本轮拥有的 server、测试 runner、stub 及后代进程组，等待退出再验证 marker 后删除数据。初始化未完成时只删除由本轮创建且验证所有权的目录；保留可定位的失败报告，不触碰别人的目录或进程。
 
@@ -331,15 +339,15 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 ### 8.2 可运行的提交边界
 
-1. `docs: confirm worker migration prerequisites`  
+1. `docs: confirm worker migration prerequisites`\
    记录哥确认的 D3/D5、版本组合、实际配置/生成入口、隔离与 workerd 探针证据、资源/账号预检和停写方案。探针在隔离临时目录，不提前改生产或运行未审阅 init。先验证第 9 节中框架/API 可行性；完整 Gecko 回归在下一步，远程验收在第 10 节，不能把后续结果当作已具备。
-2. `feat: move dashboard runtime to workers`  
+2. `feat: move dashboard runtime to workers`\
    **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期、出站适配和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
-3. `chore: add guarded d1 cutover tooling`  
+3. `chore: add guarded d1 cutover tooling`\
    `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；未授权不操作线上。
-4. `docs: record worker cutover evidence`  
+4. `docs: record worker cutover evidence`\
    完成第 10 节后更新仓根 AGENTS/README、英文指南、索引及相关编号文档，记录实际部署 revision/版本、身份映射校验和健康/同步/Cron 证据。不能仅凭 push 或 header 声称已部署。
-5. `chore: remove completed cutover tooling`  
+5. `chore: remove completed cutover tooling`\
    迁移和恢复验证完成后删一次性 baseline/remap 脚本与其专用 fixture，保留正常 migrations/deploy；旧托管、OAuth 凭据与旧运维资源按批准范围退役，历史事故与发布记录不删。
 
 每次具体 stage 文件，Conventional Commit 全小写、祈使句、≤50 字符；禁止 `--no-verify`。正式版本仍由仓根 `scripts/release.ts` / `bun run release` 对齐 Web/Mac X.Y.Z、tag、Release 与 DMG，Worker 版本元数据记录同一版本及 Git SHA；不另造独立“Worker tag”体系。
@@ -352,7 +360,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 |---|---|
 | 版本分叉 | D5 确认；锁定 vinext/插件/CLI，证明 build 配置、类型、fetch/scheduled/assets 均正确。没有证据的 `--legacy-wrangler-cloudflare-init` 等参数不写成操作步骤 |
 | 大 POST / D1 配额 | 250/1000 条与长字段在本地生产 bundle 和经批准的生产 smoke 中持久化后 202；有效 Paid 配额、响应时限及安全重试证据。不用 400/413 报临时失败 |
-| 鉴权与身份 | D3 映射方案、10 表无冲突、旧 key 不变；Access 主/更具体应用的策略/audience、机器/Backy/健康路径及所有备用域负例验收 |
+| 鉴权与身份 | D3 映射方案、10 表无冲突、旧 key 不变；Access 主/更具体应用的策略/audience/session 连续性、机器/Backy/健康路径及所有备用域负例验收 |
 | Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发 claim、isolate 中断后可恢复；本地假模型跑过 Gecko 自己的 server entry |
 | Backy / runtime | zlib/Buffer/multipart、全量导出内存/CPU、包体积/启动资源和出站超时通过；不能以 GeekHub 的成功代替 |
 | 测试工具链 | 同一 persist 的 CLI/Worker 往返，dotenv/remote 拒绝，run marker、独占端口、vinext 锁、退出清理和真实 bundle 测试通过 |
