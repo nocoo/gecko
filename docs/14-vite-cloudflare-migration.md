@@ -22,16 +22,17 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 
 | 来源 | 已核对内容 / 证据限制 |
 |---|---|
-| Gecko 独立复审基线 `d9d4018`（含 `beca53a`；应用代码与 `4493bed` 一致） | `apps/web-dashboard/package.json`：vinext `1.0.0-beta.0`、Vite `8.3.1`、next-ai 实装 `0.4.0`；未安装 Cloudflare Vite 插件 |
+| Gecko 本轮独立复审基线 `96b9257`（应用代码与 `4493bed` 一致） | 重新扫描 30 个 `route.ts` / 51 个显式方法，并核对 Mac 同步错误处理；`apps/web-dashboard/package.json`：vinext `1.0.0-beta.0`、Vite `8.3.1`、next-ai 实装 `0.4.0`；未安装 Cloudflare Vite 插件 |
 | 已安装 `apps/web-dashboard/node_modules/vinext/dist/init-cloudflare.js` | 初始化器创建/更新 **`wrangler.jsonc`**，App Router 插件设置 `name: "rsc", childEnvironments: ["ssr"]`；不能声称这个版本生成 typed config |
 | 已安装 `vinext/package.json`、`dist/server/app-router-entry.js` / `.d.ts` | 导出 `vinext/server/app-router-entry`，默认对象有 `fetch(request, env, ctx)`；自定义入口应组合该对象，而非仅增加命名 `scheduled` 导出 |
 | [vinext 当前 Cloudflare 文档](https://vinext.dev/docs/deploying/cloudflare)（本轮读取） | 已描述 `cf`、插件 v2、`cloudflare.config.ts`、`@vinext/cloudflare deploy`、`.cloudflare/types`；**比当前安装包的初始化器新**，不能直接套到锁定版本 |
 | GeekHub `8226bd0` | `../geekhub/src/worker/auth.ts`、`scripts/run-tests.ts`、`scripts/verify-test-bindings.ts`、`vite.config.ts`、`wrangler.jsonc`；实装插件 `1.63.1` 的类型有 `persistState` / `remoteBindings` / `inspectorPort` / RSC child environments；Wrangler `4.149.0` 的 `wrangler-dist/cli.js` 中 runtime types 生成会创建并 dispose Miniflare |
-| Giraffe `ac2d1e3` | `../giraffe/apps/web/src/server/index.ts`、`middleware/access.ts`、`../giraffe/docs/11-agent-api.md`：机器 API 独立鉴权，专用 Access 路径应用，不扩大 dashboard bypass |
+| Giraffe `ac2d1e3` | `../giraffe/apps/web/src/server/index.ts`、`middleware/access.ts`、`lib/db/d1.ts`、`../giraffe/docs/11-agent-api.md`：机器 API 独立鉴权，专用 Access 路径应用；`scripts/local-gateway.ts` 的线上只读代理和 `scripts/local-d1.ts` 的逐文件执行不是 Gecko 的隔离测试/迁移账本方案，不能照搬 |
 | 本机 `cf 1.0.0-beta.13` | `cf cli search`、`cf workers types --help`、`cf d1 migrations apply --help`；后者接受 **数据库 ID**，不是 Wrangler 的 binding/name 参数 |
+| Workers 官方 scheduled / logs / traces 文档及 GeekHub 已安装 Wrangler schema | scheduled 返回的 Promise 会被等待，但捕获错误后正常返回不会保留失败结果；日志与 trace 需分别启用，不能把 `observability.enabled` 当作已启用 trace；具体约束见 3.3 / 5.6 |
 | 现有库身份 | `docs/01-database-schema.md`、`docs/03-data-sync.md` 记录 `gecko` / `f66490d2-e7b3-43e8-a30c-2b34111141d7`；本轮未查询线上账号、schema、迁移账本或 Access 策略 |
 
-本轮仅审文档和源码，不访问私钥、真实用户数据，不执行初始化、远程迁移、Access 修改或部署。已核对的 API 不等于 Gecko 的生产 bundle 已通过验证；第 9 节的实施门槛仍须实际完成。
+本轮仅审文档和源码，不访问私钥、真实用户数据，不执行初始化、远程迁移、Access 修改或部署。不继承此前的 Sign Off；文档签核仅表示设计缺陷已修正，不代表 D3/D5 已决定或迁移已通过验收。已核对的 API 不等于 Gecko 的生产 bundle 已通过验证；第 9 节的实施门槛仍须实际完成。
 
 ## 2. 现状与目标
 
@@ -99,6 +100,7 @@ export default defineConfig({
 | 对外入口 | `workers_dev: false`、`preview_urls: false`、`routes: [{ pattern: "gecko.hexly.ai", custom_domain: true }]` | `worker.workersDev: false`、`worker.previewUrls: false`、`worker.domains`；完整值形状实施时按类型确认 |
 | 现有 D1 | `d1_databases` 中 `binding: "DB"`、`database_name: "gecko"`、明确 `database_id`、`migrations_dir: "migrations"` | `worker.env.DB: bindings.d1({ id: "f66490d2-e7b3-43e8-a30c-2b34111141d7", name: "gecko" })`；禁止仅凭 name 自动建新库 |
 | Cron（切换完成后） | `triggers: { crons: ["0 * * * *"] }` | `worker.triggers` 的 `triggers.scheduled({ schedule: "0 * * * *" })` |
+| 可观测性 | `observability.enabled: true`、`observability.traces.enabled: true`；采样用 `head_sampling_rate`，查询串脱敏用 `redact_query_string` | 对应 `worker.observability.enabled` / `traces.enabled`；采样用 `headSamplingRate`，查询串脱敏用 `redactQueryString`，所选版本类型再次核验 |
 | 静态资源 | `assets.binding: "ASSETS"`、构建客户端目录、`html_handling: "none"`、`not_found_handling: "none"`、`run_worker_first` | `worker.assets.htmlHandling` / `notFoundHandling` / `runWorkerFirst`；资源源目录由框架构建产物提供 |
 | 类型 | `wrangler types` 的产物加入 TS 检查；仍跑 `vinext typegen` | `cf workers types`，`.cloudflare/types` 加入 include 并忽略生成物；仍跑 vinext 路由类型生成 |
 | 发布 | Vite 全环境 build 后用 Wrangler 部署**生成的 Worker 配置**，验明入口/assets/绑定；不上传未编译的 TS 源入口 | 选定兼容版本后按官方 `@vinext/cloudflare deploy` 构建并用 cf 发布 Build Output |
@@ -140,6 +142,8 @@ export default {
 依据：[Workers scheduled handler](https://developers.cloudflare.com/workers/runtime-apis/handlers/scheduled/)。事件类型为 `ScheduledController`，不是 Service Worker 风格的 `ScheduledEvent`。不能 `export { default } ...` 再另写命名 `scheduled`；要验证最终 bundle 默认对象确实同时有 fetch/scheduled，且 fetch 仍收到原始 env/ctx。
 
 `src/lib/auto-analyze.ts` 当前 `onTick()` 只启动分析 Promise，不等待分析与邮件完成。必须改为返回覆盖 **模型调用、结果写入、失败释放 claim、邮件发送** 的完整 Promise；仅把旧 `onTick()` 包进 `ctx.waitUntil()` 不够。Cron await 完整任务；手工分析邮件、API key `last_used` 更新也改为明确 await（可捕获非关键失败），不留下脱离请求生命周期的 fire-and-forget。Cron 调服务层，不依赖 HTTP session / `next/headers` 请求上下文，也不经自身 HTTP 路由绕一圈。
+
+**完整 await 不等于正确的失败结果**：当前 `onTick()` 查询用户失败会直接 return，逐用户异常也被 catch 吞掉。新的 `runAutoAnalyzeTick` 遇用户枚举/数据库故障必须 reject；共享 `src/lib/api-helpers.ts` 的 `getUserTimezone` 也只对缺失/无效时区使用默认值，不能继续把 D1 异常吞成默认时区后分析错误日期。某用户模型、解析或持久化失败时，按 token 尝试释放，等待本轮已启动任务全部结束后再向 scheduled 报失败，不能只打一条日志并正常 resolve。其它用户已保存的结果不回滚；缓存命中、活租约、无会话/未配置模型属于明确的跳过，不误报故障。邮件失败单独记为通知失败，不把已落库分析标成失败或重新付费。L1（含 `src/__tests__/lib/api-helpers.test.ts`）断言入口 Promise 的 resolve/reject 与完成顺序，L2 核对本地 scheduled 的实际 outcome（锁定版本支持时读取 `format=json`），同时检查数据库与脱敏日志；HTTP 触发接口返回 200 不代表任务成功。
 
 保留用户时区、“今天有会话、昨天尚无总结”规则。`src/lib/daily-summary-repo.ts` 的 D1 原子 claim 继续阻止并发重复调用；现有内存 Map 不是跨 isolate 锁。当前 `claimForAnalysis` 对任何已有总结都返回 false，不能直接接到支持 `force=true` 的手工接口；也不能把旧结果的 `ai_model` 改成 `__analyzing__` 后沿用失败 DELETE，否则会丢失上一份有效分析。改为在同一总结行中分离结果与租约：新增 `migrations/0009_add_analysis_claim.sql`，增加可空的 `claim_token TEXT` / `claim_expires_at INTEGER`（Unix 秒），不再拿业务行 ID、`ai_model` 或结果更新时间充当锁。模型与邮件须有有界超时；租期覆盖已验证的模型/写入预算，以数据库当前时间判断过期，不使用可能延迟的 Cron scheduledTime 判断租约。多用户并发、Cron 执行限额及崩溃恢复纳入测试。不能承诺崩溃窗口下付费调用严格 exactly-once。
 
@@ -259,6 +263,14 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 `/api/live` 用 `SELECT 1` 探 DB，保留 200/503 与 `no-store`，错误 body 不回显凭据、SQL或内部路径。`storage: "d1"` 只是应用声明；`cf-ray` 也可能来自代理着旧 Railway 的 Cloudflare，不能单独证明 Worker 已切换。
 
+### 5.6 可观测性与日志隐私
+
+生产配置显式启用 [Workers Logs](https://developers.cloudflare.com/workers/observability/logs/workers-logs/) 和 [Traces](https://developers.cloudflare.com/workers/observability/traces/)，启用查询串脱敏，分别设置采样率并记录选择；`observability.enabled` 目前不会自动启用 traces。不新增第三方日志服务。切换验收须能把版本/revision、请求或 Cron invocation、`sync_id`、耗时、写入条数和失败阶段关联起来；`/api/live` 成功不能代替 Cron/同步失败证据。测试不上传日志或 trace。
+
+启用存储前清理 `src/services/analyze-core.ts` 的原始模型输出/上游异常正文日志，以及 `src/lib/auto-analyze.ts` 对 `outcome.message` 的直接转录。采用有限字段的结构化事件，不记录 JWT/API/webhook key、请求或响应正文、prompt/模型原文、窗口标题、屏幕会话中的访问 URL、文档路径及邮箱；D3 若选 email，不能继续把 `userId` 原样写日志。`src/services/email-notification.ts` 的上游响应正文同样不进入日志；以错误分类、阶段、状态码和不含身份内容的关联 ID 定位。查询串脱敏不是完整隐私保护，自动 trace 的出站 URL/path 属性也须用合成敏感标记验收；若上游 URL 含凭据且不能用已验证配置脱敏，先修正凭据传递方式并重新验收，否则阻断上线，不假设存在按路径关闭 trace 的 API。不能先采集真实用户数据再检查。
+
+在既有 `src/__tests__/services/{analyze-core,email-notification}.test.ts`、`src/__tests__/lib/auto-analyze.test.ts` 和新 `src/__tests__/worker-entry.test.ts` 注入合成敏感值，验证成功/超时/解析失败/写库失败/通知失败日志均不泄漏；L2 验证失败 outcome 与 DB 状态一致。部署脚本审查最终 observability 配置，远端仅在批准的烟测中核对日志/trace 与实际版本；cf 对应配置未通过类型检查时保持阻断，不猜测字段。
+
 ## 6. API 清单：L2 显式方法全覆盖
 
 当前 30 个 route 文件、51 个显式方法；删除 NextAuth GET/POST 后增加 GET `/api/me`，目标仍 30 个文件、**50 个显式方法**。每一行对应 `src/app` 下同名路径的 `route.ts`，`:id` / `:date` 对应 `[id]` / `[date]`。
@@ -304,7 +316,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 | 维度 | 所需证据 |
 |---|---|
-| L1 web | Vitest 四项各 ≥95.5%，禁止 focused/skipped/empty suites；D1 adapter、Access、同步写入、Cron await/claim、harness guard 均实测，不以新增排除掩盖覆盖率 |
+| L1 web | Vitest 四项各 ≥95.5%，禁止 focused/skipped/empty suites；D1 adapter、Access、同步写入、Cron await/claim/失败传播、日志脱敏、harness guard 均实测，不以新增排除掩盖覆盖率 |
 | L1 static web | 所选工具生成 Worker binding/runtime types + `vinext typegen` + 应用/工具两个 TS 项目严格检查 + Biome 零警告；Vitest 不加载 Worker 应用，类型生成器自身的隔离 runtime 见 7.1 |
 | L2 | 17018，真实 vinext + Cloudflare 插件 + 本地 D1 HTTP；第 6 节 50 个显式方法逐一有业务证据；包含机器 key、Access JWT 负例、租户隔离、同步读后写、Cron 本地事件 |
 | L3 web | 27018，Chromium 独立状态；页面/深链/RSC 导航、日览、同步状态、API key 管理、设置与本地身份；真实 Access 登录/退出另做上线人工验收 |
@@ -333,7 +345,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 6. 空库执行全部 migrations，创建 `_test_marker(key, value)`，至少含 `env=test`、`run_id=<本轮>`；fixture/reset 前验证 marker。用测试专用散列 key 与两个用户创建数据。假 JWKS/模型/Dove/Backy 仅绑定本轮 loopback，阻止外部网络副作用；付费服务不作测试依赖。
 7. 启动真实 vinext + CF 插件（可用 `node node_modules/vite/bin/vite.js --host 127.0.0.1 --port <lane>`），cache/报告全部在本轮目录。ready 同时要求进程存活、`/api/live` 的预期版本/存储、受限 test 身份返回的 run ID 与数据库 marker 一致；JWT 测试模式的 ready 请求必须携带有效 fixture JWT。任何旧服务的 200 都不能算就绪。
 8. 单一 harness 启动 L2 或 Playwright；`playwright.config.ts` 不再自行启动/复用 server，baseURL 来自本轮环境。新增项目自有测试变量 `TEST_AUTH_MODE=stub|jwt`：仅在本地 test 绑定/marker 已验证时读取；生产/日常配置禁止它。L3 可用固定 stub；L2 必须有独立启动的 jwt 模式，**完全禁用本地身份短路**，使用本轮签名/JWKS（只换信任材料，执行同一验签逻辑）覆盖缺 JWT、伪造、过期、错 iss/aud、跨站、冒充本地和两个用户的数据边界。生产忽略测试 JWKS 并拒绝测试模式配置；机器 key 在两模式都照常验证。
-9. Cron 通过所选插件支持的本地 scheduled 触发接口测试（当前官方说明 `/cdn-cgi/local/scheduled`；必须在锁定版本验证）；证据是完整任务已落库/失败已释放 claim，而非 HTTP 触发返回 200。独立完成一次生产 build/preview 测试，防止只验证 dev 虚拟入口。
+9. Cron 通过所选插件支持的本地 scheduled 触发接口测试（当前官方说明 `/cdn-cgi/local/scheduled`；必须在锁定版本验证）；核对 3.3 的成功/失败 outcome、完整任务落库和失败释放 claim，而非 HTTP 触发返回 200。独立完成一次生产 build/preview 测试，防止只验证 dev 虚拟入口。
 10. 成功、失败、超时、SIGINT/SIGTERM 都清理本轮拥有的 server、测试 runner、stub 及后代进程组，等待退出再验证 marker 后删除数据。初始化未完成时只删除由本轮创建且验证所有权的目录；保留可定位的失败报告，不触碰别人的目录或进程。
 
 ## 8. 改动与原子提交计划
@@ -347,10 +359,10 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | `vite.config.ts`、选定的 `wrangler.jsonc` **或** `cloudflare.config.ts`、`worker-entry.ts`、`tsconfig.json`、`tsconfig.tools.json`（新增）、`vitest.config.ts`、`biome.json`、`package.json`、`bun.lock` | 单一 Workers target、入口/工具检查范围、类型、依赖与脚本；不留两套活跃配置 |
 | `src/lib/d1.ts`、`src/lib/sync-write.ts`（新增）、`src/app/api/sync/route.ts`、`src/app/api/sync/status/route.ts`、`src/app/api/live/route.ts` | binding、持久化 202、同步日志、健康检查 |
 | 第 4.3 节全部路径及 `src/app/api/**/route.ts` | Access、页面身份、退出、所有直接/间接 NextAuth 依赖 |
-| `src/lib/auto-analyze.ts`、`src/lib/daily-summary-repo.ts`、`src/services/analyze-core.ts`、`src/app/api/daily/[date]/analyze/route.ts`、`src/app/api/daily/[date]/route.ts`、`src/app/api/daily/summaries/route.ts`、`src/services/email-notification.ts` | Cron 完整 await、独立租约/过期恢复、手工重算保留旧结果、读取合同及邮件生命周期 |
+| `src/lib/auto-analyze.ts`、`src/lib/daily-summary-repo.ts`、`src/services/analyze-core.ts`、`src/app/api/daily/[date]/analyze/route.ts`、`src/app/api/daily/[date]/route.ts`、`src/app/api/daily/summaries/route.ts`、`src/services/email-notification.ts` | Cron 完整 await/失败传播、独立租约/过期恢复、手工重算保留旧结果、读取合同、邮件生命周期及日志脱敏 |
 | `src/lib/backy.ts`、`src/lib/backy-export.ts`、`src/lib/backy-push.ts`、`src/lib/backy-repo.ts` | 检查 workerd 能力与数据规模；环境标签/测试出站隔离；不强改按用户凭据存储 |
 | `drizzle/*.sql` → `migrations/*.sql`、`migrations/0009_add_analysis_claim.sql`（新增）、`scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts`（新增） | 原样保留历史 SQL、新增独立租约列、历史基线与目标 schema 分开演练、拒绝 local/test 的部署流程 |
-| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,daily-data,daily-summaries,settings-notifications}.test.ts`、`src/__tests__/services/analyze-core.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry 和 harness guards 测试 |
+| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,daily-data,daily-summaries,settings-notifications}.test.ts`、`src/__tests__/services/{analyze-core,email-notification}.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry、日志隐私和 harness guards 测试 |
 | `Dockerfile`、`.dockerignore`、`src/lib/sync-queue.ts`、`src/instrumentation.ts`、`src/lib/hourly-scheduler.ts`、`src/__tests__/lib/hourly-scheduler.test.ts`、`scripts/init-local-db.ts` | 目标替代能力已可用后删除，不留空壳兼容 |
 | `.env.example`、`.env.e2e.example`、仓根 `.gitignore` | 去 OAuth/业务 CF tokens/真实模型 E2E 变量；只保留所选 Workers 的本地示例；忽略 `.wrangler` / `.cloudflare`、types、临时状态，不能把 secrets 加进 typed config |
 | 仓根 `package.json`、`bun.lock`（仅根依赖变化才改）、`scripts/pre-commit.py`、`scripts/test_pre_commit.py`、`.husky/pre-push`、`.github/workflows/ci.yml` | 入口、index-snapshot 生成类型/依赖隔离、L2/L3 与 CI；不降门槛、不绕 hooks、不顺手改 shared workflow pin |
@@ -361,7 +373,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 1. `docs: confirm worker migration prerequisites`\
    记录哥确认的 D3/D5、版本组合、实际配置/生成入口、隔离与 workerd 探针证据、资源/账号预检和停写方案。探针在隔离临时目录，不提前改生产或运行未审阅 init。先验证第 9 节中框架/API 可行性；完整 Gecko 回归在下一步，远程验收在第 10 节，不能把后续结果当作已具备。
 2. `feat: move dashboard runtime to workers`\
-   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
+   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
 3. `chore: add guarded d1 cutover tooling`\
    `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。
 4. `docs: record worker cutover evidence`\
@@ -381,6 +393,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | 大 POST / D1 配额 | 250/1000 条与长字段在本地生产 bundle 和经批准的生产 smoke 中持久化后 202；有效 Paid 配额、响应时限及安全重试证据。不用 400/413 报临时失败 |
 | 鉴权与身份 | D3 映射方案、10 表无冲突、旧 key 不变；Access 主/更具体应用的策略/audience/session 连续性、机器/Backy/健康路径及所有备用域负例验收 |
 | Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发租约、isolate 中断后可恢复；force 可重算且失败保留旧结果，写库失败不报成功/发邮件，旧 token 不能覆盖新结果；0009 升级/旧占位恢复与 Gecko 自己的假模型 server entry 通过 |
+| 故障可观测与隐私 | Cron 故障向入口传播，跳过/分析成功/通知失败可区分；生产 logs/traces 配置和采样已核对；合成敏感值不进入应用日志或自动 trace，D3 email 不成为日志身份字段；未解除不启用真实流量采集 |
 | 切换静默 | 停旧入口后在途分析/HTTP/队列均已完成；新 Worker 在预备及 HTTP 阶段实际无 Cron，不能因发布最终配置提前启用；cf 若未证明移除语义则阻断 |
 | Backy / runtime | zlib/Buffer/multipart、全量导出内存/CPU、包体积/启动资源和出站超时通过；不能以 GeekHub 的成功代替 |
 | 测试工具链 | 入口/工具均在 tsc/coverage 范围，类型生成 runtime 隔离；同一 persist 的 CLI/Worker 往返，dotenv/remote 拒绝，run marker、独占端口、vinext 锁、退出清理和真实 bundle 测试通过 |
@@ -407,7 +420,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 5. 用仓内锁定的 `scripts/deploy.ts` 选择 **production 的 HTTP 验收阶段（Cron 仍显式为空）**，核对基线后应用真实待执行迁移、构建并发布，切 `gecko.hexly.ai` 到该 Worker；生产只保留一个活跃写入者。取得实际部署 ID / Git SHA / 版本 / 域名绑定及无 Cron 的证据后恢复流量，不能直接发布 3.2 表中的最终 Cron 配置。
 6. **GET** `https://gecko.hexly.ai/api/live` 同时核对 HTTP 200、body `status=ok`、版本、`storage=d1` 与 DB 探测；不用 `curl -I` 读取不存在的 body，不以 `cf-ray` 单独判定切换。无凭据的机器 API 是 JSON 401、Backy HEAD 是无 body 的 401，不能跳登录页。
 7. 浏览器验证 Access 允许/拒绝、直接页面与 `/api/me`、timezone 日览、key 管理、设置、退出及 private cache；验证 `/api/sync/status` 仍要求人的身份。以原 Mac key 上传一批并读 D1/控制台确认已持久化、重传无重复；Backy HEAD/POST 和原 webhook key 验收，副作用由哥批准。
-8. HTTP 验收通过且哥批准后，再经部署脚本启用最终 Cron `0 * * * *`（UTC 调度，业务按用户 timezone），记录变更及传播后的实际 trigger；若工具需要重新构建/部署，重新核对 revision/版本并做健康回归。验证 scheduled 事件、完整分析/持久化/邮件与重复触发保护；真实付费模型仅在哥批准的烟测范围调用。不需要先访问某个 route 才启动 Cron。
+8. HTTP 验收通过且哥批准后，再经部署脚本启用最终 Cron `0 * * * *`（UTC 调度，业务按用户 timezone），记录变更及传播后的实际 trigger；若工具需要重新构建/部署，重新核对 revision/版本并做健康回归。验证 scheduled 事件的实际 outcome、完整分析/持久化/邮件与重复触发保护，并按 5.6 关联脱敏日志/trace；真实付费模型仅在哥批准的烟测范围调用。不需要先访问某个 route 才启动 Cron。
 9. 全部通过后退役 Railway/旧域或旁路访问、旧 OAuth 凭据；按恢复检查点处理备份，不留双运行时兼容分支。记录证据并完成协调发布；本轮审文档不执行这些外部动作。
 
 验收结论必须同时覆盖：vinext App Router 保留、Cloudflare 部署来源可证明、Access 人机边界、原 Mac 协议、D1 binding/现有数据、无悬空后台 Promise、完整 L2/L3/隔离和全部删除调用点。日常 / L2 / L3 端口仍是 **7018 / 17018 / 27018**。
