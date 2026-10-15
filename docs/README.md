@@ -17,6 +17,6 @@
 | 11 | [image-size 审查](11-image-size-patch-review.md) | 历史 |
 | 12 | [Vitest 5](12-vitest-5-migration.md) | 历史 |
 | 13 | [原生工作区](13-native-workspace.md) | Mac 界面 |
-| 14 | [迁 Vite 与 Cloudflare](14-vite-cloudflare-migration.md) | 待 Review |
+| 14 | [vinext 直部 Cloudflare](14-vite-cloudflare-migration.md) | 待确认 D3/D5；D2 Access 已定 |
 
 英文产品说明：[README.en.md](README.en.md)。事故记录在仓库根目录 [Retrospective.md](../Retrospective.md)。
