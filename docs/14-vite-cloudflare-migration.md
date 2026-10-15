@@ -141,6 +141,8 @@ export default {
 
 保留用户时区、“今天有会话、昨天尚无总结”规则。`src/lib/daily-summary-repo.ts` 的 D1 原子 claim 继续阻止并发重复调用；现有内存 Map 不是跨 isolate 锁。使用已有 claim 行 ID 和 `updated_at` 实现过期重领、所有权条件更新/释放，防止 isolate 终止后永久卡住或旧任务删除新 claim；手工分析也参与同一互斥规则，`force` 不覆盖运行中的任务。模型与邮件须有有界超时；多用户并发、Cron 执行限额及崩溃恢复纳入测试。不能承诺崩溃窗口下付费调用严格 exactly-once。
 
+`src/services/analyze-core.ts` 当前把 `upsertAiResult` 失败当作 non-fatal 并返回 `ok: true`；迁移时必须删除这一成功语义。只有持有当前 claim 且结果已持久化才算分析成功；重领时换用新的 claim ID，完成/释放都带所有权条件，旧任务迟到不能覆盖新结果或发送成功邮件。写库失败向上返回失败，手工接口给 JSON 5xx，Cron 记录失败并按所有权释放；释放也失败则靠过期恢复。邮件失败不撤销已落库的分析，也不因此再次付费调用模型。修改 `src/__tests__/services/analyze-core.test.ts` 中“cache upsert fails 仍成功”的测试，补写库失败、不发送成功邮件、旧 claim 迟到及邮件失败不重算的 L1/L2 证据。
+
 ## 4. Access、人机边界与 NextAuth 清理
 
 ### 4.1 边缘路径策略
@@ -226,11 +228,14 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 
 1. 验真实 Bearer key，服务端决定 `user_id` / `device_id`，忽略客户端伪造的归属字段。
 2. 维持现有协议校验与 1000 条上限，不因迁移收紧合法 Mac payload；400/413 仅用于原有确定性坏输入，不用于 Access、绑定、D1 配额或临时故障。
-3. 将 `src/lib/sync-queue.ts` 的 14 列映射/SQL 纯函数移至 `src/lib/sync-write.ts`，每 INSERT 最多 7 行（98 bind），删除整套队列类、单例、计数与 drain timer。保持 `INSERT OR IGNORE` 对 session ID 的重试幂等。
-4. await 一次包含本批所有 INSERT 的 `DB.batch`；同时写 `sync_logs`，让现有 `/api/sync/status` 真正可读最新设备状态。`sync_logs.id = sync_id`，`session_count` 记录收到条数，首末时间取本批 start_time 的最小/最大值；新增条数可从 INSERT 的 meta.changes 另记运行指标，不改现有日志 schema。重试可有多条上传日志，但不能复制 focus session。
-5. 全部成功后返回 **202**、`accepted = 合法提交条数`（含同一身份的重复 session，不取 `meta.changes`）、新 `sync_id`。DB 失败返回 JSON 5xx，不能先 202 后 waitUntil 写库；响应丢失后重复提交仍安全。
+3. 将 `src/lib/sync-queue.ts` 的 14 列映射/SQL 纯函数移至 `src/lib/sync-write.ts`，每 INSERT 最多 7 行（98 bind），删除整套队列类、单例、计数与 drain timer。保留按 session ID 的重试幂等，但改为仅针对 ID 的 `ON CONFLICT(id) DO NOTHING`，不能让广义 `INSERT OR IGNORE` 吞掉其它约束错误。
+4. await 一次包含本批 session INSERT 和归属核验 SELECT 的 `DB.batch`；按去重 ID 分块读取，计入 user_id 等参数后每句仍不超过 100 bind。核对所有提交 ID 均已存在且属于当前 `user_id`，不能把其它用户占用的全局主键当作已接收。冲突返回不透露对方身份的 JSON 409（Mac 保留重试，不用 400/413），不覆盖原行、不写成功日志；这种批后业务校验失败不等于 SQL 回滚，已写入的合法行靠幂等重试恢复，不谎称整个 HTTP 请求原子化。
+5. 归属核验成功后，明确 await 写入 `sync_logs`，让 `/api/sync/status` 真正可读最新设备状态。`sync_logs.id = sync_id`，`session_count` 记录收到条数，首末时间取本批 start_time 的最小/最大值；新增条数可从 INSERT 的 meta.changes 另记运行指标，不改现有日志 schema。日志写入失败也返回 5xx；重试可有多条上传日志，但不能复制 focus session。
+6. 全部成功后返回 **202**、`accepted = 合法提交条数`（含同一用户的重复 session，不取 `meta.changes`）、新 `sync_id`。同用户换 key 后重传不强求旧 session 的 device_id 等于新 key 的 device_id，不重写历史归属。DB 失败返回 JSON 5xx，不能先 202 后 waitUntil 写库；响应丢失后重复提交仍安全。
 
-[D1 batch 是事务](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch)，错误回滚本 batch；[单语句最多 100 bind，查询/调用另有配额](https://developers.cloudflare.com/d1/platform/limits/)。1000 条需要 143 条 INSERT，加鉴权/审计超过 Free 每次调用 50 查询上限；此方案要求上线前确认 **Workers Paid** 的有效配额，不能悄悄把 API 上限改小。验证 250 条约 85KB、1000 条、长标题/URL、重复批次、D1 故障与响应丢失；202 之前必须可读到全部行。记录 D1 时限和 Mac 实际 URLSession 超时内的完成证据；Node/Bun 旧 hang 在 workerd 是否消失，不能仅凭运行时不同作保证。
+[D1 batch 是事务](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch)，SQL 错误回滚本 batch，不涵盖随后独立写入的日志；[单语句最多 100 bind，查询/调用另有配额](https://developers.cloudflare.com/d1/platform/limits/)。1000 条需要 143 条 INSERT，加归属核验/鉴权/审计超过 Free 每次调用 50 查询上限；此方案要求上线前确认 **Workers Paid** 的有效配额，不能悄悄把 API 上限改小。验证 250 条约 85KB、1000 条、长标题/URL、重复批次、跨用户 ID 冲突、换 key 重传、日志/D1 故障与响应丢失；202 之前必须可读到全部行及成功日志。记录 D1 时限和 Mac 实际 URLSession 超时内的完成证据；Node/Bun 旧 hang 在 workerd 是否消失，不能仅凭运行时不同作保证。
+
+`src/app/api/sync/status/route.ts` 当前用 `synced_at = MAX(synced_at)`，而旧 schema 默认只有秒精度；同设备连续上传会返回并列的多行。改成每个 `(user_id, device_id)` 只选一条，按 `synced_at DESC, id DESC` 稳定破除时间并列（ID 仅作 tie-break，不代表实际提交先后）。`src/__tests__/api/sync-status.test.ts` 与 `src/__tests__/e2e/sync-status.test.ts` 必须覆盖同时间多批次、重传、多设备及两用户隔离；L2 不能再以空 devices 或手填日志代替真实同步后的状态断言。
 
 ### 5.5 出站、字体与健康
 
@@ -331,7 +336,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | `src/lib/auto-analyze.ts`、`src/lib/daily-summary-repo.ts`、`src/services/analyze-core.ts`、`src/app/api/daily/[date]/analyze/route.ts`、`src/services/email-notification.ts` | Cron 完整 await、claim 所有权/过期恢复、手工分析互斥及邮件生命周期 |
 | `src/lib/backy.ts`、`src/lib/backy-export.ts`、`src/lib/backy-push.ts`、`src/lib/backy-repo.ts` | 检查 workerd 能力与数据规模；环境标签/测试出站隔离；不强改按用户凭据存储 |
 | `drizzle/*.sql` → `migrations/*.sql`、`scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts`（新增） | 原样迁移 SQL、基线与 remap 演练、拒绝 local/test 的部署流程 |
-| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,settings-notifications}.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry 和 harness guards 测试 |
+| 第 7 节 harness / configs / tests；`src/__tests__/lib/{d1,sync-queue,auto-analyze,auto-analyze-default-deps,daily-summary-repo}.test.ts`、`src/__tests__/api/{sync,sync-status,live,backy-pull,daily-analyze-route,settings-notifications}.test.ts`、`src/__tests__/services/analyze-core.test.ts` | 删除旧实现测试并替换为新合同测试；HTTP/browser 全面接入，新增 Access、entry 和 harness guards 测试 |
 | `Dockerfile`、`.dockerignore`、`src/lib/sync-queue.ts`、`src/instrumentation.ts`、`src/lib/hourly-scheduler.ts`、`src/__tests__/lib/hourly-scheduler.test.ts`、`scripts/init-local-db.ts` | 目标替代能力已可用后删除，不留空壳兼容 |
 | `.env.example`、`.env.e2e.example`、仓根 `.gitignore` | 去 OAuth/业务 CF tokens/真实模型 E2E 变量；只保留所选 Workers 的本地示例；忽略 `.wrangler` / `.cloudflare`、types、临时状态，不能把 secrets 加进 typed config |
 | 仓根 `package.json`、`bun.lock`（仅根依赖变化才改）、`scripts/pre-commit.py`、`scripts/test_pre_commit.py`、`.husky/pre-push`、`.github/workflows/ci.yml` | 入口、index-snapshot 生成类型/依赖隔离、L2/L3 与 CI；不降门槛、不绕 hooks、不顺手改 shared workflow pin |
@@ -361,7 +366,7 @@ Access 主应用保护 `gecko.hexly.ai`；team `nocoo` 是既有约定，Gecko �
 | 版本分叉 | D5 确认；锁定 vinext/插件/CLI，证明 build 配置、类型、fetch/scheduled/assets 均正确。没有证据的 `--legacy-wrangler-cloudflare-init` 等参数不写成操作步骤 |
 | 大 POST / D1 配额 | 250/1000 条与长字段在本地生产 bundle 和经批准的生产 smoke 中持久化后 202；有效 Paid 配额、响应时限及安全重试证据。不用 400/413 报临时失败 |
 | 鉴权与身份 | D3 映射方案、10 表无冲突、旧 key 不变；Access 主/更具体应用的策略/audience/session 连续性、机器/Backy/健康路径及所有备用域负例验收 |
-| Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发 claim、isolate 中断后可恢复；本地假模型跑过 Gecko 自己的 server entry |
+| Cron / next-ai | 无请求上下文可完成 scheduled；完整 await、超时、并发 claim、isolate 中断后可恢复；写库失败不报成功/发邮件，旧 claim 不能覆盖新结果；本地假模型跑过 Gecko 自己的 server entry |
 | Backy / runtime | zlib/Buffer/multipart、全量导出内存/CPU、包体积/启动资源和出站超时通过；不能以 GeekHub 的成功代替 |
 | 测试工具链 | 同一 persist 的 CLI/Worker 往返，dotenv/remote 拒绝，run marker、独占端口、vinext 锁、退出清理和真实 bundle 测试通过 |
 | 字体 / 私有缓存 | 生产字体/images/assets 可用，构建联网行为已知；HTML/RSC/API 不共享缓存用户身份或数据 |
