@@ -65,7 +65,7 @@ export function cfLocalOutputComplete(args: string[], stdout: string): boolean {
   if (args[0] === "d1" && args[1] === "migrations" && args[2] === "apply") {
     return d1MigrationsComplete(stdout);
   }
-  if (args[0] === "d1" && args[1] === "raw") {
+  if (args[0] === "d1" && (args[1] === "raw" || args[1] === "query")) {
     return d1RawComplete(stdout);
   }
   return false;

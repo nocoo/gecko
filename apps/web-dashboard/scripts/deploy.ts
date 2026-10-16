@@ -109,7 +109,7 @@ export async function runDeploy(
   if (stage !== "prep" && !flags["silence-confirmed"]) {
     throw new Error("http/cron deploy requires --silence-confirmed");
   }
-  if (pending.length > 0) {
+  if (pending.length > 0 && stage !== "prep") {
     await deps.adapter.applyMigrations(PRODUCTION_DB_ID, pending);
   }
   const deployed = await deps.adapter.deploy(config);

@@ -154,6 +154,40 @@ export function remapStatements(
   return sql;
 }
 
+function resolveConflict(
+  conflict: UniqueConflict,
+  explicit: RemapConflictResolution[],
+  mergeKeep: "first" | undefined,
+): RemapConflictResolution | undefined {
+  const hit = allowedConflict(conflict, explicit);
+  if (hit) return hit;
+  if (mergeKeep === "first") {
+    return { table: conflict.table, key: conflict.key, keep: "target" };
+  }
+  return undefined;
+}
+
+function applyMoveToRows(
+  rows: StoredRow[],
+  oldId: string,
+  newId: string,
+  resolutions: RemapConflictResolution[],
+  conflicts: UniqueConflict[],
+): StoredRow[] {
+  let next = rows;
+  for (const conflict of conflicts) {
+    const resolution = allowedConflict(conflict, resolutions);
+    if (!resolution) continue;
+    const discard = resolution.keep === "source" ? newId : oldId;
+    const rest = conflict.columns.filter((column) => column !== "user_id");
+    next = next.filter((row) => {
+      if (row.user_id !== discard) return true;
+      return !rest.every((column) => (row[column] ?? "") === (conflict.values[column] ?? ""));
+    });
+  }
+  return next.map((row) => (row.user_id === oldId ? { ...row, user_id: newId } : row));
+}
+
 export async function planRemap(
   map: RemapMapping,
   store: RemapStore,
@@ -162,6 +196,7 @@ export async function planRemap(
     resolutions?: RemapConflictResolution[];
     completedOldIds?: string[];
     statementBudget?: number;
+    mergeKeep?: "first";
   } = {},
 ): Promise<RemapReport> {
   const tables = await store.tablesWithUserId();
@@ -179,7 +214,11 @@ export async function planRemap(
   const queuedOldIds = [...map.keys()].filter((oldId) => !completed.has(oldId));
   const rowsByTable = new Map<UserIdTable, StoredRow[]>();
   for (const table of USER_ID_TABLES) {
-    rowsByTable.set(table, tables.includes(table) ? await store.loadTable(table) : []);
+    const loaded = tables.includes(table) ? await store.loadTable(table) : [];
+    rowsByTable.set(
+      table,
+      loaded.map((row) => ({ ...row })),
+    );
   }
   const moves: RemapReport["moves"] = [];
   const conflicts: UniqueConflict[] = [];
@@ -187,22 +226,30 @@ export async function planRemap(
   const budget = options.statementBudget ?? 100;
   const unresolved: UniqueConflict[] = [];
   const processed: string[] = [];
+  const explicit = options.resolutions ?? [];
   for (const oldId of queuedOldIds) {
     const newId = map.get(oldId);
     if (!newId) continue;
     const tablesTouched: Record<string, number> = {};
     const nextSql: string[] = [];
+    const usedByTable = new Map<UserIdTable, RemapConflictResolution[]>();
+    const foundByTable = new Map<UserIdTable, UniqueConflict[]>();
     for (const table of USER_ID_TABLES) {
       const rows = rowsByTable.get(table) ?? [];
       const count = rows.filter((row) => row.user_id === oldId).length;
       tablesTouched[table] = count;
       const found = conflictsForMove(table, rows, oldId, newId);
+      const used: RemapConflictResolution[] = [];
       for (const conflict of found) {
         conflicts.push(conflict);
-        if (!allowedConflict(conflict, options.resolutions ?? [])) unresolved.push(conflict);
+        const resolution = resolveConflict(conflict, explicit, options.mergeKeep);
+        if (resolution) used.push(resolution);
+        else unresolved.push(conflict);
       }
+      usedByTable.set(table, used);
+      foundByTable.set(table, found);
       if (count > 0) {
-        nextSql.push(...remapStatements(table, oldId, newId, options.resolutions ?? [], found));
+        nextSql.push(...remapStatements(table, oldId, newId, used, found));
       }
     }
     if (statements.length + nextSql.length > budget) {
@@ -212,6 +259,18 @@ export async function planRemap(
     statements.push(...nextSql);
     processed.push(oldId);
     moves.push({ from: redactId(oldId), to: redactId(newId), tables: tablesTouched });
+    for (const table of USER_ID_TABLES) {
+      rowsByTable.set(
+        table,
+        applyMoveToRows(
+          rowsByTable.get(table) ?? [],
+          oldId,
+          newId,
+          usedByTable.get(table) ?? [],
+          foundByTable.get(table) ?? [],
+        ),
+      );
+    }
   }
   if (unresolved.length > 0) {
     blocked.push(`unique key conflicts: ${unresolved.length}`);
@@ -240,11 +299,16 @@ export async function runRemap(
   const flags = parseFlags(argv);
   const map = parseMapping(deps.mapping);
   const budgetRaw = flagString(flags, "statement-budget");
+  const mergeKeepRaw = flagString(flags, "merge-keep");
+  if (mergeKeepRaw && mergeKeepRaw !== "first") {
+    throw new Error("--merge-keep must be first");
+  }
   const report = await planRemap(map, deps.store, {
     allowMerges: Boolean(flags["allow-merges"]),
     resolutions: deps.resolutions,
     completedOldIds: deps.completedOldIds,
     statementBudget: budgetRaw ? Number(budgetRaw) : 100,
+    mergeKeep: mergeKeepRaw === "first" ? "first" : undefined,
   });
   if (!flags.apply) return report;
   if (flagString(flags, "database-id") === PRODUCTION_DB_ID) {

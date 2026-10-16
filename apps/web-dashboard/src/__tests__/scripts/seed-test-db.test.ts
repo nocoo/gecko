@@ -50,7 +50,7 @@ describe("seed-test-db", () => {
     expect(d1RawComplete('[{ "success": false }]')).toBe(false);
     expect(d1RawComplete(RAW_OK)).toBe(true);
     expect(cfLocalOutputComplete(["d1", "raw", "id"], RAW_OK)).toBe(true);
-    expect(cfLocalOutputComplete(["d1", "query", "id"], RAW_OK)).toBe(false);
+    expect(cfLocalOutputComplete(["d1", "query", "id"], RAW_OK)).toBe(true);
   });
 
   test("runCf treats hung-but-successful local output as done", async () => {

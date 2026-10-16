@@ -38,6 +38,7 @@ export default defineConfig({
         "scripts/baseline-d1.ts",
         "scripts/remap-user-ids.ts",
         "scripts/deploy.ts",
+        "scripts/cutover-cf.ts",
       ],
       exclude: [
         "**/*.test.ts",

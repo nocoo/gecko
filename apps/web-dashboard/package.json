@@ -24,9 +24,9 @@
     "test:e2e": "bun run test:l2",
     "test:bdd": "bun run test:l3",
     "gate:security": "bun run scripts/gate-security.ts",
-    "cutover:baseline": "bun run scripts/baseline-d1.ts",
-    "cutover:remap": "bun run scripts/remap-user-ids.ts",
-    "cutover:deploy": "bun run scripts/deploy.ts"
+    "cutover:baseline": "bun run scripts/cutover-cf.ts baseline",
+    "cutover:remap": "bun run scripts/cutover-cf.ts remap",
+    "cutover:deploy": "bun run scripts/cutover-cf.ts deploy"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",

@@ -190,6 +190,30 @@ describe("remap-user-ids", () => {
     expect(oversize.blocked.join(" ")).toMatch(/exceeds statement budget/);
   });
 
+  test("merge-keep first simulates prior moves and deletes later unique collisions", async () => {
+    const { store } = memoryStore({
+      settings: [
+        { user_id: "old-a", key: "timezone", value: "UTC" },
+        { user_id: "old-b", key: "timezone", value: "Asia/Tokyo" },
+      ],
+    });
+    const report = await planRemap(
+      parseMapping({ "old-a": "a@b.com", "old-b": "a@b.com" }),
+      store,
+      {
+        allowMerges: true,
+        mergeKeep: "first",
+      },
+    );
+    expect(report.ok).toBe(true);
+    expect(
+      report.statements.some(
+        (sql) => sql.startsWith("DELETE FROM settings") && sql.includes("old-b"),
+      ),
+    ).toBe(true);
+    expect(report.statements.filter((sql) => sql.startsWith("UPDATE settings"))).toHaveLength(2);
+  });
+
   test("allow-merges, keep-source, and empty-statement apply succeed", async () => {
     const { store } = memoryStore({
       settings: [{ user_id: "old-a", key: "timezone", value: "UTC" }],
@@ -223,5 +247,46 @@ describe("remap-user-ids", () => {
         mapping: { "old-a": "a@b.com", "old-b": "a@b.com" },
       }),
     ).rejects.toThrow(/remap blocked/);
+    await expect(runRemap(["--merge-keep", "last"], { store, mapping })).rejects.toThrow(
+      /merge-keep must be first/,
+    );
+  });
+
+  test("unresolved unique conflicts still simulate later ids", async () => {
+    const { store } = memoryStore({
+      settings: [
+        { user_id: "old-google-1", key: "timezone", value: "UTC" },
+        { user_id: "architie@gmail.com", key: "timezone", value: "Asia/Tokyo" },
+      ],
+    });
+    const report = await planRemap(parseMapping(mapping), store);
+    expect(report.ok).toBe(false);
+    expect(report.blocked.join(" ")).toMatch(/unique key conflicts/);
+    const budget = await runRemap(["--statement-budget", "0"], { store, mapping });
+    expect(budget.blocked.join(" ")).toMatch(/statement budget/);
+  });
+
+  test("missing unique columns and empty map values still plan", async () => {
+    const { store } = memoryStore({
+      settings: [{ user_id: "old-a" }, { user_id: "old-b" }, { user_id: "old-b", key: "timezone" }],
+      api_keys: [
+        { user_id: "old-a", device_id: "d1" },
+        { user_id: "old-b", device_id: "d1" },
+      ],
+    });
+    const merged = await planRemap(
+      new Map([
+        ["old-a", "a@b.com"],
+        ["old-b", "a@b.com"],
+        ["ghost", ""],
+      ]),
+      store,
+      {
+        allowMerges: true,
+        mergeKeep: "first",
+      },
+    );
+    expect(merged.remainingOldIds).toContain("ghost");
+    expect(merged.statements.length).toBeGreaterThan(0);
   });
 });

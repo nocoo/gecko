@@ -93,6 +93,7 @@ describe("deploy", () => {
     expect(report.dryRun).toBe(false);
     expect(report.deployedId).toBe("deploy-1");
     expect(state.remote).toEqual([]);
+    expect(state.pending).toEqual([]);
     expect(report.pending).toEqual([FORWARD_MIGRATION]);
   });
 
@@ -104,6 +105,7 @@ describe("deploy", () => {
     );
     expect(report.config.domains).toEqual(["gecko.hexly.ai"]);
     expect(state.remote).toEqual([]);
+    expect(state.pending).toEqual([FORWARD_MIGRATION]);
   });
 
   test("analyzing-with-result rows and 0009-as-historical ledgers are blocked", async () => {
