@@ -16,6 +16,7 @@ import {
   parseDeployedId,
   parseJsonValue,
   selectColumns,
+  writeCutoverReport,
 } from "../../../scripts/cutover-cf";
 import { FORWARD_MIGRATION, HISTORICAL_MIGRATIONS } from "../../../scripts/cutover-schema";
 import { PRODUCTION_DB_ID, PRODUCTION_WORKER } from "../../../scripts/worker-stage";
@@ -172,6 +173,9 @@ describe("cutover-cf", () => {
       "11111111-1111-1111-1111-111111111111",
     );
     expect(parseDeployedId("no id")).toBe("deployed");
+    const printed: string[] = [];
+    writeCutoverReport({ ok: true }, (text) => printed.push(text));
+    expect(printed.join("")).toContain('"ok": true');
   });
 
   test("baseline inspect skips _cf tables and treats missing migration ledger as empty", async () => {
@@ -479,8 +483,10 @@ describe("cutover-cf", () => {
   });
 
   test("default vinext deploy parses ids, failures, and timeouts", async () => {
+    const commands: string[] = [];
     const fake = (code: number, output: string, hang = false) =>
-      (() => {
+      ((command: string) => {
+        commands.push(command);
         const child = new EventEmitter() as EventEmitter & {
           stdout: EventEmitter;
           stderr: EventEmitter;
@@ -510,6 +516,7 @@ describe("cutover-cf", () => {
     await expect(
       defaultVinextDeploy({}, process.cwd(), fake(0, "hang", true) as never, 20),
     ).rejects.toThrow(/timed out/);
+    expect(commands.every((command) => command === "node")).toBe(true);
   });
 
   test("vinext deploy records stderr, spawn errors, and ignores late errors", async () => {

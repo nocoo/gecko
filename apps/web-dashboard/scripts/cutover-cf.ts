@@ -351,6 +351,15 @@ export function parseDeployedId(text: string): string {
   return match?.[0] ?? "deployed";
 }
 
+export function writeCutoverReport(
+  value: unknown,
+  write: (text: string) => void = (text) => {
+    process.stdout.write(text);
+  },
+): void {
+  write(`${JSON.stringify(value, null, 2)}\n`);
+}
+
 export async function defaultVinextDeploy(
   env: NodeJS.ProcessEnv,
   cwd: string,
@@ -359,7 +368,7 @@ export async function defaultVinextDeploy(
 ): Promise<{ id: string }> {
   return new Promise((resolvePromise, reject) => {
     const child: ChildProcess = spawnFn(
-      process.execPath,
+      "node",
       [resolve(cwd, "node_modules/@vinext/cloudflare/dist/cli.js"), "deploy"],
       { cwd, env, stdio: ["ignore", "pipe", "pipe"] },
     );
@@ -428,4 +437,8 @@ export async function main(
   throw new Error("cutover-cf command must be baseline, remap, or deploy");
 }
 
-maybeRunCli(process.argv[1], "cutover-cf.ts", () => main());
+maybeRunCli(process.argv[1], "cutover-cf.ts", async () => {
+  const result = await main();
+  writeCutoverReport(result);
+  return result;
+});
