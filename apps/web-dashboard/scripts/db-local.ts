@@ -1,8 +1,9 @@
 import { mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { d1MigrationsComplete, runCf } from "./seed-test-db";
+import { LOCAL_DB_ID } from "./worker-stage";
 
-export const LOCAL_DB_ID = "aaaaaaaa-0000-4000-8000-000000000001";
+export { LOCAL_DB_ID };
 
 export function localPersistPath(cwd = process.cwd()): string {
   return resolve(cwd, ".cloudflare/local");

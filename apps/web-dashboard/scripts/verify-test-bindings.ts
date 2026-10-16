@@ -1,7 +1,8 @@
 import { existsSync, realpathSync } from "node:fs";
 import { resolve, sep } from "node:path";
+import { PRODUCTION_DB_ID } from "./worker-stage";
 
-export const PRODUCTION_DB_ID = "f66490d2-e7b3-43e8-a30c-2b34111141d7";
+export { PRODUCTION_DB_ID };
 
 export function testStateRoot(projectRoot: string): string {
   return resolve(projectRoot, ".cloudflare/tests");

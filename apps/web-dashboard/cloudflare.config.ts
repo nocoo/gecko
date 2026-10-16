@@ -1,34 +1,22 @@
 import { bindings, defineConfig, defineWorker, triggers } from "cf/config";
+import {
+  ACCESS_AUD,
+  COMPATIBILITY_DATE,
+  CRON_SCHEDULE,
+  databaseId,
+  databaseName,
+  deployStage,
+  productionDomains,
+  productionTriggers,
+  resourceEnv,
+} from "./scripts/worker-stage.ts";
 import * as entrypoint from "./worker-entry.ts" with { type: "cf-worker" };
 
-const PRODUCTION_DB_ID = "f66490d2-e7b3-43e8-a30c-2b34111141d7";
-const LOCAL_DB_ID = "aaaaaaaa-0000-4000-8000-000000000001";
-const TEST_DB_FALLBACK_ID = "bbbbbbbb-0000-4000-8000-000000000001";
-const ACCESS_AUD = "bc4c0722bcd5e327e650d26a24358aa80ec6077782a1f484e9ec48d09bdaeb13";
 const RUN_WORKER_FIRST = ["/*", "!/_next/static/*", "!/*/_next/static/*"];
-
-type ResourceEnv = "production" | "local" | "test";
-
-function resourceEnv(): ResourceEnv {
-  if (process.env.GECKO_TEST_STATE || process.env.GECKO_RESOURCE_ENV === "test") return "test";
-  if (process.env.CLOUDFLARE_DEPLOY === "production") return "production";
-  return "local";
-}
-
-function databaseId(resource: ResourceEnv): string {
-  if (resource === "production") return PRODUCTION_DB_ID;
-  if (resource === "test") return process.env.GECKO_TEST_DB_ID || TEST_DB_FALLBACK_ID;
-  return LOCAL_DB_ID;
-}
-
-function databaseName(resource: ResourceEnv): string {
-  if (resource === "production") return "gecko";
-  if (resource === "test") return "gecko-test";
-  return "gecko-local";
-}
 
 export default defineConfig(() => {
   const resource = resourceEnv();
+  const stage = deployStage();
   const isProd = resource === "production";
   const env: Record<
     string,
@@ -66,15 +54,19 @@ export default defineConfig(() => {
     }
   }
 
+  const scheduled = productionTriggers(stage).map((item) =>
+    triggers.scheduled({ schedule: item.cron || CRON_SCHEDULE }),
+  );
+
   return {
     worker: defineWorker({
       name: "gecko",
       entrypoint,
-      compatibilityDate: "2026-09-28",
+      compatibilityDate: COMPATIBILITY_DATE,
       compatibilityFlags: ["nodejs_compat"],
       workersDev: false,
       previewUrls: false,
-      domains: isProd ? ["gecko.hexly.ai"] : undefined,
+      domains: isProd ? productionDomains(stage) : undefined,
       observability: {
         enabled: true,
         traces: { enabled: true },
@@ -87,7 +79,7 @@ export default defineConfig(() => {
         runWorkerFirst: RUN_WORKER_FIRST,
       },
       env,
-      triggers: isProd ? [triggers.scheduled({ schedule: "0 * * * *" })] : [],
+      triggers: isProd ? scheduled : [],
     }),
   };
 });

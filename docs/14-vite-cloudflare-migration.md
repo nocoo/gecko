@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：D1–D5 已确认；本地 Workers 切片已可运行（L1/L2/L3、vinext 生产 bundle 含 fetch+scheduled）。生产 Worker 尚未创建，不部署、不 remap、不改 Access 策略。\
+> **状态**：D1–D5 已确认；本地 Workers 切片已可运行（L1/L2/L3、vinext 生产 bundle 含 fetch+scheduled）。生产 Worker 名拟为 `gecko`，账号上尚不存在；不部署、不 remap、不改 Access 策略。\
 > **日期**：2026-10-16\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
@@ -374,9 +374,9 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 1. `docs: confirm worker migration prerequisites`\
    记录哥确认的 D3/D5、版本组合、实际配置/生成入口、隔离与 workerd 探针证据、资源/账号预检和停写方案。探针在隔离临时目录，不提前改生产或运行未审阅 init。先验证第 9 节中框架/API 可行性；完整 Gecko 回归在下一步，远程验收在第 10 节，不能把后续结果当作已具备。
 2. `feat: move dashboard runtime to workers`\
-   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。**本地切片已完成**：L1 817、L2 89、L3 1、vinext build 默认导出含 fetch+scheduled。G2 仍被既有传递依赖 `braces@3.0.3`（GHSA-vfj7-8cjw-p6xm，上游无补丁）挡住。Cron 本地 HTTP 触发接口在锁定插件中未找到 `/cdn-cgi/local/scheduled`，未作为 L2 断言。
+   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。**本地切片已完成**：L1 817、L2 89、L3 1、vinext build 默认导出含 fetch+scheduled。G2 对传递依赖 `braces@3.0.3`（GHSA-vfj7-8cjw-p6xm，上游无补丁）做一次性 ignore：vinext 构建链间接依赖，Worker 运行时不展开攻击者 glob；braces 发补丁后删除 ignore。Cron 本地 HTTP 触发接口在锁定插件中未找到 `/cdn-cgi/local/scheduled`，未作为 L2 断言。
 3. `chore: add guarded d1 cutover tooling`\
-   `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。
+   `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。**本地工具已落地**：默认 dry-run，注入 store/adapter 才写；预备/HTTP/Cron 三阶段 `triggers` 必带且 prep/http 为空数组。生产 Worker 名拟为 `gecko`，尚未创建、尚未部署。
 4. `docs: record worker cutover evidence`\
    完成第 10 节后更新仓根 AGENTS/README、英文指南、索引及相关编号文档，记录实际部署 revision/版本、身份映射校验和健康/同步/Cron 证据。不能仅凭 push 或 header 声称已部署。
 5. `chore: remove completed cutover tooling`\

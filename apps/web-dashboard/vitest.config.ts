@@ -28,7 +28,17 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: ["src/**/*.ts", "src/**/*.tsx", "worker-entry.ts"],
+      include: [
+        "src/**/*.ts",
+        "src/**/*.tsx",
+        "worker-entry.ts",
+        "scripts/worker-stage.ts",
+        "scripts/cutover-guard.ts",
+        "scripts/cutover-schema.ts",
+        "scripts/baseline-d1.ts",
+        "scripts/remap-user-ids.ts",
+        "scripts/deploy.ts",
+      ],
       exclude: [
         "**/*.test.ts",
         "**/*.test.tsx",
