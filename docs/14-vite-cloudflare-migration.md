@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：D1–D5 已确认；本地 Workers 切片已可运行（L1/L2/L3、vinext 生产 bundle 含 fetch+scheduled）。生产 Worker 名拟为 `gecko`，账号上尚不存在；不部署、不 remap、不改 Access 策略。\
+> **状态**：D1–D5 已确认；本地 Workers 切片已可运行。生产 Worker 名 **`gecko` 已批准**。cutover CLI 已接 `cf`；现网 D1 账本空、0001–0008 schema 已证、0009 未加。哥批准生产 cutover，单用户五 ID 直接映射到 Access email `architie@gmail.com`（`--allow-merges --merge-keep first`，Google ID 排第一）。DNS 仍指向 Railway。不切 HTTP/Cron、不改 Access 策略，直到 prep 完成且静默后才 remap。\
 > **日期**：2026-10-16\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
@@ -26,7 +26,7 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 | vinext `1.1.0` tarball `init-cloudflare.js` | 默认写 **`cloudflare.config.ts`**；已有 `wrangler.jsonc` 会拒绝，除非 `--legacy-wrangler-cloudflare-init`。Gecko 不走该遗留开关。App Router 插件 `viteEnvironment.name = "rsc"`、`childEnvironments: ["ssr"]`。默认会建议 KV/Images/Response Store，Gecko **不采用** |
 | 隔离探针 `/tmp/gecko-cf-workerd-probe` | 锁定 `cf@1.0.0-beta.13`、`@cloudflare/vite-plugin@2.0.0-beta.sha-c82c3efb3`。`cf workers types` 写出 `.cloudflare/types/index.d.ts`，runtime `workerd@1.20261006.1` + `compatibilityDate: 2026-10-16` + `nodejs_compat`。插件类型仍有 `persistState` / `remoteBindings` / `inspectorPort`。`cf d1 migrations apply <id> --local --persist-to --dir` 成功；`cf d1 raw --local` INSERT 由 `miniflare.db` 返回 success，但 CLI 进程可能不退出，harness 必须有超时与进程组清理。未跑完整 vinext RSC 构建 |
 | `cf auth whoami` / `cf d1 get` / `cf workers get gecko` | 账号 `d51a8fde361e4be31db17d8c56737c1f`（Zheng Li Workspace）。现有 D1 `gecko` / `f66490d2-e7b3-43e8-a30c-2b34111141d7`：10 表、约 81MB、`running_in_region: APAC`。名为 `gecko` 的 Worker **不存在** |
-| `cf zero-trust access applications list` | 应用 `gecko-auth` id `9f4a898e-6231-4711-99ff-bfeaa8762dd8`，aud 与哥提供的一致，域 `gecko.hexly.ai`，Allow `architie@gmail.com`，IdP `7ea46ecc-2463-4ac5-b492-9a4870c12f98`，team `nocoo`。`shared-bypass` 已含 `gecko.hexly.ai/api/live`。**尚未**配置 `/api/sync`、`/api/v1/*`、`/api/backy/pull` bypass 以及更具体的 `/api/sync/status` Allow |
+| `cf zero-trust access applications list` | 应用 `gecko-auth` id `9f4a898e-6231-4711-99ff-bfeaa8762dd8`，aud 与哥提供的一致，域 `gecko.hexly.ai`，Allow `architie@gmail.com`，IdP `7ea46ecc-2463-4ac5-b492-9a4870c12f98`，team `nocoo`。`gecko-bypass` 已存在，覆盖 `/api/live` `/api/sync` `/api/backy/pull` `/api/v1/*`。**缺**更具体的 `/api/sync/status` Allow（会继承 `/api/sync` bypass）。HTTP 切流前须告知，不自动建 Access 应用 |
 | GeekHub `8226bd0` | Access JWT 用 `jose` 验 `sub`+`email`，User.id 用 `sub`；Gecko D3 用 **email 小写** 作 `user_id`，不能照搬 GeekHub 的 id 字段。其 Wrangler 隔离 harness 结构可参考，配置文件不可照搬 |
 | Giraffe `ac2d1e3` | 机器 API 独立鉴权、专用 Access 路径应用；不扩大 dashboard bypass |
 | [vinext Cloudflare 文档](https://vinext.dev/docs/deploying/cloudflare) / [cf typed config](https://developers.cloudflare.com/cf/projects/cloudflare-config/) | `assets.runWorkerFirst` 必须含 `["/*", "!/_next/static/*", "!/*/_next/static/*"]`。cf 配置在 Bun 下不能加载；实施与 CI 的 `cf` 命令用 Node ≥22.18 |
@@ -376,7 +376,7 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 2. `feat: move dashboard runtime to workers`\
    **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。**本地切片已完成**：L1 817、L2 89、L3 1、vinext build 默认导出含 fetch+scheduled。G2 对传递依赖 `braces@3.0.3`（GHSA-vfj7-8cjw-p6xm，上游无补丁）做一次性 ignore：vinext 构建链间接依赖，Worker 运行时不展开攻击者 glob；braces 发补丁后删除 ignore。Cron 本地 HTTP 触发接口在锁定插件中未找到 `/cdn-cgi/local/scheduled`，未作为 L2 断言。
 3. `chore: add guarded d1 cutover tooling`\
-   `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。**本地工具已落地**：默认 dry-run，注入 store/adapter 才写；预备/HTTP/Cron 三阶段 `triggers` 必带且 prep/http 为空数组。生产 Worker 名拟为 `gecko`，尚未创建、尚未部署。
+   `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。**本地工具已落地**：`scripts/cutover-cf.ts` 接 `cf` 跑 baseline/remap/deploy；默认 dry-run；prep 不应用 0009；多对一 remap 用 `--merge-keep first`。生产 Worker 名 **`gecko` 已批准**，账号上尚不存在。
 4. `docs: record worker cutover evidence`\
    完成第 10 节后更新仓根 AGENTS/README、英文指南、索引及相关编号文档，记录实际部署 revision/版本、身份映射校验和健康/同步/Cron 证据。不能仅凭 push 或 header 声称已部署。
 5. `chore: remove completed cutover tooling`\
