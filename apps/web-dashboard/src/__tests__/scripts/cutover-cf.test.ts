@@ -209,6 +209,9 @@ describe("cutover-cf", () => {
         GECKO_TEST_STATE: "x",
         GECKO_RESOURCE_ENV: "test",
         RESOURCE_ENV: "test",
+        CF_API_TOKEN: "scoped",
+        CF_ACCOUNT_ID: "acct",
+        CF_D1_DATABASE_ID: "db",
       },
     }).inspect();
     expect(snapshot.d1Migrations).toEqual(["0001_cloud_init.sql"]);
@@ -216,6 +219,9 @@ describe("cutover-cf", () => {
     expect(seenEnv?.GECKO_TEST_STATE).toBeUndefined();
     expect(seenEnv?.GECKO_RESOURCE_ENV).toBeUndefined();
     expect(seenEnv?.RESOURCE_ENV).toBeUndefined();
+    expect(seenEnv?.CF_API_TOKEN).toBeUndefined();
+    expect(seenEnv?.CF_ACCOUNT_ID).toBeUndefined();
+    expect(seenEnv?.CF_D1_DATABASE_ID).toBeUndefined();
   });
 
   test("query failures and unexpected migration-ledger errors surface", async () => {

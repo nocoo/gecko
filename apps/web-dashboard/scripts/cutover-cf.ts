@@ -106,6 +106,9 @@ function productionEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const next = { ...env };
   delete next.GECKO_TEST_STATE;
   delete next.TEST_AUTH_MODE;
+  delete next.CF_API_TOKEN;
+  delete next.CF_ACCOUNT_ID;
+  delete next.CF_D1_DATABASE_ID;
   if (next.GECKO_RESOURCE_ENV === "test") delete next.GECKO_RESOURCE_ENV;
   if (next.RESOURCE_ENV === "test") delete next.RESOURCE_ENV;
   return next;
