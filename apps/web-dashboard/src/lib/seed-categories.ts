@@ -45,17 +45,11 @@ export async function seedDefaultCategories(userId: string): Promise<boolean> {
     catParams,
   );
 
-  // ── Step 2: Auto-map known bundle_ids ──
-  // Build mapping entries. Every BUNDLE_ID_MAPPINGS slug exists in
-  // DEFAULT_CATEGORIES (verified statically), so the lookup is total.
-  const mappingEntries: Array<{ bundleId: string; categoryId: string }> = [];
-  for (const [bundleId, slug] of BUNDLE_ID_MAPPINGS) {
-    const categoryId = categoryIdBySlug.get(slug);
-    if (categoryId === undefined) {
-      continue;
-    }
-    mappingEntries.push({ bundleId, categoryId });
-  }
+  // Every BUNDLE_ID_MAPPINGS slug exists in DEFAULT_CATEGORIES.
+  const mappingEntries = [...BUNDLE_ID_MAPPINGS].map(([bundleId, slug]) => ({
+    bundleId,
+    categoryId: categoryIdBySlug.get(slug) as string,
+  }));
 
   // Batch insert: 3 params per row (user_id, bundle_id, category_id) + datetime('now') in SQL.
   // Batch size 25 → 75 params < 100.

@@ -9,6 +9,8 @@
  *   - Fire-and-forget safe: callers don't need to await
  */
 
+import { identityTag } from "@/lib/access";
+import { textBinding } from "@/lib/runtime-env";
 import { settingsRepo } from "@/lib/settings-repo";
 import { type AiAnalysisResult, fmtDuration } from "@/services/analyze-core";
 import type { DailyStats } from "@/services/daily-stats";
@@ -60,10 +62,10 @@ export function formatTimeSegments(
 export async function sendAnalysisEmail(params: SendAnalysisEmailParams): Promise<void> {
   try {
     // 1. Check env vars
-    const webhookUrl = process.env.DOVE_WEBHOOK_URL;
-    const webhookToken = process.env.DOVE_WEBHOOK_TOKEN;
+    const webhookUrl = textBinding("DOVE_WEBHOOK_URL");
+    const webhookToken = textBinding("DOVE_WEBHOOK_TOKEN");
     if (!webhookUrl || !webhookToken) {
-      return; // silently skip — Dove not configured
+      return;
     }
 
     // 2. Check user settings
@@ -79,10 +81,10 @@ export async function sendAnalysisEmail(params: SendAnalysisEmailParams): Promis
     }
 
     // 3. Build template variables
-    const templateSlug = process.env.DOVE_TEMPLATE_SLUG || "daily-analysis";
+    const templateSlug = textBinding("DOVE_TEMPLATE_SLUG") || "daily-analysis";
     const dashboardBaseUrl =
-      params.dashboardBaseUrl || process.env.NEXTAUTH_URL || "https://gecko.hexly.ai";
-    const dashboardUrl = `${dashboardBaseUrl}/daily/${params.date}`;
+      params.dashboardBaseUrl || textBinding("DASHBOARD_URL") || "https://gecko.hexly.ai";
+    const dashboardUrl = `${dashboardBaseUrl.replace(/\/$/, "")}/daily/${params.date}`;
 
     const variables: Record<string, string> = {
       date: params.date,
@@ -97,7 +99,8 @@ export async function sendAnalysisEmail(params: SendAnalysisEmailParams): Promis
     };
 
     // 4. POST to Dove webhook
-    const idempotencyKey = `gecko-analysis-${params.userId}-${params.date}`;
+    const tag = await identityTag(params.userId);
+    const idempotencyKey = `gecko-analysis-${tag}-${params.date}`;
 
     const response = await fetch(webhookUrl, {
       method: "POST",
@@ -114,19 +117,17 @@ export async function sendAnalysisEmail(params: SendAnalysisEmailParams): Promis
     });
 
     if (!response.ok) {
-      // response.text() doesn't reject in practice for fetch Responses;
-      // the `.catch` is defense-in-depth only.
-      /* v8 ignore next */
-      const body = await response.text().catch(() => "(unreadable)");
-      console.error(`[email-notification] Dove returned ${response.status}: ${body}`);
+      console.error("[email-notification] dove failed", {
+        stage: "webhook",
+        status: response.status,
+      });
     } else {
-      console.log(`[email-notification] Email sent for user ${params.userId} date ${params.date}`);
+      console.log("[email-notification] sent", { stage: "webhook", date: params.date });
     }
   } catch (err) {
-    // Never throw — email is a best-effort side effect
-    console.error(
-      "[email-notification] Unexpected error:",
-      err instanceof Error ? err.message : err,
-    );
+    console.error("[email-notification] unexpected", {
+      stage: "webhook",
+      error: err instanceof Error ? err.name : "error",
+    });
   }
 }

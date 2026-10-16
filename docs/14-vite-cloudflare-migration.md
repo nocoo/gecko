@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：D1–D5 已确认；正在实施本地 Workers 切片。生产 Worker 尚未创建，vinext-on-workerd 全量验收未完成。\
+> **状态**：D1–D5 已确认；本地 Workers 切片已可运行（L1/L2/L3、vinext 生产 bundle 含 fetch+scheduled）。生产 Worker 尚未创建，不部署、不 remap、不改 Access 策略。\
 > **日期**：2026-10-16\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
@@ -97,7 +97,7 @@ export default defineConfig({
 |---|---|
 | 文件 | `apps/web-dashboard/cloudflare.config.ts` |
 | Worker 入口 | `import * as entrypoint from "./worker-entry.ts" with { type: "cf-worker" }`；`worker.entrypoint` |
-| 基础字段 | `name: "gecko"`、`compatibilityDate: "2026-10-16"`、`compatibilityFlags: ["nodejs_compat"]` |
+| 基础字段 | `name: "gecko"`、`compatibilityDate: "2026-09-28"`、`compatibilityFlags: ["nodejs_compat"]` |
 | 对外入口 | `workersDev: false`、`previewUrls: false`；HTTP 验收阶段起 `domains: ["gecko.hexly.ai"]` |
 | 现有 D1 | `env.DB: bindings.d1({ id: "f66490d2-e7b3-43e8-a30c-2b34111141d7", name: "gecko", dev: { remote: false } })`；禁止仅凭 name 自动建新库 |
 | Cron | 最终 `triggers: [triggers.scheduled({ schedule: "0 * * * *" })]`；预备/HTTP 阶段显式空数组 |
@@ -108,7 +108,7 @@ export default defineConfig({
 
 字段依据：[cf typed config](https://developers.cloudflare.com/cf/projects/cloudflare-config/)、[cf agents](https://developers.cloudflare.com/cf/agents/)、[Vite plugin API](https://developers.cloudflare.com/workers/vite-plugin/reference/api/)。cf `d1 migrations apply <database>` 的 `<database>` 是 ID；其 `--local --persist-to --dir` 已由本机帮助确认，但它与插件 `persistState` 是否同一路径，仍须本地读写往返证明。不得混用 Wrangler 字段或部署命令。
 
-三种资源模式显式分开：production 使用上述现有库和正式域；日常 local 使用独立本地 DB ID/persist、`ENVIRONMENT=local` / `RESOURCE_ENV=local`、无域名发布或 Cron；test 使用第 7 节的每轮资源。日常 `dev` 脚本必须显式选择本地配置，不能依赖 production 配置的隐式 Miniflare 模拟。cf 按 mode 返回完整配置；部署脚本检查最终配置而不只检查模式名字。`compatibilityDate` 固定为探针日期 `2026-10-16`，不在每次发布时自动漂移。
+三种资源模式显式分开：production 使用上述现有库和正式域；日常 local 使用独立本地 DB ID/persist、`ENVIRONMENT=local` / `RESOURCE_ENV=local`、无域名发布或 Cron；test 使用第 7 节的每轮资源。日常 `dev` 脚本必须显式选择本地配置，不能依赖 production 配置的隐式 Miniflare 模拟。cf 按 mode 返回完整配置；部署脚本检查最终配置而不只检查模式名字。`compatibilityDate` 固定为锁定 `@cloudflare/vite-plugin` 所带 workerd（`1.20260918.1` / miniflare `1.20260921.1`）支持的上限 `2026-09-28`。`cf workers types` 探针曾按日历写出 `2026-10-16`，该日期会让本地 Worker 无法启动，不能随发布日漂移。
 
 生产配置表描述的是**最终状态**，不能用于跳过切换阶段。`scripts/deploy.ts` 必须显式核验同一 Worker/DB 的三个阶段：预备阶段无公开域、无 Cron；HTTP 验收阶段只开放正式域、仍无 Cron；人工确认后才启用最终 Cron。前两阶段必须生成空 `triggers` 数组，不能省略字段：省略是否保留远端已有 Cron，须以 `cf` 1.0.0-beta.13 的实际控制面记录证明。部署前审生成物、部署后核对实际 triggers；不得把本地无定时事件当作远端已停的证据。依据：[Cron 配置与删除语义](https://developers.cloudflare.com/workers/configuration/cron-triggers/)。
 
@@ -374,7 +374,7 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 1. `docs: confirm worker migration prerequisites`\
    记录哥确认的 D3/D5、版本组合、实际配置/生成入口、隔离与 workerd 探针证据、资源/账号预检和停写方案。探针在隔离临时目录，不提前改生产或运行未审阅 init。先验证第 9 节中框架/API 可行性；完整 Gecko 回归在下一步，远程验收在第 10 节，不能把后续结果当作已具备。
 2. `feat: move dashboard runtime to workers`\
-   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。
+   **一个端到端可运行切片**：8.1 中 target/依赖/类型、binding、Access、同步写入、Cron 生命周期与 0009 租约迁移、出站适配、可观测配置/脱敏和测试 harness 必须一起形成可运行产品；同步删除对应 NextAuth、Node SQLite、timer 和 Docker 路径。分拆开发可以在工作区进行，但不提交必然不能启动/测试的中间状态。native 代码不变。通过 L1/L2/L3、G2、生产 bundle 本地验收后原子提交，不部署。**本地切片已完成**：L1 817、L2 89、L3 1、vinext build 默认导出含 fetch+scheduled。G2 仍被既有传递依赖 `braces@3.0.3`（GHSA-vfj7-8cjw-p6xm，上游无补丁）挡住。Cron 本地 HTTP 触发接口在锁定插件中未找到 `/cdn-cgi/local/scheduled`，未作为 L2 断言。
 3. `chore: add guarded d1 cutover tooling`\
    `scripts/baseline-d1.ts`、`scripts/remap-user-ids.ts`、`scripts/deploy.ts` 及隔离 fixture 测试；默认 dry-run，明确生产 ID、基线审批、恢复检查、静默条件和环境拒绝。本地空库/历史 schema/已登记基线/冲突/超限中断恢复均演练；部署预备/HTTP/Cron 三阶段生成配置分别断言，并演练已有 Cron 不能因字段省略而残留；未授权不操作线上。
 4. `docs: record worker cutover evidence`\

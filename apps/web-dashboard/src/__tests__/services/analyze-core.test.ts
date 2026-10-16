@@ -5,7 +5,8 @@
  * bun:test vi.fn() for the `ai` module's generateText.
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test, vi } from "vitest";
+import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import {
   type AppContext,
   buildAppContextSection,
@@ -19,62 +20,11 @@ import {
   runAnalysis,
 } from "@/services/analyze-core";
 import { computeDailyStats } from "@/services/daily-stats";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
+import { mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // D1 mock helper
 // ---------------------------------------------------------------------------
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    let body: Record<string, unknown>;
-    try {
-      body = JSON.parse(init.body as string);
-    } catch {
-      return Promise.resolve(
-        new Response(JSON.stringify({ error: "Invalid JSON response" }), { status: 400 }),
-      );
-    }
-
-    if (!body.sql) {
-      return Promise.resolve(
-        new Response(JSON.stringify({ error: "Invalid JSON response" }), { status: 400 }),
-      );
-    }
-
-    calls.push({ sql: body.sql as string, params: body.params as unknown[] });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 // ---------------------------------------------------------------------------
 // Pure function tests
@@ -497,7 +447,7 @@ describe("runAnalysis", () => {
     __testOverrides.generateText = null;
   });
 
-  test("succeeds even when cache upsert fails (non-fatal)", async () => {
+  test("returns persist_error when cache upsert fails", async () => {
     const validResult = {
       score: 80,
       highlights: ["Productive"],
@@ -512,16 +462,12 @@ describe("runAnalysis", () => {
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
     });
 
-    // D1 mock: upsert call will fail
-    let callIndex = 0;
-    const responses: unknown[][] = [
-      // 1. loadAiSettings
+    const { db } = mockD1([
       [
         { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
         { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
         { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
       ],
-      // 2. fetchSessionsForDate
       [
         {
           id: "s1",
@@ -533,52 +479,116 @@ describe("runAnalysis", () => {
           duration: 3600,
         },
       ],
-      // 3-5. loadAppContext
       [],
       [],
       [],
-    ];
-
-    globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-      let body: Record<string, unknown>;
-      try {
-        body = JSON.parse(init.body as string);
-      } catch {
-        return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
-      }
-      if (!body.sql) {
-        return Promise.resolve(new Response(JSON.stringify({ error: "bad" }), { status: 400 }));
-      }
-
-      const results = responses[callIndex] ?? [];
-      callIndex++;
-
-      // 6th call is the upsert — make it fail
-      if (callIndex > responses.length) {
-        return Promise.resolve(
-          new Response(JSON.stringify({ error: "D1 write failed" }), { status: 500 }),
-        );
-      }
-
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            success: true,
-            result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-            errors: [],
-          }),
-          { status: 200 },
-        ),
-      );
-    }) as unknown as typeof fetch;
+    ]);
+    db.throwOn = (sql) =>
+      /daily_summaries/i.test(sql) && /INSERT|UPDATE/i.test(sql)
+        ? new Error("D1 write failed")
+        : undefined;
 
     const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
-    // Should still succeed despite cache failure
-    expect(result.ok).toBe(true);
-    if (result.ok) {
-      expect(result.score).toBe(80);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("persist_error");
     }
 
+    __testOverrides.generateText = null;
+  });
+
+  test("returns persist_error when cache upsert throws a non-Error", async () => {
+    const validResult = {
+      score: 80,
+      highlights: ["Productive"],
+      improvements: ["Rest more"],
+      timeSegments: [],
+      summary: "Solid day.",
+    };
+    const { __testOverrides } = await import("../setup");
+    __testOverrides.generateText = async () => ({
+      text: JSON.stringify(validResult),
+      usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
+    });
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-sonnet-4-20250514", updated_at: 100 },
+      ],
+      [
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "test.ts",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
+      ],
+      [],
+      [],
+      [],
+    ]);
+    const spy = vi.spyOn(dailySummaryRepo, "upsertAiResult").mockRejectedValue("persist string");
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("persist_error");
+    }
+    spy.mockRestore();
+    __testOverrides.generateText = null;
+  });
+
+  test("ignores unknown authType values", async () => {
+    const validResult = {
+      score: 80,
+      highlights: ["Productive"],
+      improvements: ["Rest more"],
+      timeSegments: [],
+      summary: "Solid day.",
+    };
+    const { __testOverrides } = await import("../setup");
+    let observed: Record<string, unknown> | undefined;
+    const prevResolve = __testOverrides.resolveAiConfig;
+    __testOverrides.resolveAiConfig = (input) => {
+      observed = input;
+      return {
+        provider: input.provider,
+        baseURL: "https://api.example.com",
+        apiKey: input.apiKey,
+        model: input.model ?? "test-model",
+        sdkType: "anthropic",
+      };
+    };
+    __testOverrides.generateText = async () => ({ text: JSON.stringify(validResult) });
+    mockD1([
+      [
+        { user_id: "u1", key: "ai.provider", value: "anthropic", updated_at: 100 },
+        { user_id: "u1", key: "ai.apiKey", value: "sk-test", updated_at: 100 },
+        { user_id: "u1", key: "ai.model", value: "claude-x", updated_at: 100 },
+        { user_id: "u1", key: "ai.authType", value: "other", updated_at: 100 },
+      ],
+      [
+        {
+          id: "s1",
+          app_name: "VSCode",
+          bundle_id: "com.microsoft.VSCode",
+          window_title: "x",
+          url: null,
+          start_time: MARCH_01_10AM_CST,
+          duration: 3600,
+        },
+      ],
+      [],
+      [],
+      [],
+    ]);
+    const result = await runAnalysis("u1", "2026-03-01", "Asia/Shanghai");
+    expect(result.ok).toBe(true);
+    expect(observed?.authType).toBeUndefined();
+    __testOverrides.resolveAiConfig = prevResolve ?? null;
     __testOverrides.generateText = null;
   });
 
@@ -928,6 +938,7 @@ describe("parseAiResponse branch coverage", () => {
       // first segment missing label → dropped; second has all fields
       timeSegments: [
         { timeRange: "09:00-10:00" },
+        { label: "L" },
         { timeRange: "10:00-11:00", label: "L", description: "D" },
       ],
       summary: "s",

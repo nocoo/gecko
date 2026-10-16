@@ -7,8 +7,8 @@ import { backyRepo } from "@/lib/backy-repo";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const config = await backyRepo.getPushConfig(user.userId);

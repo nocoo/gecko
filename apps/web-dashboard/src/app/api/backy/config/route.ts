@@ -8,8 +8,8 @@ import { backyRepo } from "@/lib/backy-repo";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const config = await backyRepo.getPushConfig(user.userId);
@@ -31,13 +31,13 @@ export async function GET(): Promise<Response> {
   });
 }
 
-export async function PUT(request: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function PUT(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { webhookUrl?: string; apiKey?: string };
   try {
-    body = await request.json();
+    body = await req.json();
   } catch {
     return jsonError("Invalid JSON body", 400);
   }

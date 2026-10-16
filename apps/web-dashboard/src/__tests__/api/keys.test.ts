@@ -1,53 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/keys route handler tests
-// Uses E2E_SKIP_AUTH=true to bypass session auth.
-// Mocks D1 client to avoid real Cloudflare calls.
+// Session identity comes from the Access stub in the L1 test env.
 // ---------------------------------------------------------------------------
 
 // Save originals
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
 // Mock D1 to track queries
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
-
 describe("/api/keys", () => {
   // ---------------------------------------------------------------------------
   // POST /api/keys — Generate API key
@@ -58,7 +18,7 @@ describe("/api/keys", () => {
       const { calls } = mockD1([[]]);
       const { POST } = await import("../../app/api/keys/route");
 
-      const req = new Request("http://localhost/api/keys", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "MacBook Pro" }),
@@ -83,7 +43,7 @@ describe("/api/keys", () => {
       mockD1();
       const { POST } = await import("../../app/api/keys/route");
 
-      const req = new Request("http://localhost/api/keys", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -100,7 +60,7 @@ describe("/api/keys", () => {
       mockD1();
       const { POST } = await import("../../app/api/keys/route");
 
-      const req = new Request("http://localhost/api/keys", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "  " }),
@@ -137,7 +97,7 @@ describe("/api/keys", () => {
       ]);
       const { GET } = await import("../../app/api/keys/route");
 
-      const req = new Request("http://localhost/api/keys");
+      const req = humanRequest("http://127.0.0.1:17018/api/keys");
       const res = await GET(req);
       expect(res.status).toBe(200);
 
@@ -154,7 +114,7 @@ describe("/api/keys", () => {
       mockD1([[]]);
       const { GET } = await import("../../app/api/keys/route");
 
-      const req = new Request("http://localhost/api/keys");
+      const req = humanRequest("http://127.0.0.1:17018/api/keys");
       const res = await GET(req);
       expect(res.status).toBe(200);
 
@@ -181,7 +141,7 @@ describe("/api/keys/[id]", () => {
       ]);
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "Work MacBook" }),
@@ -199,7 +159,7 @@ describe("/api/keys/[id]", () => {
       mockD1();
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -213,7 +173,7 @@ describe("/api/keys/[id]", () => {
       mockD1();
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "   " }),
@@ -227,7 +187,7 @@ describe("/api/keys/[id]", () => {
       mockD1();
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "PATCH",
         body: "not json",
       });
@@ -240,7 +200,7 @@ describe("/api/keys/[id]", () => {
       mockD1([[]]);
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/nonexistent", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/nonexistent", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "New Name" }),
@@ -254,7 +214,7 @@ describe("/api/keys/[id]", () => {
       mockD1([[{ id: "key-1", user_id: "other-user" }]]);
       const { PATCH } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "New Name" }),
@@ -276,7 +236,7 @@ describe("/api/keys/[id]", () => {
       mockD1([[{ id: "key-1", user_id: "e2e-test-user" }], []]);
       const { DELETE } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "DELETE",
       });
 
@@ -291,7 +251,7 @@ describe("/api/keys/[id]", () => {
       mockD1([[]]);
       const { DELETE } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/nonexistent", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/nonexistent", {
         method: "DELETE",
       });
 
@@ -303,7 +263,7 @@ describe("/api/keys/[id]", () => {
       mockD1([[{ id: "key-1", user_id: "other-user" }]]);
       const { DELETE } = await import("../../app/api/keys/[id]/route");
 
-      const req = new Request("http://localhost/api/keys/key-1", {
+      const req = humanRequest("http://127.0.0.1:17018/api/keys/key-1", {
         method: "DELETE",
       });
 

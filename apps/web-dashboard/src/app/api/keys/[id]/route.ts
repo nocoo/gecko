@@ -33,7 +33,7 @@ export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const { id } = await params;
@@ -69,10 +69,10 @@ export async function PATCH(
 // ---------------------------------------------------------------------------
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const { id } = await params;

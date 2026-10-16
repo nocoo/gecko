@@ -4,67 +4,33 @@
  */
 
 import { gunzipSync } from "node:zlib";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { BackupEnvelope } from "@/lib/backy";
 import { executePush } from "@/lib/backy-push";
+import { humanRequest, mockD1BySql, mockExternalFetch } from "../test-env";
 
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-/** D1 response builder */
-function d1Resp(results: unknown[]) {
-  return JSON.stringify({
-    success: true,
-    result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-    errors: [],
-  });
-}
-
-/**
- * Mock fetch that routes D1 calls vs external (backy) calls.
- * Captures the FormData sent to the backy webhook for assertion.
- */
 function mockFetchRouter(opts: {
   d1Handler?: (sql: string, params: unknown[]) => unknown[];
   backyStatus?: number;
   backyBody?: string;
   backyHandler?: (url: string, init: RequestInit) => Response;
 }) {
-  const d1Calls: Array<{ sql: string; params: unknown[] }> = [];
+  const { calls: d1Calls } = mockD1BySql((sql, params) => opts.d1Handler?.(sql, params) ?? []);
   const backyCalls: Array<{ url: string; method: string; body: FormData | null }> = [];
-
-  globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
-
-    if (urlStr.includes("api.cloudflare.com")) {
-      const body = JSON.parse((init?.body ?? "") as string);
-      d1Calls.push({ sql: body.sql, params: body.params });
-      const results = opts.d1Handler?.(body.sql, body.params) ?? [];
-      return new Response(d1Resp(results), { status: 200 });
-    }
-
-    // Backy calls
-    const formData = init?.body instanceof FormData ? init.body : null;
-    backyCalls.push({ url: urlStr, method: init?.method ?? "GET", body: formData });
-
-    if (opts.backyHandler) {
-      return opts.backyHandler(urlStr, init!);
-    }
+  mockExternalFetch((url, init) => {
+    backyCalls.push({
+      url,
+      method: init?.method ?? "GET",
+      body: init?.body instanceof FormData ? init.body : null,
+    });
+    if (opts.backyHandler) return opts.backyHandler(url, init ?? {});
     return new Response(opts.backyBody ?? "OK", { status: opts.backyStatus ?? 200 });
-  }) as unknown as typeof fetch;
-
+  });
   return { d1Calls, backyCalls };
+}
+
+function pushReq(): Request {
+  return humanRequest("http://127.0.0.1:17018/api/backy/push", { method: "POST" });
 }
 
 // ---------------------------------------------------------------------------
@@ -253,7 +219,7 @@ describe("/api/backy/push POST", () => {
     });
 
     const { POST } = await import("../../app/api/backy/push/route");
-    const res = await POST();
+    const res = await POST(pushReq());
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -266,7 +232,7 @@ describe("/api/backy/push POST", () => {
   test("returns 422 when not configured", async () => {
     mockFetchRouter({});
     const { POST } = await import("../../app/api/backy/push/route");
-    const res = await POST();
+    const res = await POST(pushReq());
     expect(res.status).toBe(422);
   });
 });
@@ -300,7 +266,7 @@ describe("/api/backy/history GET", () => {
     });
 
     const { GET } = await import("../../app/api/backy/history/route");
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -311,7 +277,7 @@ describe("/api/backy/history GET", () => {
   test("returns 422 when not configured", async () => {
     mockFetchRouter({});
     const { GET } = await import("../../app/api/backy/history/route");
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     expect(res.status).toBe(422);
   });
 
@@ -332,7 +298,7 @@ describe("/api/backy/history GET", () => {
     });
 
     const { GET } = await import("../../app/api/backy/history/route");
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     expect(res.status).toBe(502);
   });
 });

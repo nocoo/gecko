@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@nocoo/basalt/components/avatar";
+import { Avatar, AvatarFallback } from "@nocoo/basalt/components/avatar";
 import { Badge } from "@nocoo/basalt/components/badge";
 import {
   Sidebar as BasaltSidebar,
@@ -33,7 +33,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { accessLogout, useMe } from "@/hooks/use-me";
 import { cn, getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { useSidebar } from "./sidebar-context";
@@ -111,11 +111,10 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle } = useSidebar();
-  const { data: session } = useSession();
+  const { user } = useMe();
 
-  const userName = session?.user?.name ?? "User";
-  const userEmail = session?.user?.email ?? "";
-  const userImage = session?.user?.image;
+  const userName = user?.name ?? "User";
+  const userEmail = user?.email ?? "";
   const userInitial = userName[0] ?? "?";
 
   return (
@@ -187,13 +186,8 @@ export function Sidebar() {
             <div className="py-3 flex justify-center w-full">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="cursor-pointer"
-                  >
+                  <button type="button" onClick={accessLogout} className="cursor-pointer">
                     <Avatar className="h-9 w-9">
-                      {userImage && <AvatarImage src={userImage} alt={userName} />}
                       <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
                         {userInitial}
                       </AvatarFallback>
@@ -279,7 +273,6 @@ export function Sidebar() {
                 email={userEmail}
                 avatar={
                   <Avatar className="h-9 w-9 shrink-0">
-                    {userImage && <AvatarImage src={userImage} alt={userName} />}
                     <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
                       {userInitial}
                     </AvatarFallback>
@@ -290,7 +283,7 @@ export function Sidebar() {
                     <TooltipTrigger asChild>
                       <button
                         type="button"
-                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        onClick={accessLogout}
                         aria-label="Sign out"
                         className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors shrink-0 cursor-pointer"
                       >

@@ -2,55 +2,18 @@
  * Tests for backy-export.ts — full data export with pagination.
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { BACKUP_SCHEMA_VERSION } from "@/lib/backy";
 import { exportUserData, PAGE_SIZE } from "@/lib/backy-export";
+import { mockD1BySql } from "../test-env";
 
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
-/** Build a fake D1 response. */
-function d1Response(results: unknown[], meta?: { changes: number }) {
-  return {
-    success: true,
-    result: [{ results, success: true, meta: meta ?? { changes: 0, last_row_id: 0 } }],
-    errors: [],
-  };
-}
-
-/**
- * Mock D1 with a router that inspects the SQL to return appropriate data.
- * Returns the calls array for assertion.
- */
 function mockD1Router(handlers: Record<string, (params: unknown[]) => unknown[]>) {
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    // Match handler by checking if the SQL contains the table name
+  return mockD1BySql((sql, params) => {
     for (const [pattern, handler] of Object.entries(handlers)) {
-      if (body.sql.includes(pattern)) {
-        const results = handler(body.params);
-        return Promise.resolve(new Response(JSON.stringify(d1Response(results)), { status: 200 }));
-      }
+      if (sql.includes(pattern)) return handler(params);
     }
-
-    // Default: empty results
-    return Promise.resolve(new Response(JSON.stringify(d1Response([])), { status: 200 }));
-  }) as unknown as typeof fetch;
-
-  return { calls };
+    return [];
+  });
 }
 
 // Helper to make a minimal session row

@@ -7,68 +7,12 @@
  * daily-analyze.test.ts.
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // D1 mock helper
 // ---------------------------------------------------------------------------
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    // AI SDK calls won't have a SQL body — detect and reject them
-    let body: Record<string, unknown>;
-    try {
-      body = JSON.parse(init.body as string);
-    } catch {
-      // Non-JSON body (e.g. AI SDK call) — return error
-      return Promise.resolve(
-        new Response(JSON.stringify({ error: "Invalid JSON response" }), { status: 400 }),
-      );
-    }
-
-    if (!body.sql) {
-      // AI SDK or other non-D1 call
-      return Promise.resolve(
-        new Response(JSON.stringify({ error: "Invalid JSON response" }), { status: 400 }),
-      );
-    }
-
-    calls.push({ sql: body.sql as string, params: body.params as unknown[] });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -114,16 +58,29 @@ const aiSettingsRows = [
 ];
 
 function makeAnalyzeRequest(date: string, force = false): Request {
-  const url = force
-    ? `http://localhost/api/daily/${date}/analyze?force=true`
-    : `http://localhost/api/daily/${date}/analyze`;
-  return new Request(url, { method: "POST" });
+  const url = force ? `/api/daily/${date}/analyze?force=true` : `/api/daily/${date}/analyze`;
+  return humanRequest(url, { method: "POST" });
 }
 
 async function callPOST(req: Request, date: string): Promise<Response> {
   const { POST } = await import("../../app/api/daily/[date]/analyze/route");
   return POST(req, { params: Promise.resolve({ date }) });
 }
+
+const claimWrites = [
+  { results: [], meta: { changes: 1 } },
+  { results: [], meta: { changes: 1 } },
+];
+const upsertOk = { results: [], meta: { changes: 1 } };
+const sampleSession = {
+  id: "s1",
+  app_name: "VSCode",
+  bundle_id: "com.microsoft.VSCode",
+  window_title: "test.ts",
+  url: null,
+  start_time: 1772157600,
+  duration: 3600,
+};
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -175,16 +132,7 @@ describe("POST /api/daily/[date]/analyze", () => {
   });
 
   test("returns 400 when no sessions found for date", async () => {
-    mockD1([
-      // 1. getUserTimezone
-      [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
-      [],
-      // 3. settingsRepo.findByUserId — AI settings
-      aiSettingsRows,
-      // 4. fetchSessionsForDate — empty
-      [],
-    ]);
+    mockD1([[tzRow], [], ...claimWrites, aiSettingsRows, []]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-20"), "2026-02-20");
     expect(res.status).toBe(400);
@@ -194,16 +142,7 @@ describe("POST /api/daily/[date]/analyze", () => {
   });
 
   test("returns 400 when AI settings not configured", async () => {
-    mockD1([
-      // 1. getUserTimezone
-      [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
-      [],
-      // 3. settingsRepo.findByUserId — empty (no AI settings)
-      [],
-      // 4. fetchSessionsForDate — has sessions (won't reach here)
-      // (won't be called because we check AI config before sessions)
-    ]);
+    mockD1([[tzRow], [], ...claimWrites, []]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-20"), "2026-02-20");
     expect(res.status).toBe(400);
@@ -214,59 +153,30 @@ describe("POST /api/daily/[date]/analyze", () => {
 
   test("force=true skips AI cache check", async () => {
     const { calls } = mockD1([
-      // 1. getUserTimezone
       [tzRow],
-      // No cache check — force=true skips it
-      // 2. settingsRepo.findByUserId — AI settings
+      ...claimWrites,
       aiSettingsRows,
-      // 3. fetchSessionsForDate — has sessions but will fail at AI call
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 4-6. loadAppContext — categories, tags, notes
+      [sampleSession],
       [],
       [],
       [],
-      // generateText will fail but we're testing the skip behavior
     ]);
 
-    const _res = await callPOST(makeAnalyzeRequest("2026-02-27", true), "2026-02-27");
-    // Will get 502 because generateText isn't mocked, but that's fine —
-    // we're verifying that it reached the AI call (skipped cache).
-    // The key assertion: no SQL query for daily_summaries was made.
-    const cacheQueries = calls.filter((c) => c.sql.includes("daily_summaries"));
-    expect(cacheQueries).toHaveLength(0);
+    await callPOST(makeAnalyzeRequest("2026-02-27", true), "2026-02-27");
+    const cacheSelects = calls.filter(
+      (c) => c.sql.includes("daily_summaries") && c.sql.trim().toUpperCase().startsWith("SELECT"),
+    );
+    expect(cacheSelects).toHaveLength(0);
+    expect(calls.some((c) => c.sql.includes("INSERT INTO daily_summaries"))).toBe(true);
   });
 
   test("queries sessions with timezone-aware day boundaries", async () => {
     const { calls } = mockD1([
-      // 1. getUserTimezone
       [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
       [],
-      // 3. settingsRepo.findByUserId — AI settings
+      ...claimWrites,
       aiSettingsRows,
-      // 4. fetchSessionsForDate
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext — categories, tags, notes
+      [sampleSession],
       [],
       [],
       [],
@@ -305,25 +215,11 @@ describe("POST /api/daily/[date]/analyze", () => {
     };
 
     const { calls } = mockD1([
-      // 1. getUserTimezone
       [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — cached row but no AI result
       [cachedRowNoAi],
-      // 3. settingsRepo.findByUserId — AI settings
+      ...claimWrites,
       aiSettingsRows,
-      // 4. fetchSessionsForDate — has sessions
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext — categories, tags, notes
+      [sampleSession],
       [],
       [],
       [],
@@ -345,30 +241,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       usage: { promptTokens: 10, completionTokens: 20, totalTokens: 30 },
     });
 
-    mockD1([
-      // 1. getUserTimezone
-      [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
-      [],
-      // 3. settingsRepo.findByUserId — AI settings
-      aiSettingsRows,
-      // 4. fetchSessionsForDate
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext
-      [],
-      [],
-      [],
-    ]);
+    mockD1([[tzRow], [], ...claimWrites, aiSettingsRows, [sampleSession], [], [], []]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
     expect(res.status).toBe(502);
@@ -385,30 +258,7 @@ describe("POST /api/daily/[date]/analyze", () => {
       throw new DOMException("The operation was aborted.", "TimeoutError");
     };
 
-    mockD1([
-      // 1. getUserTimezone
-      [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
-      [],
-      // 3. settingsRepo.findByUserId — AI settings
-      aiSettingsRows,
-      // 4. fetchSessionsForDate
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext
-      [],
-      [],
-      [],
-    ]);
+    mockD1([[tzRow], [], ...claimWrites, aiSettingsRows, [sampleSession], [], [], []]);
 
     const res = await callPOST(makeAnalyzeRequest("2026-02-27"), "2026-02-27");
     expect(res.status).toBe(504);
@@ -435,31 +285,15 @@ describe("POST /api/daily/[date]/analyze", () => {
     });
 
     mockD1([
-      // 1. getUserTimezone
       [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
       [],
-      // 3. settingsRepo.findByUserId — AI settings
+      ...claimWrites,
       aiSettingsRows,
-      // 4. fetchSessionsForDate
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext
+      [sampleSession],
       [],
       [],
       [],
-      // 8. dailySummaryRepo.upsertAiResult (cache write)
-      [],
-      // 9. settingsRepo.findByKey (notification.email.onManualAnalyze) — enabled
+      upsertOk,
       [
         {
           user_id: "e2e-test-user",
@@ -468,7 +302,6 @@ describe("POST /api/daily/[date]/analyze", () => {
           updated_at: Date.now(),
         },
       ],
-      // 10. sendAnalysisEmail will make D1 calls — provide empty responses
       [],
       [],
       [],
@@ -505,31 +338,15 @@ describe("POST /api/daily/[date]/analyze", () => {
     });
 
     mockD1([
-      // 1. getUserTimezone
       [tzRow],
-      // 2. dailySummaryRepo.findByUserAndDate — no cached AI
       [],
-      // 3. settingsRepo.findByUserId — AI settings
+      ...claimWrites,
       aiSettingsRows,
-      // 4. fetchSessionsForDate
-      [
-        {
-          id: "s1",
-          app_name: "VSCode",
-          bundle_id: "com.microsoft.VSCode",
-          window_title: "test.ts",
-          url: null,
-          start_time: 1772157600,
-          duration: 3600,
-        },
-      ],
-      // 5-7. loadAppContext
+      [sampleSession],
       [],
       [],
       [],
-      // 8. dailySummaryRepo.upsertAiResult
-      [],
-      // 9. settingsRepo.findByKey — not enabled
+      upsertOk,
       [],
     ]);
 

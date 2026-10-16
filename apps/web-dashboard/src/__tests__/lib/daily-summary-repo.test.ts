@@ -2,52 +2,9 @@
  * Tests for daily-summary-repo.ts — CRUD via D1 REST API.
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: Array<{ results: unknown[]; meta?: { changes: number } }>) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const resp = responses[callIndex] ?? { results: [], meta: { changes: 0 } };
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [
-            {
-              results: resp.results,
-              success: true,
-              meta: resp.meta ?? { changes: 0, last_row_id: 0 },
-            },
-          ],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
+import { mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // findByUserAndDate
@@ -114,6 +71,16 @@ describe("dailySummaryRepo.upsertAiResult", () => {
     expect(c0.params[4]).toBe('{"score":80}');
     expect(c0.params[5]).toBe("claude-sonnet-4-20250514");
   });
+
+  test("throws when a claim-scoped upsert does not match", async () => {
+    mockD1([{ results: [], meta: { changes: 0 } }]);
+    await expect(
+      dailySummaryRepo.upsertAiResult("u1", "2026-02-27", 80, '{"score":80}', "m", undefined, {
+        token: "tok",
+        nowSeconds: 1,
+      }),
+    ).rejects.toThrow("analysis claim mismatch");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -121,27 +88,46 @@ describe("dailySummaryRepo.upsertAiResult", () => {
 // ---------------------------------------------------------------------------
 
 describe("dailySummaryRepo.claimForAnalysis", () => {
-  test("returns true when claim succeeds (no existing row)", async () => {
-    const { calls } = mockD1([{ results: [], meta: { changes: 1 } }]);
+  test("returns claimed=true when the lease update succeeds", async () => {
+    const { calls } = mockD1([
+      { results: [], meta: { changes: 1 } },
+      { results: [], meta: { changes: 1 } },
+    ]);
     const claimed = await dailySummaryRepo.claimForAnalysis("u1", "2026-03-30");
 
-    expect(claimed).toBe(true);
-    expect(calls).toHaveLength(1);
+    expect(claimed).toEqual({ claimed: true, token: expect.any(String) });
+    expect(calls).toHaveLength(2);
     const c0 = calls[0];
-    if (!c0) return;
+    const c1 = calls[1];
+    if (!c0 || !c1) return;
     expect(c0.sql).toContain("INSERT INTO daily_summaries");
     expect(c0.sql).toContain("ON CONFLICT");
     expect(c0.sql).toContain("DO NOTHING");
-    expect(c0.sql).toContain("__analyzing__");
     expect(c0.params[1]).toBe("u1");
     expect(c0.params[2]).toBe("2026-03-30");
+    expect(c1.sql).toContain("claim_token");
   });
 
-  test("returns false when another process already claimed it", async () => {
-    mockD1([{ results: [], meta: { changes: 0 } }]);
+  test("returns busy when another process already claimed it", async () => {
+    mockD1([
+      { results: [], meta: { changes: 0 } },
+      { results: [], meta: { changes: 0 } },
+      [{ ai_result_json: null }],
+    ]);
     const claimed = await dailySummaryRepo.claimForAnalysis("u1", "2026-03-30");
 
-    expect(claimed).toBe(false);
+    expect(claimed).toEqual({ claimed: false, reason: "busy" });
+  });
+
+  test("returns cached when a result already exists", async () => {
+    mockD1([
+      { results: [], meta: { changes: 0 } },
+      { results: [], meta: { changes: 0 } },
+      [{ ai_result_json: '{"score":1}' }],
+    ]);
+    const claimed = await dailySummaryRepo.claimForAnalysis("u1", "2026-03-30");
+
+    expect(claimed).toEqual({ claimed: false, reason: "cached" });
   });
 });
 
@@ -150,15 +136,22 @@ describe("dailySummaryRepo.claimForAnalysis", () => {
 // ---------------------------------------------------------------------------
 
 describe("dailySummaryRepo.releaseAnalysisClaim", () => {
-  test("deletes placeholder row with __analyzing__ sentinel", async () => {
+  test("clears claim columns for the date", async () => {
     const { calls } = mockD1([{ results: [], meta: { changes: 1 } }]);
     await dailySummaryRepo.releaseAnalysisClaim("u1", "2026-03-30");
 
     expect(calls).toHaveLength(1);
     const c0 = calls[0];
     if (!c0) return;
-    expect(c0.sql).toContain("DELETE FROM daily_summaries");
-    expect(c0.sql).toContain("__analyzing__");
+    expect(c0.sql).toContain("UPDATE daily_summaries");
+    expect(c0.sql).toContain("claim_token = NULL");
     expect(c0.params).toEqual(["u1", "2026-03-30"]);
+  });
+
+  test("scopes the release to the claim token when provided", async () => {
+    const { calls } = mockD1([{ results: [], meta: { changes: 1 } }]);
+    await dailySummaryRepo.releaseAnalysisClaim("u1", "2026-03-30", "tok");
+
+    expect(calls[0]?.params).toEqual(["u1", "2026-03-30", "tok"]);
   });
 });

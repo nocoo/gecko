@@ -10,7 +10,7 @@ const DEFAULT_LIMIT = 50;
 
 /** GET /api/sessions?limit=50&offset=0 */
 export async function GET(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const url = new URL(req.url);

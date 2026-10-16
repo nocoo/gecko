@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 /** POST /api/keys — Generate a new API key for a device. */
 export async function POST(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { name?: string };
@@ -50,8 +50,8 @@ export async function POST(req: Request): Promise<Response> {
 }
 
 /** GET /api/keys — List current user's API keys (without hashes). */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{

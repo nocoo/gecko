@@ -1,16 +1,4 @@
-/**
- * Daily summary repository.
- *
- * CRUD for the daily_summaries table via D1 REST API.
- * Composite unique index: (user_id, date).
- * Only AI analysis results are stored here — stats are always computed fresh.
- */
-
 import { execute, query } from "@/lib/d1";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
 
 export interface DailySummaryRow {
   id: string;
@@ -21,27 +9,32 @@ export interface DailySummaryRow {
   ai_model: string | null;
   ai_prompt: string | null;
   ai_generated_at: string | null;
+  claim_token: string | null;
+  claim_expires_at: number | null;
   created_at: string;
   updated_at: string;
 }
 
-// ---------------------------------------------------------------------------
-// Repository
-// ---------------------------------------------------------------------------
-
 export interface DailySummaryRangeRow {
   date: string;
   ai_score: number | null;
-  /** 0/1 from SQLite — true when a real AI result is cached (not a placeholder claim). */
   has_ai_result: number;
 }
 
+export interface ClaimResult {
+  claimed: boolean;
+  token?: string;
+  reason?: "cached" | "busy";
+}
+
+const DEFAULT_LEASE_SECONDS = 15 * 60;
+
 export const dailySummaryRepo = {
-  /** Find a cached summary for a given user + date. */
   async findByUserAndDate(userId: string, date: string): Promise<DailySummaryRow | null> {
     const rows = await query<DailySummaryRow>(
       `SELECT id, user_id, date, ai_score, ai_result_json,
-              ai_model, ai_prompt, ai_generated_at, created_at, updated_at
+              ai_model, ai_prompt, ai_generated_at,
+              claim_token, claim_expires_at, created_at, updated_at
        FROM daily_summaries
        WHERE user_id = ? AND date = ?`,
       [userId, date],
@@ -49,13 +42,6 @@ export const dailySummaryRepo = {
     return rows[0] ?? null;
   },
 
-  /**
-   * List cached summaries for a user within an inclusive date range.
-   *
-   * Returns only the columns needed for calendar badges. `__analyzing__`
-   * placeholder rows (from {@link claimForAnalysis}) report `has_ai_result = 0`
-   * so the UI doesn't paint an AI badge for an in-flight analysis.
-   */
   async listByUserAndDateRange(
     userId: string,
     fromDate: string,
@@ -64,10 +50,7 @@ export const dailySummaryRepo = {
     return query<DailySummaryRangeRow>(
       `SELECT date,
               ai_score,
-              CASE
-                WHEN ai_result_json IS NOT NULL AND ai_model != '__analyzing__'
-                  THEN 1 ELSE 0
-              END AS has_ai_result
+              CASE WHEN ai_result_json IS NOT NULL THEN 1 ELSE 0 END AS has_ai_result
        FROM daily_summaries
        WHERE user_id = ? AND date >= ? AND date <= ?
        ORDER BY date ASC`,
@@ -75,7 +58,6 @@ export const dailySummaryRepo = {
     );
   },
 
-  /** Update the AI analysis result for an existing summary. */
   async upsertAiResult(
     userId: string,
     date: string,
@@ -83,7 +65,36 @@ export const dailySummaryRepo = {
     aiResultJson: string,
     aiModel: string,
     aiPrompt?: string,
+    claim?: { token: string; nowSeconds: number },
   ): Promise<void> {
+    if (claim) {
+      const result = await execute(
+        `UPDATE daily_summaries SET
+           ai_score = ?,
+           ai_result_json = ?,
+           ai_model = ?,
+           ai_prompt = ?,
+           ai_generated_at = datetime('now'),
+           updated_at = datetime('now'),
+           claim_token = NULL,
+           claim_expires_at = NULL
+         WHERE user_id = ? AND date = ? AND claim_token = ? AND claim_expires_at >= ?`,
+        [
+          aiScore,
+          aiResultJson,
+          aiModel,
+          aiPrompt ?? null,
+          userId,
+          date,
+          claim.token,
+          claim.nowSeconds,
+        ],
+      );
+      if (result.meta.changes !== 1) {
+        throw new Error("analysis claim mismatch");
+      }
+      return;
+    }
     const id = crypto.randomUUID();
     await execute(
       `INSERT INTO daily_summaries (id, user_id, date, ai_score, ai_result_json, ai_model, ai_prompt, ai_generated_at, updated_at)
@@ -99,39 +110,56 @@ export const dailySummaryRepo = {
     );
   },
 
-  /**
-   * Atomically claim a (user_id, date) slot for AI analysis.
-   *
-   * Inserts a placeholder row with ai_model = '__analyzing__' and
-   * ai_result_json = NULL. Returns true if the claim succeeded (no
-   * existing row), false if a row already exists (another process
-   * claimed it or analysis is already complete).
-   *
-   * This prevents duplicate AI calls across concurrent processes:
-   * only the process that wins the INSERT gets to call the AI provider.
-   */
-  async claimForAnalysis(userId: string, date: string): Promise<boolean> {
-    const id = crypto.randomUUID();
-    const result = await execute(
-      `INSERT INTO daily_summaries (id, user_id, date, ai_model, updated_at)
-       VALUES (?, ?, ?, '__analyzing__', datetime('now'))
+  async claimForAnalysis(
+    userId: string,
+    date: string,
+    options: { force?: boolean; nowSeconds?: number; leaseSeconds?: number } = {},
+  ): Promise<ClaimResult> {
+    const nowSeconds = options.nowSeconds ?? Math.floor(Date.now() / 1000);
+    const leaseSeconds = options.leaseSeconds ?? DEFAULT_LEASE_SECONDS;
+    const token = crypto.randomUUID();
+    const expires = nowSeconds + leaseSeconds;
+    const force = options.force ? 1 : 0;
+
+    await execute(
+      `INSERT INTO daily_summaries (id, user_id, date, updated_at)
+       VALUES (?, ?, ?, datetime('now'))
        ON CONFLICT (user_id, date) DO NOTHING`,
-      [id, userId, date],
+      [crypto.randomUUID(), userId, date],
     );
-    return result.meta.changes > 0;
+
+    const result = await execute(
+      `UPDATE daily_summaries
+       SET claim_token = ?, claim_expires_at = ?, updated_at = datetime('now')
+       WHERE user_id = ? AND date = ?
+         AND (claim_token IS NULL OR claim_expires_at < ?)
+         AND (? = 1 OR ai_result_json IS NULL)`,
+      [token, expires, userId, date, nowSeconds, force],
+    );
+    if (result.meta.changes > 0) {
+      return { claimed: true, token };
+    }
+    const existing = await dailySummaryRepo.findByUserAndDate(userId, date);
+    if (existing?.ai_result_json && !options.force) {
+      return { claimed: false, reason: "cached" };
+    }
+    return { claimed: false, reason: "busy" };
   },
 
-  /**
-   * Release a previously claimed analysis slot on failure.
-   *
-   * Deletes the placeholder row ONLY if it still has ai_model = '__analyzing__'
-   * (i.e. analysis hasn't completed yet). This allows the next tick to retry.
-   * Will not delete rows that have real AI results.
-   */
-  async releaseAnalysisClaim(userId: string, date: string): Promise<void> {
+  async releaseAnalysisClaim(userId: string, date: string, token?: string): Promise<void> {
+    if (token) {
+      await execute(
+        `UPDATE daily_summaries
+         SET claim_token = NULL, claim_expires_at = NULL, updated_at = datetime('now')
+         WHERE user_id = ? AND date = ? AND claim_token = ?`,
+        [userId, date, token],
+      );
+      return;
+    }
     await execute(
-      `DELETE FROM daily_summaries
-       WHERE user_id = ? AND date = ? AND ai_model = '__analyzing__'`,
+      `UPDATE daily_summaries
+       SET claim_token = NULL, claim_expires_at = NULL, updated_at = datetime('now')
+       WHERE user_id = ? AND date = ?`,
       [userId, date],
     );
   },

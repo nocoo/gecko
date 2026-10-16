@@ -90,7 +90,7 @@ export type AnalysisOutcome =
     }
   | {
       ok: false;
-      reason: "no_ai_config" | "no_sessions" | "ai_error" | "parse_error";
+      reason: "no_ai_config" | "no_sessions" | "ai_error" | "parse_error" | "persist_error";
       message: string;
     };
 
@@ -393,6 +393,7 @@ export async function runAnalysis(
   userId: string,
   date: string,
   tz: string,
+  options: { claimToken?: string; nowSeconds?: number } = {},
 ): Promise<AnalysisOutcome> {
   // 1. Load AI config
   const settings = await loadAiSettings(userId);
@@ -456,9 +457,11 @@ export async function runAnalysis(
   try {
     const aiModel = createAiModel(config);
     const startMs = Date.now();
-    console.log(
-      `[analyze-core] AI call starting: provider=${config.provider} model=${config.model} promptChars=${prompt.length} sessions=${stats.sessions.length}`,
-    );
+    console.log("[analyze-core] AI call starting", {
+      stage: "generate",
+      promptChars: prompt.length,
+      sessionCount: stats.sessions.length,
+    });
     const response = await generateText({
       model: aiModel,
       prompt,
@@ -468,15 +471,18 @@ export async function runAnalysis(
     text = response.text;
     usage = response.usage;
     durationMs = Date.now() - startMs;
-    console.log(
-      `[analyze-core] AI call succeeded: provider=${config.provider} model=${config.model} duration=${durationMs}ms tokens=${usage?.totalTokens ?? "?"}`,
-    );
+    console.log("[analyze-core] AI call succeeded", {
+      stage: "generate",
+      durationMs,
+      tokens: usage?.totalTokens ?? 0,
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const isTimeout = err instanceof DOMException && err.name === "TimeoutError";
-    console.error(
-      `[analyze-core] AI provider error: provider=${config.provider} model=${config.model} timeout=${isTimeout} promptChars=${prompt.length} sessions=${stats.sessions.length} error=${message}`,
-    );
+    console.error("[analyze-core] AI provider error", {
+      stage: "generate",
+      timeout: isTimeout,
+    });
     return {
       ok: false,
       reason: "ai_error",
@@ -492,18 +498,14 @@ export async function runAnalysis(
     result = parseAiResponse(text);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    const preview = text.slice(0, 400).replace(/\s+/g, " ").trim();
-    console.error(
-      `[analyze-core] Failed to parse AI response: ${message}. Raw text (first 500 chars): ${text.slice(0, 500)}`,
-    );
+    console.error("[analyze-core] parse failed", { stage: "parse" });
     return {
       ok: false,
       reason: "parse_error",
-      message: `Failed to parse AI response: ${message}\n\nModel returned (first 400 chars): ${preview}`,
+      message: `Failed to parse AI response: ${message}`,
     };
   }
 
-  // 7. Cache result (non-fatal)
   try {
     await dailySummaryRepo.upsertAiResult(
       userId,
@@ -512,11 +514,23 @@ export async function runAnalysis(
       JSON.stringify(result),
       config.model,
       prompt,
+      options.claimToken
+        ? {
+            token: options.claimToken,
+            nowSeconds: options.nowSeconds ?? Math.floor(Date.now() / 1000),
+          }
+        : undefined,
     );
   } catch (err) {
-    console.error(
-      `[analyze-core] Failed to cache AI result: ${err instanceof Error ? err.message : err}`,
-    );
+    console.error("[analyze-core] persist failed", {
+      stage: "upsert",
+      error: err instanceof Error ? err.message : "error",
+    });
+    return {
+      ok: false,
+      reason: "persist_error",
+      message: "Failed to persist analysis result",
+    };
   }
 
   return {

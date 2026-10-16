@@ -1,53 +1,10 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { BUNDLE_ID_MAPPINGS } from "../../lib/default-categories";
+import { mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // seed-categories tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [
-            {
-              results,
-              success: true,
-              meta: { changes: results.length, last_row_id: 0 },
-            },
-          ],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 describe("seedDefaultCategories", () => {
   test("seeds 4 default categories when user has none", async () => {
@@ -89,6 +46,14 @@ describe("seedDefaultCategories", () => {
       ["system-core", "system-app", "browser", "application"].includes(p as string),
     );
     expect(slugsInParams).toHaveLength(4);
+  });
+
+  test("treats a missing COUNT row as zero", async () => {
+    const mappingCount = BUNDLE_ID_MAPPINGS.size;
+    const batchCount = Math.ceil(mappingCount / 25);
+    mockD1([[], [], ...Array(batchCount).fill([])]);
+    const { seedDefaultCategories } = await import("../../lib/seed-categories");
+    await expect(seedDefaultCategories("user-123")).resolves.toBe(true);
   });
 
   test("skips seeding when user already has categories", async () => {

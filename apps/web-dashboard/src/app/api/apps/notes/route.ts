@@ -8,8 +8,8 @@ import { execute, query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/apps/notes */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{
@@ -40,7 +40,7 @@ interface NoteBody {
 
 /** PUT /api/apps/notes — Upsert a note for an app. */
 export async function PUT(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: NoteBody;
@@ -82,7 +82,7 @@ export async function PUT(req: Request): Promise<Response> {
 
 /** DELETE /api/apps/notes — Delete a note for an app. */
 export async function DELETE(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { bundleId?: string };

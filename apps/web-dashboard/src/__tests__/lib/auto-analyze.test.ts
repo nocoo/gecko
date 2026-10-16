@@ -8,10 +8,8 @@ import { describe, expect, test, vi } from "vitest";
 import {
   type AutoAnalyzeDeps,
   createAutoAnalyze,
-  ensureAutoAnalyze,
   getAutoAnalyze,
   resetAutoAnalyze,
-  resetEnsureAutoAnalyze,
 } from "@/lib/auto-analyze";
 import type { AnalysisOutcome } from "@/services/analyze-core";
 import type { DailyStats } from "@/services/daily-stats";
@@ -28,7 +26,7 @@ function makeDeps(overrides?: Partial<AutoAnalyzeDeps>): AutoAnalyzeDeps {
     getUserTimezone: vi.fn(() => Promise.resolve("Asia/Shanghai")),
     hasAnalysis: vi.fn(() => Promise.resolve(false)),
     hasSessions: vi.fn(() => Promise.resolve(false)),
-    claimForAnalysis: vi.fn(() => Promise.resolve(true)),
+    claimForAnalysis: vi.fn(() => Promise.resolve({ claimed: true, token: "tok" })),
     releaseAnalysisClaim: vi.fn(() => Promise.resolve()),
     runAnalysis: vi.fn(() =>
       Promise.resolve({
@@ -51,12 +49,12 @@ function makeDeps(overrides?: Partial<AutoAnalyzeDeps>): AutoAnalyzeDeps {
 // onTick — trigger conditions
 // ---------------------------------------------------------------------------
 
-describe("AutoAnalyzeService.onTick", () => {
+describe("AutoAnalyzeService.runTick", () => {
   test("does nothing when no users have autoSummarize", async () => {
     const deps = makeDeps();
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     expect(deps.findAutoSummarizeUsers).toHaveBeenCalledTimes(1);
     expect(deps.getUserTimezone).not.toHaveBeenCalled();
   });
@@ -68,7 +66,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     expect(deps.hasSessions).toHaveBeenCalled();
     expect(deps.runAnalysis).not.toHaveBeenCalled();
   });
@@ -81,7 +79,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     expect(deps.hasAnalysis).toHaveBeenCalled();
     expect(deps.runAnalysis).not.toHaveBeenCalled();
   });
@@ -94,7 +92,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
 
     // Verify it was called with yesterday's date
@@ -119,13 +117,10 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    // onTick should return without waiting for analysis to finish
-    await svc.onTick();
-
-    // Task should be tracked
+    const tick = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
     expect(svc.getRunningTasks().size).toBe(1);
 
-    // Resolve the analysis
     resolveAnalysis!({
       ok: true,
       score: 80,
@@ -136,9 +131,7 @@ describe("AutoAnalyzeService.onTick", () => {
       prompt: "p",
       stats: stubStats,
     });
-
-    // Give the .finally() callback a chance to run
-    await new Promise((r) => setTimeout(r, 10));
+    await tick;
     expect(svc.getRunningTasks().size).toBe(0);
   });
 
@@ -150,7 +143,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
 
     // Wait for the fire-and-forget promise to settle
     await new Promise((r) => setTimeout(r, 10));
@@ -171,15 +164,14 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    // First tick — starts analysis
-    await svc.onTick();
+    const first = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
 
-    // Second tick — should skip because task is still running
-    await svc.onTick();
-    expect(deps.runAnalysis).toHaveBeenCalledTimes(1); // not called again
+    const second = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
 
-    // Cleanup
     resolveAnalysis!({
       ok: true,
       score: 80,
@@ -190,7 +182,8 @@ describe("AutoAnalyzeService.onTick", () => {
       prompt: "p",
       stats: stubStats,
     });
-    await new Promise((r) => setTimeout(r, 10));
+    await first;
+    await second;
   });
 
   test("removes stale task (>threshold) and allows new analysis", async () => {
@@ -222,20 +215,23 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps, { staleThresholdMs: 5000 });
 
-    // First tick at t=1000
-    await svc.onTick();
+    const first = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
     expect(callCount).toBe(1);
     expect(svc.getRunningTasks().size).toBe(1);
 
-    // Second tick at t=2000 — not stale yet
     now = 2000;
-    await svc.onTick();
-    expect(callCount).toBe(1); // still 1, task not stale
+    const second = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(callCount).toBe(1);
 
-    // Third tick at t=7000 — stale (>5000ms threshold)
     now = 7000;
-    await svc.onTick();
-    expect(callCount).toBe(2); // new analysis triggered
+    const third = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
+    expect(callCount).toBe(2);
+    void first;
+    void second;
+    void third;
   });
 
   test("handles per-user errors without blocking others", async () => {
@@ -254,9 +250,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    // Should not throw — u1 errors are caught, u2 proceeds
-    await svc.onTick();
-    // u2 should have gotten analysis triggered
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
     expect(deps.runAnalysis).toHaveBeenCalledTimes(1);
     const call = (deps.runAnalysis as ReturnType<typeof vi.fn>).mock.calls[0]!;
     expect(call[0]).toBe("u2");
@@ -268,9 +262,25 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    // Should not throw
-    await svc.onTick();
+    await expect(svc.runTick()).rejects.toThrow("DB down");
     expect(deps.getUserTimezone).not.toHaveBeenCalled();
+  });
+
+  test("does not fail the tick for no_sessions or no_ai_config", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1", "u2"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn((userId: string) =>
+        Promise.resolve(
+          userId === "u1"
+            ? { ok: false, reason: "no_sessions" as const, message: "none" }
+            : { ok: false, reason: "no_ai_config" as const, message: "none" },
+        ),
+      ),
+    });
+    await createAutoAnalyze(deps).runTick();
+    expect(deps.releaseAnalysisClaim).not.toHaveBeenCalled();
   });
 
   test("skips analysis when claimForAnalysis returns false (another process won)", async () => {
@@ -278,11 +288,11 @@ describe("AutoAnalyzeService.onTick", () => {
       findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
       hasSessions: vi.fn(() => Promise.resolve(true)),
       hasAnalysis: vi.fn(() => Promise.resolve(false)),
-      claimForAnalysis: vi.fn(() => Promise.resolve(false)),
+      claimForAnalysis: vi.fn(() => Promise.resolve({ claimed: false, reason: "busy" })),
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     expect(deps.claimForAnalysis).toHaveBeenCalledTimes(1);
     expect(deps.runAnalysis).not.toHaveBeenCalled();
   });
@@ -295,7 +305,7 @@ describe("AutoAnalyzeService.onTick", () => {
       hasAnalysis: vi.fn(() => Promise.resolve(false)),
       claimForAnalysis: vi.fn(() => {
         callOrder.push("claim");
-        return Promise.resolve(true);
+        return Promise.resolve({ claimed: true, token: "tok" });
       }),
       runAnalysis: vi.fn(() => {
         callOrder.push("analyze");
@@ -313,7 +323,7 @@ describe("AutoAnalyzeService.onTick", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     // Wait for background task
     await new Promise((r) => setTimeout(r, 10));
     expect(callOrder).toEqual(["claim", "analyze"]);
@@ -345,10 +355,87 @@ describe("releaseAnalysisClaim behavior", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    await svc.runTick();
     await new Promise((r) => setTimeout(r, 10));
 
     expect(deps.releaseAnalysisClaim).not.toHaveBeenCalled();
+  });
+
+  test("swallows notification failures after a successful analysis", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      sendEmail: vi.fn(() => Promise.reject(new Error("dove down"))),
+    });
+    const svc = createAutoAnalyze(deps);
+    await svc.runTick();
+    expect(deps.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  test("swallows non-Error notification failures", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      sendEmail: vi.fn(() => Promise.reject("dove string")),
+    });
+    await createAutoAnalyze(deps).runTick();
+    expect(deps.sendEmail).toHaveBeenCalledTimes(1);
+  });
+
+  test("keeps a replacement task when the original work finishes", async () => {
+    let now = 1000;
+    let resolveFirst: ((v: AnalysisOutcome) => void) | null = null;
+    let callCount = 0;
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => {
+        callCount += 1;
+        if (callCount === 1) {
+          return new Promise<AnalysisOutcome>((resolve) => {
+            resolveFirst = resolve;
+          });
+        }
+        return new Promise<AnalysisOutcome>(() => {});
+      }),
+      nowFn: () => now,
+    });
+    const svc = createAutoAnalyze(deps, { staleThresholdMs: 5000 });
+    const first = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
+    now = 7000;
+    void svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
+    const replacementStartedAt = svc.getRunningTasks().get("u1")!.startedAt;
+    resolveFirst!({
+      ok: true,
+      score: 80,
+      model: "m",
+      provider: "p",
+      durationMs: 50,
+      result: {} as never,
+      prompt: "p",
+      stats: stubStats,
+    });
+    await first;
+    expect(svc.getRunningTasks().get("u1")!.startedAt).toBe(replacementStartedAt);
+  });
+
+  test("still fails the tick when claim release throws", async () => {
+    const deps = makeDeps({
+      findAutoSummarizeUsers: vi.fn(() => Promise.resolve(["u1"])),
+      hasSessions: vi.fn(() => Promise.resolve(true)),
+      hasAnalysis: vi.fn(() => Promise.resolve(false)),
+      runAnalysis: vi.fn(() => Promise.reject(new Error("network failure"))),
+      releaseAnalysisClaim: vi.fn(() => Promise.reject(new Error("lease fail"))),
+    });
+    await expect(createAutoAnalyze(deps).runTick()).rejects.toThrow(
+      "auto-analyze failed for 1 user(s)",
+    );
+    expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
   });
 
   test("releases claim when analysis returns ok=false", async () => {
@@ -366,8 +453,7 @@ describe("releaseAnalysisClaim behavior", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
-    await new Promise((r) => setTimeout(r, 10));
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
 
     expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
   });
@@ -381,8 +467,7 @@ describe("releaseAnalysisClaim behavior", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
-    await new Promise((r) => setTimeout(r, 10));
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
 
     expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
   });
@@ -396,8 +481,7 @@ describe("releaseAnalysisClaim behavior", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
-    await new Promise((r) => setTimeout(r, 10));
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
 
     expect(deps.releaseAnalysisClaim).toHaveBeenCalledTimes(1);
   });
@@ -407,7 +491,7 @@ describe("releaseAnalysisClaim behavior", () => {
       findAutoSummarizeUsers: vi.fn(() => Promise.reject("db down")),
     });
     const svc = createAutoAnalyze(deps);
-    await svc.onTick();
+    await expect(svc.runTick()).rejects.toBe("db down");
     expect(deps.claimForAnalysis).not.toHaveBeenCalled();
   });
 
@@ -421,8 +505,7 @@ describe("releaseAnalysisClaim behavior", () => {
       hasSessions: vi.fn(() => Promise.resolve(false)),
     });
     const svc = createAutoAnalyze(deps);
-    await svc.onTick();
-    // u2 should still have been processed (hasSessions called for it)
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
     expect(deps.hasSessions).toHaveBeenCalled();
   });
 });
@@ -448,7 +531,8 @@ describe("getRunningTasks()", () => {
     });
     const svc = createAutoAnalyze(deps);
 
-    await svc.onTick();
+    const _tick = svc.runTick();
+    await new Promise((r) => setTimeout(r, 10));
 
     const tasks = svc.getRunningTasks();
     expect(tasks.size).toBe(1);
@@ -494,35 +578,5 @@ describe("singleton management", () => {
     const b = getAutoAnalyze();
     expect(a).not.toBe(b);
     resetAutoAnalyze();
-  });
-
-  test("ensureAutoAnalyze is idempotent (only wires once)", () => {
-    resetEnsureAutoAnalyze();
-    resetAutoAnalyze();
-    // First call wires up
-    ensureAutoAnalyze();
-    // Second call is a no-op (no error)
-    ensureAutoAnalyze();
-    resetEnsureAutoAnalyze();
-    resetAutoAnalyze();
-  });
-
-  test("ensureAutoAnalyze wires the scheduler callback to service.onTick", async () => {
-    const { resetHourlyScheduler, getHourlyScheduler } = await import("@/lib/hourly-scheduler");
-    resetHourlyScheduler();
-    resetEnsureAutoAnalyze();
-    resetAutoAnalyze();
-
-    const onTick = vi.spyOn(getAutoAnalyze(), "onTick").mockResolvedValue(undefined);
-    ensureAutoAnalyze();
-    // Manually fire a tick — exercises the registered `() => service.onTick()`
-    // callback, covering the arrow-body statement.
-    await getHourlyScheduler().tick();
-    expect(onTick).toHaveBeenCalledTimes(1);
-    onTick.mockRestore();
-
-    resetEnsureAutoAnalyze();
-    resetAutoAnalyze();
-    resetHourlyScheduler();
   });
 });

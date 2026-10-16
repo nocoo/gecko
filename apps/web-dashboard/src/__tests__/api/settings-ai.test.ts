@@ -1,48 +1,9 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/settings/ai route handler tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 function settingRow(key: string, value: string) {
   return { user_id: "e2e-test-user", key, value, updated_at: 1000 };
@@ -61,7 +22,7 @@ describe("/api/settings/ai", () => {
       ]);
       const { GET } = await import("../../app/api/settings/ai/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(200);
 
       const data = await res.json();
@@ -77,7 +38,7 @@ describe("/api/settings/ai", () => {
       mockD1([[]]);
       const { GET } = await import("../../app/api/settings/ai/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(200);
 
       const data = await res.json();
@@ -93,7 +54,7 @@ describe("/api/settings/ai", () => {
       mockD1([]);
       const { PUT } = await import("../../app/api/settings/ai/route");
 
-      const req = new Request("http://localhost/api/settings/ai", {
+      const req = humanRequest("http://127.0.0.1:17018/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ provider: "no-such-provider" }),
@@ -110,7 +71,7 @@ describe("/api/settings/ai", () => {
       mockD1([]);
       const { PUT } = await import("../../app/api/settings/ai/route");
 
-      const req = new Request("http://localhost/api/settings/ai", {
+      const req = humanRequest("http://127.0.0.1:17018/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sdkType: "weird" }),
@@ -127,7 +88,7 @@ describe("/api/settings/ai", () => {
       mockD1([]);
       const { PUT } = await import("../../app/api/settings/ai/route");
 
-      const req = new Request("http://localhost/api/settings/ai", {
+      const req = humanRequest("http://127.0.0.1:17018/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: "not json",
@@ -151,7 +112,7 @@ describe("/api/settings/ai", () => {
       ]);
       const { PUT } = await import("../../app/api/settings/ai/route");
 
-      const req = new Request("http://localhost/api/settings/ai", {
+      const req = humanRequest("http://127.0.0.1:17018/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -181,7 +142,7 @@ describe("/api/settings/ai", () => {
       ]);
       const { PUT } = await import("../../app/api/settings/ai/route");
 
-      const req = new Request("http://localhost/api/settings/ai", {
+      const req = humanRequest("http://127.0.0.1:17018/api/settings/ai", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ promptSection1: "" }),

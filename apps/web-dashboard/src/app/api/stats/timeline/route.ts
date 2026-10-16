@@ -20,7 +20,7 @@ function periodDays(period: Period): number | null {
 }
 
 export async function GET(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const tz = await getUserTimezone(user.userId);

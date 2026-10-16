@@ -50,10 +50,10 @@ function validateDate(dateStr: string, tz: string): string | null {
 }
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ date: string }> },
 ): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const tz = await getUserTimezone(user.userId);

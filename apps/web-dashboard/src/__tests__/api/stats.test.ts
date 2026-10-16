@@ -1,48 +1,9 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/stats route handler tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 const tzRow = {
   user_id: "e2e-test-user",
@@ -69,7 +30,7 @@ describe("GET /api/stats", () => {
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats");
+    const req = humanRequest("http://127.0.0.1:17018/api/stats");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -93,7 +54,7 @@ describe("GET /api/stats", () => {
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats?period=bogus");
+    const req = humanRequest("http://127.0.0.1:17018/api/stats?period=bogus");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -110,7 +71,7 @@ describe("GET /api/stats", () => {
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats?period=all");
+    const req = humanRequest("http://127.0.0.1:17018/api/stats?period=all");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -132,7 +93,7 @@ describe("GET /api/stats", () => {
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats?period=week");
+    const req = humanRequest("http://127.0.0.1:17018/api/stats?period=week");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -156,7 +117,7 @@ describe("GET /api/stats", () => {
     ]);
     const { GET } = await import("../../app/api/stats/route");
 
-    const req = new Request("http://localhost/api/stats");
+    const req = humanRequest("http://127.0.0.1:17018/api/stats");
     const res = await GET(req);
     expect(res.status).toBe(200);
 

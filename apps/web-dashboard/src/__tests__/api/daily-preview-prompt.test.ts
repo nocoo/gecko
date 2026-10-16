@@ -1,48 +1,9 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/daily/[date]/preview-prompt route handler tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: results.length, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 const tzRow = {
   user_id: "e2e-test-user",
@@ -63,7 +24,7 @@ const sampleSessionRow = {
 
 async function callPOST(date: string) {
   const { POST } = await import("../../app/api/daily/[date]/preview-prompt/route");
-  const req = new Request(`http://localhost/api/daily/${date}/preview-prompt`, { method: "POST" });
+  const req = humanRequest(`/api/daily/${date}/preview-prompt`, { method: "POST" });
   return POST(req, { params: Promise.resolve({ date }) });
 }
 

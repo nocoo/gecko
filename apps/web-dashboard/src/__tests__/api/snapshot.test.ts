@@ -1,50 +1,11 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { machineRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // GET /api/v1/snapshot — Public API snapshot endpoint tests
-// Uses E2E_SKIP_AUTH=true to bypass API key auth.
+// Machine identity comes from the ScriptedD1 auto API key.
 // Mocks D1 client to avoid real Cloudflare calls.
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 describe("GET /api/v1/snapshot", () => {
   test("returns snapshot for a valid date with sessions", async () => {
@@ -86,7 +47,7 @@ describe("GET /api/v1/snapshot", () => {
 
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2025-02-27", {
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2025-02-27", {
       headers: { Authorization: "Bearer gk_test" },
     });
 
@@ -133,7 +94,7 @@ describe("GET /api/v1/snapshot", () => {
 
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2025-02-27");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2025-02-27");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -163,7 +124,7 @@ describe("GET /api/v1/snapshot", () => {
 
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2025-02-27");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2025-02-27");
     const res = await GET(req);
     expect(res.status).toBe(200);
 
@@ -178,7 +139,7 @@ describe("GET /api/v1/snapshot", () => {
     mockD1();
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot");
     const res = await GET(req);
     expect(res.status).toBe(400);
 
@@ -200,7 +161,7 @@ describe("GET /api/v1/snapshot", () => {
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=27-02-2025");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=27-02-2025");
     const res = await GET(req);
     expect(res.status).toBe(400);
 
@@ -221,7 +182,7 @@ describe("GET /api/v1/snapshot", () => {
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2025-02-30");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2025-02-30");
     const res = await GET(req);
     expect(res.status).toBe(400);
   });
@@ -239,7 +200,7 @@ describe("GET /api/v1/snapshot", () => {
     ]);
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2099-12-31");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2099-12-31");
     const res = await GET(req);
     expect(res.status).toBe(400);
 
@@ -259,7 +220,7 @@ describe("GET /api/v1/snapshot", () => {
 
     const { GET } = await import("../../app/api/v1/snapshot/route");
 
-    const req = new Request("http://localhost/api/v1/snapshot?date=2025-02-27");
+    const req = machineRequest("http://127.0.0.1:17018/api/v1/snapshot?date=2025-02-27");
     const res = await GET(req);
     expect(res.status).toBe(200);
 

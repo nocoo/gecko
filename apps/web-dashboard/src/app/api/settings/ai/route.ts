@@ -35,8 +35,8 @@ function maskApiKey(key: string): string {
   return `${"*".repeat(Math.max(0, key.length - 4))}${key.slice(-4)}`;
 }
 
-export async function GET(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const settings = await readAiSettings(user.userId);
@@ -47,8 +47,8 @@ export async function GET(): Promise<Response> {
   });
 }
 
-export async function PUT(request: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function PUT(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: {
@@ -65,7 +65,7 @@ export async function PUT(request: Request): Promise<Response> {
     promptSection4?: string;
   };
   try {
-    body = await request.json();
+    body = await req.json();
   } catch {
     return jsonError("Invalid JSON body", 400);
   }

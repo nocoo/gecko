@@ -6,25 +6,26 @@ import { query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/sync/status */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
-  // Get latest sync per device
   const syncLogs = await query<{
     device_id: string;
     session_count: number;
     synced_at: string;
   }>(
     `SELECT device_id, session_count, synced_at
-     FROM sync_logs
-     WHERE user_id = ?
-       AND synced_at = (
-         SELECT MAX(s2.synced_at)
-         FROM sync_logs s2
-         WHERE s2.user_id = sync_logs.user_id
-           AND s2.device_id = sync_logs.device_id
-       )
+     FROM (
+       SELECT device_id, session_count, synced_at,
+              ROW_NUMBER() OVER (
+                PARTITION BY device_id
+                ORDER BY synced_at DESC, id DESC
+              ) AS rn
+       FROM sync_logs
+       WHERE user_id = ?
+     )
+     WHERE rn = 1
      ORDER BY synced_at DESC`,
     [user.userId],
   );

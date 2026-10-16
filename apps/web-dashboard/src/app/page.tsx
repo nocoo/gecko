@@ -11,7 +11,6 @@ import {
   Timer,
   TrendingUp,
 } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useState } from "react";
 import {
   Bar,
@@ -27,6 +26,7 @@ import {
 } from "recharts";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
+import { useMe } from "@/hooks/use-me";
 import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact } from "@/lib/chart-config";
 import { CHART_COLORS, chartPrimary, withAlpha } from "@/lib/palette";
 import { cn } from "@/lib/utils";
@@ -65,8 +65,8 @@ interface TimelineEntry {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
-  const userName = session?.user?.name?.split(" ")[0] ?? "there";
+  const { user } = useMe();
+  const userName = user?.name?.split(" ")[0] ?? "there";
 
   const [period, setPeriod] = useState<Period>("week");
   const [stats, setStats] = useState<Stats | null>(null);

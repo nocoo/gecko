@@ -7,54 +7,8 @@
  * 3. Zero-duration sessions after clipping are filtered out
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-});
-
-// ---------------------------------------------------------------------------
-// D1 mock helper
-// ---------------------------------------------------------------------------
-
-interface D1Call {
-  sql: string;
-  params: unknown[];
-}
-
-function mockD1(results: unknown[][]) {
-  let callIndex = 0;
-  const calls: D1Call[] = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql as string, params: body.params as unknown[] });
-
-    const rows = results[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results: rows, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
+import { describe, expect, test } from "vitest";
+import { mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // Constants for Asia/Shanghai (UTC+8, no DST)

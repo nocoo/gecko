@@ -4,15 +4,14 @@
   "description": "Gecko screen time dashboard",
   "type": "module",
   "engines": {
-    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
+    "node": "^22.18.0 || ^24.0.0 || >=26.0.0"
   },
   "scripts": {
     "dev": "vinext dev --port 7018",
     "build": "vinext build",
     "start": "vinext start --port 7018",
-    "db:init": "bun run scripts/init-local-db.ts",
-    "dev:e2e": "bun run db:init && E2E_SKIP_AUTH=true AUTH_SECRET=e2e-test-secret D1_LOCAL_PATH=.local/gecko-test.db vinext dev --port 17018",
-    "typecheck": "vinext typegen && tsc --noEmit",
+    "db:local": "bun run scripts/db-local.ts",
+    "typecheck": "cf workers types && vinext typegen && tsc --noEmit && tsc --noEmit -p tsconfig.tools.json",
     "lint": "biome check --error-on-warnings --max-diagnostics=500 .",
     "lint:fix": "biome check --write --error-on-warnings --max-diagnostics=500 .",
     "format": "biome format --write .",
@@ -20,25 +19,24 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:l1": "vitest run --coverage",
-    "test:l2": "bun run test:e2e",
-    "test:l3": "bun run test:bdd",
-    "test:e2e": "bun run db:init && RUN_E2E=true D1_LOCAL_PATH=.local/gecko-test.db bun test src/__tests__/e2e/ --timeout 60000",
-    "dev:bdd": "bun run db:init && E2E_SKIP_AUTH=true AUTH_SECRET=e2e-test-secret D1_LOCAL_PATH=.local/gecko-test.db vinext dev --port 27018",
-    "test:bdd": "bunx playwright test",
+    "test:l2": "bun run scripts/run-tests.ts l2",
+    "test:l3": "bun run scripts/run-tests.ts l3",
+    "test:e2e": "bun run test:l2",
+    "test:bdd": "bun run test:l3",
     "gate:security": "bun run scripts/gate-security.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-c82c3efb3",
     "@playwright/test": "^1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/better-sqlite3": "^9.6.0",
     "@types/bun": "1.4.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
     "@vitejs/plugin-rsc": "0.5.35",
     "@vitest/coverage-v8": "5.0.3",
-    "better-sqlite3": "13.0.3",
+    "cf": "1.0.0-beta.13",
     "tailwindcss": "^4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.1",
@@ -47,11 +45,12 @@
   "dependencies": {
     "@nocoo/basalt": "2.2.0",
     "@nocoo/next-ai": "^0.4.0",
+    "@vinext/cloudflare": "1.1.0",
     "ai": "7.0.126",
     "clsx": "^2.1.1",
+    "jose": "6.2.12",
     "lucide-react": "1.49.0",
     "next": "16.3.8",
-    "next-auth": "^5.0.0-beta.32",
     "react": "^19.3.0",
     "react-day-picker": "^10.0.2",
     "react-dom": "^19.3.0",
@@ -60,7 +59,7 @@
     "recharts": "3.10.1",
     "tailwind-merge": "3.7.0",
     "tw-animate-css": "^1.4.0",
-    "vinext": "1.0.0-beta.0"
+    "vinext": "1.1.0"
   },
   "overrides": {
     "@ai-sdk/provider-utils": "5.0.53",
@@ -75,6 +74,7 @@
     "sharp": "0.35.5",
     "fast-uri": "3.1.8",
     "fflate": "0.7.5",
-    "undici": "7.30.0"
+    "undici": "7.30.0",
+    "source-map-js": "1.2.2"
   }
 }

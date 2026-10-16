@@ -1,54 +1,9 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/tags route handler tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [
-            {
-              results,
-              success: true,
-              meta: { changes: results.length, last_row_id: 0 },
-            },
-          ],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 describe("/api/tags", () => {
   describe("GET /api/tags", () => {
@@ -64,7 +19,7 @@ describe("/api/tags", () => {
       ]);
       const { GET } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags");
+      const req = humanRequest("http://127.0.0.1:17018/api/tags");
       const res = await GET(req);
       expect(res.status).toBe(200);
 
@@ -77,7 +32,7 @@ describe("/api/tags", () => {
       mockD1([[]]);
       const { GET } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags");
+      const req = humanRequest("http://127.0.0.1:17018/api/tags");
       const res = await GET(req);
       const data = await res.json();
       expect(data.tags).toEqual([]);
@@ -89,7 +44,7 @@ describe("/api/tags", () => {
       const { calls } = mockD1([[]]);
       const { POST } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "productivity" }),
@@ -112,7 +67,7 @@ describe("/api/tags", () => {
       mockD1();
       const { POST } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -126,7 +81,7 @@ describe("/api/tags", () => {
       mockD1();
       const { POST } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: "not json",
@@ -144,7 +99,7 @@ describe("/api/tags", () => {
       mockD1([[{ id: "tag-1", user_id: "e2e-test-user" }], []]);
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "tag-1", name: "focus" }),
@@ -161,7 +116,7 @@ describe("/api/tags", () => {
       mockD1([[]]);
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "nonexistent", name: "x" }),
@@ -175,7 +130,7 @@ describe("/api/tags", () => {
       mockD1();
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "tag-1" }),
@@ -189,7 +144,7 @@ describe("/api/tags", () => {
       mockD1();
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: "not json",
@@ -205,7 +160,7 @@ describe("/api/tags", () => {
       mockD1();
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "x" }),
@@ -219,7 +174,7 @@ describe("/api/tags", () => {
       mockD1([[{ id: "tag-1", user_id: "other-user" }]]);
       const { PUT } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "tag-1", name: "stolen" }),
@@ -239,7 +194,7 @@ describe("/api/tags", () => {
       ]);
       const { DELETE } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "tag-1" }),
@@ -256,7 +211,7 @@ describe("/api/tags", () => {
       mockD1([[]]);
       const { DELETE } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "nonexistent" }),
@@ -270,7 +225,7 @@ describe("/api/tags", () => {
       mockD1();
       const { DELETE } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: "not json",
@@ -286,7 +241,7 @@ describe("/api/tags", () => {
       mockD1();
       const { DELETE } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -300,7 +255,7 @@ describe("/api/tags", () => {
       mockD1([[{ id: "tag-1", user_id: "other-user" }]]);
       const { DELETE } = await import("../../app/api/tags/route");
 
-      const req = new Request("http://localhost/api/tags", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: "tag-1" }),

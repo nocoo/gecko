@@ -7,14 +7,26 @@
  * - ai: top-level generateText controlled per-test via __testOverrides
  */
 
-import { afterEach, expect, vi } from "vitest";
+import { afterEach, beforeEach, expect, vi } from "vitest";
+import { setTestEnv } from "@/lib/runtime-env";
+import { installHumanTestEnv } from "./test-env";
 
 let unexpectedRequests = 0;
-globalThis.fetch = async () => {
-  unexpectedRequests += 1;
-  throw new Error("Unit tests must mock fetch; outbound network is disabled");
-};
+function installBlockedFetch(): void {
+  unexpectedRequests = 0;
+  globalThis.fetch = async () => {
+    unexpectedRequests += 1;
+    throw new Error("Unit tests must mock fetch; outbound network is disabled");
+  };
+}
+installBlockedFetch();
+beforeEach(() => {
+  installBlockedFetch();
+  installHumanTestEnv();
+});
+
 afterEach(() => {
+  setTestEnv(undefined);
   const count = unexpectedRequests;
   unexpectedRequests = 0;
   expect(count, "Unmocked outbound fetch calls").toBe(0);

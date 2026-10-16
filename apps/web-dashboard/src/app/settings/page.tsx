@@ -1,7 +1,6 @@
 "use client";
 
 import { AlertTriangle, Bell, Check, Globe, Loader2, Mail, Sparkles, User } from "lucide-react";
-import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
@@ -9,13 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { type MeUser, useMe } from "@/hooks/use-me";
 
 // ---------------------------------------------------------------------------
 // Settings Page
 // ---------------------------------------------------------------------------
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { user } = useMe();
 
   return (
     <AppShell breadcrumbs={[{ label: "Settings" }]}>
@@ -27,7 +27,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Profile section */}
-        <ProfileSection session={session} />
+        <ProfileSection user={user} />
 
         <Separator />
 
@@ -47,9 +47,7 @@ export default function SettingsPage() {
 // Profile Section (read-only, data from Google OAuth)
 // =============================================================================
 
-function ProfileSection({ session }: { session: ReturnType<typeof useSession>["data"] }) {
-  const user = session?.user;
-
+function ProfileSection({ user }: { user: MeUser | null }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
@@ -59,20 +57,12 @@ function ProfileSection({ session }: { session: ReturnType<typeof useSession>["d
 
       <div className="rounded-2xl bg-secondary p-5 space-y-4">
         <div className="flex items-center gap-4">
-          {user?.image ? (
-            <img
-              src={user.image}
-              alt="Avatar"
-              className="size-14 rounded-full ring-2 ring-border"
-            />
-          ) : (
-            <div className="size-14 rounded-full bg-muted flex items-center justify-center ring-2 ring-border">
-              <User className="size-6 text-muted-foreground" />
-            </div>
-          )}
+          <div className="size-14 rounded-full bg-muted flex items-center justify-center ring-2 ring-border">
+            <User className="size-6 text-muted-foreground" />
+          </div>
           <div>
             <p className="font-medium">{user?.name ?? "—"}</p>
-            <p className="text-sm text-muted-foreground">Managed by Google OAuth</p>
+            <p className="text-sm text-muted-foreground">Managed by Cloudflare Access</p>
           </div>
         </div>
 

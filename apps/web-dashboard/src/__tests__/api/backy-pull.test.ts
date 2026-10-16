@@ -6,62 +6,28 @@
  */
 
 import { gunzipSync } from "node:zlib";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import type { BackupEnvelope } from "@/lib/backy";
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  // Pull webhook does NOT use E2E_SKIP_AUTH — it has its own auth via X-Webhook-Key
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-/** D1 response builder */
-function d1Resp(results: unknown[]) {
-  return JSON.stringify({
-    success: true,
-    result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-    errors: [],
-  });
-}
+import { humanRequest, mockD1BySql, mockExternalFetch } from "../test-env";
 
 const VALID_PULL_KEY = `bpk_${"ab".repeat(32)}`;
 const USER_ID = "user-abc-123";
 
-/**
- * Mock fetch that routes D1 calls vs external (backy) calls.
- */
 function mockFetchRouter(opts: {
   d1Handler?: (sql: string, params: unknown[]) => unknown[];
   backyStatus?: number;
   backyBody?: string;
 }) {
-  const d1Calls: Array<{ sql: string; params: unknown[] }> = [];
+  const { calls: d1Calls } = mockD1BySql((sql, params) => opts.d1Handler?.(sql, params) ?? []);
   const backyCalls: Array<{ url: string; method: string; body: FormData | null }> = [];
-
-  globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
-
-    if (urlStr.includes("api.cloudflare.com")) {
-      const body = JSON.parse((init?.body ?? "") as string);
-      d1Calls.push({ sql: body.sql, params: body.params });
-      const results = opts.d1Handler?.(body.sql, body.params) ?? [];
-      return new Response(d1Resp(results), { status: 200 });
-    }
-
-    // Backy calls
-    const formData = init?.body instanceof FormData ? init.body : null;
-    backyCalls.push({ url: urlStr, method: init?.method ?? "GET", body: formData });
+  mockExternalFetch((url, init) => {
+    backyCalls.push({
+      url,
+      method: init?.method ?? "GET",
+      body: init?.body instanceof FormData ? init.body : null,
+    });
     return new Response(opts.backyBody ?? "OK", { status: opts.backyStatus ?? 200 });
-  }) as unknown as typeof fetch;
-
+  });
   return { d1Calls, backyCalls };
 }
 
@@ -93,7 +59,7 @@ describe("HEAD /api/backy/pull", () => {
     mockFetchRouter({ d1Handler: standardD1Handler });
     const { HEAD } = await import("../../app/api/backy/pull/route");
 
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "HEAD",
       headers: { "X-Webhook-Key": VALID_PULL_KEY },
     });
@@ -106,7 +72,7 @@ describe("HEAD /api/backy/pull", () => {
     mockFetchRouter({});
     const { HEAD } = await import("../../app/api/backy/pull/route");
 
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "HEAD",
     });
     const res = await HEAD(req);
@@ -120,7 +86,7 @@ describe("HEAD /api/backy/pull", () => {
     mockFetchRouter({ d1Handler: standardD1Handler });
     const { HEAD } = await import("../../app/api/backy/pull/route");
 
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "HEAD",
       headers: { "X-Webhook-Key": "bpk_invalid" },
     });
@@ -144,7 +110,7 @@ describe("POST /api/backy/pull", () => {
     });
 
     const { POST } = await import("../../app/api/backy/pull/route");
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
       headers: { "X-Webhook-Key": VALID_PULL_KEY },
     });
@@ -201,7 +167,7 @@ describe("POST /api/backy/pull", () => {
     });
 
     const { POST } = await import("../../app/api/backy/pull/route");
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
       headers: { "X-Webhook-Key": VALID_PULL_KEY },
     });
@@ -228,7 +194,7 @@ describe("POST /api/backy/pull", () => {
     mockFetchRouter({});
     const { POST } = await import("../../app/api/backy/pull/route");
 
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
     });
     const res = await POST(req);
@@ -240,7 +206,7 @@ describe("POST /api/backy/pull", () => {
     mockFetchRouter({ d1Handler: standardD1Handler });
     const { POST } = await import("../../app/api/backy/pull/route");
 
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
       headers: { "X-Webhook-Key": "bpk_wrong-key-here" },
     });
@@ -264,7 +230,7 @@ describe("POST /api/backy/pull", () => {
     });
 
     const { POST } = await import("../../app/api/backy/pull/route");
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
       headers: { "X-Webhook-Key": VALID_PULL_KEY },
     });
@@ -283,7 +249,7 @@ describe("POST /api/backy/pull", () => {
     });
 
     const { POST } = await import("../../app/api/backy/pull/route");
-    const req = new Request("http://localhost/api/backy/pull", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/pull", {
       method: "POST",
       headers: { "X-Webhook-Key": VALID_PULL_KEY },
     });

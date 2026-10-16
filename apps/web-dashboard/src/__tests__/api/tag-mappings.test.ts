@@ -1,54 +1,9 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1 } from "../test-env";
 
 // ---------------------------------------------------------------------------
 // /api/tags/mappings route handler tests
 // ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-function mockD1(responses: unknown[][] = [[]]) {
-  let callIndex = 0;
-  const calls: Array<{ sql: string; params: unknown[] }> = [];
-
-  globalThis.fetch = vi.fn((_url: string, init: RequestInit) => {
-    const body = JSON.parse(init.body as string);
-    calls.push({ sql: body.sql, params: body.params });
-
-    const results = responses[callIndex] ?? [];
-    callIndex++;
-
-    return Promise.resolve(
-      new Response(
-        JSON.stringify({
-          success: true,
-          result: [
-            {
-              results,
-              success: true,
-              meta: { changes: results.length, last_row_id: 0 },
-            },
-          ],
-          errors: [],
-        }),
-        { status: 200 },
-      ),
-    );
-  }) as unknown as typeof fetch;
-
-  return { calls };
-}
 
 describe("/api/tags/mappings", () => {
   describe("GET /api/tags/mappings", () => {
@@ -64,7 +19,7 @@ describe("/api/tags/mappings", () => {
       ]);
       const { GET } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings");
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings");
       const res = await GET(req);
       expect(res.status).toBe(200);
 
@@ -80,7 +35,7 @@ describe("/api/tags/mappings", () => {
       mockD1([[]]);
       const { GET } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings");
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings");
       const res = await GET(req);
       const data = await res.json();
       expect(data.mappings).toEqual([]);
@@ -92,7 +47,7 @@ describe("/api/tags/mappings", () => {
       const { calls } = mockD1([[]]);
       const { PUT } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -119,7 +74,7 @@ describe("/api/tags/mappings", () => {
       mockD1();
       const { PUT } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mappings: [] }),
@@ -133,7 +88,7 @@ describe("/api/tags/mappings", () => {
       mockD1();
       const { PUT } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -155,7 +110,7 @@ describe("/api/tags/mappings", () => {
         tagId: "tag-1",
       }));
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mappings }),
@@ -188,7 +143,7 @@ describe("/api/tags/mappings", () => {
       const { calls } = mockD1([[], []]);
       const { POST } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -223,7 +178,7 @@ describe("/api/tags/mappings", () => {
       const { calls } = mockD1([[]]);
       const { POST } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -247,7 +202,7 @@ describe("/api/tags/mappings", () => {
       const { calls } = mockD1([[], [], [], []]);
       const { POST } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -270,7 +225,7 @@ describe("/api/tags/mappings", () => {
       mockD1();
       const { POST } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apps: [] }),
@@ -284,7 +239,7 @@ describe("/api/tags/mappings", () => {
       mockD1();
       const { POST } = await import("../../app/api/tags/mappings/route");
 
-      const req = new Request("http://localhost/api/tags/mappings", {
+      const req = humanRequest("http://127.0.0.1:17018/api/tags/mappings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

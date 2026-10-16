@@ -1,22 +1,5 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-
-// ---------------------------------------------------------------------------
-// /api/backy/history route handler tests
-// ---------------------------------------------------------------------------
-
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1, mockExternalFetch } from "../test-env";
 
 function mockFetchRouter(opts: {
   d1Responses?: unknown[][];
@@ -25,36 +8,16 @@ function mockFetchRouter(opts: {
   externalJson?: unknown;
   externalError?: Error;
 }) {
-  let d1CallIndex = 0;
-
-  globalThis.fetch = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
-
-    if (urlStr.includes("api.cloudflare.com")) {
-      const _body = JSON.parse(init?.body as string);
-      const results = opts.d1Responses?.[d1CallIndex] ?? [];
-      d1CallIndex++;
-      return new Response(
-        JSON.stringify({
-          success: true,
-          result: [{ results, success: true, meta: { changes: 0, last_row_id: 0 } }],
-          errors: [],
-        }),
-        { status: 200 },
-      );
-    }
-
-    // External fetch (backy webhook)
-    if (opts.externalError) {
-      throw opts.externalError;
-    }
+  mockD1(opts.d1Responses ?? [[]]);
+  mockExternalFetch(() => {
+    if (opts.externalError) throw opts.externalError;
     if (opts.externalJson) {
       return new Response(JSON.stringify(opts.externalJson), {
         status: opts.externalStatus ?? 200,
       });
     }
     return new Response(opts.externalBody ?? "", { status: opts.externalStatus ?? 200 });
-  }) as unknown as typeof fetch;
+  });
 }
 
 describe("/api/backy/history", () => {
@@ -63,7 +26,7 @@ describe("/api/backy/history", () => {
       mockFetchRouter({ d1Responses: [[]] });
       const { GET } = await import("../../app/api/backy/history/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(422);
       const data = await res.json();
       expect(data.error).toContain("not configured");
@@ -81,7 +44,7 @@ describe("/api/backy/history", () => {
       });
       const { GET } = await import("../../app/api/backy/history/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(200);
       const data = await res.json();
       expect(data.history).toHaveLength(1);
@@ -100,7 +63,7 @@ describe("/api/backy/history", () => {
       });
       const { GET } = await import("../../app/api/backy/history/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(502);
       const data = await res.json();
       expect(data.error).toContain("500");
@@ -118,7 +81,7 @@ describe("/api/backy/history", () => {
       });
       const { GET } = await import("../../app/api/backy/history/route");
 
-      const res = await GET();
+      const res = await GET(humanRequest("http://127.0.0.1:17018/"));
       expect(res.status).toBe(502);
       const data = await res.json();
       expect(data.error).toContain("Connection refused");

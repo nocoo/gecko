@@ -9,8 +9,8 @@
     "typecheck": "bun run --cwd apps/web-dashboard typecheck",
     "lint": "bun run --cwd apps/web-dashboard lint",
     "test:l1": "bun run --cwd apps/web-dashboard test:coverage",
-    "test:l2": "bun run --cwd apps/web-dashboard test:e2e",
-    "test:l3": "bun run --cwd apps/web-dashboard test:bdd",
+    "test:l2": "bun run --cwd apps/web-dashboard test:l2",
+    "test:l3": "bun run --cwd apps/web-dashboard test:l3",
     "test:e2e:bdd": "bun run test:l3"
   },
   "devDependencies": {

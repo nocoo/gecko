@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noUncheckedIndexedAccess": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node", "bun"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "vitest.l2.config.ts",
+    "playwright.config.ts",
+    "cloudflare.config.ts",
+    "src/__tests__/e2e/**/*.ts",
+    "e2e/**/*.ts",
+    "src/env.d.ts"
+  ],
+  "exclude": ["node_modules", "dist"]
+}

@@ -1,9 +1,0 @@
-node_modules
-dist
-.env
-.env.local
-.wrangler
-*.test.ts
-__tests__
-logo.png
-*.md

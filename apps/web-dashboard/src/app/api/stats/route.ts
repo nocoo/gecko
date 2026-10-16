@@ -42,7 +42,7 @@ function periodStartTime(period: Period, tz: string): number | null {
 
 /** GET /api/stats?period=today */
 export async function GET(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const tz = await getUserTimezone(user.userId);

@@ -25,6 +25,7 @@ node_modules/
 .env*.local
 .env.e2e
 .wrangler/
+.cloudflare/
 
 # Build artifacts
 build/

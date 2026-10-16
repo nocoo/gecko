@@ -20,8 +20,8 @@ function slugify(title: string): string {
 }
 
 /** GET /api/categories */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   // Seed defaults on first access (idempotent — no-op if already seeded).
@@ -54,7 +54,7 @@ export async function GET(_req: Request): Promise<Response> {
 
 /** POST /api/categories */
 export async function POST(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { title?: string; icon?: string };
@@ -85,7 +85,7 @@ export async function POST(req: Request): Promise<Response> {
 
 /** PUT /api/categories */
 export async function PUT(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { id?: string; title?: string; icon?: string };
@@ -150,7 +150,7 @@ export async function PUT(req: Request): Promise<Response> {
 
 /** DELETE /api/categories */
 export async function DELETE(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { id?: string };

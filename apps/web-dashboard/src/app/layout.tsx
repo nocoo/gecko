@@ -1,6 +1,6 @@
+import { ThemeProvider } from "@nocoo/basalt/providers/theme";
 import type { Metadata } from "next";
 import googleFonts from "next/font/google";
-import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 const Inter = googleFonts.Inter;
@@ -18,7 +18,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3000"),
+  metadataBase: new URL("https://gecko.hexly.ai"),
   title: "gecko - Screen Time Dashboard",
   description: "Personal screen time tracking and focus analytics",
   openGraph: {
@@ -47,7 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${dmSans.variable} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

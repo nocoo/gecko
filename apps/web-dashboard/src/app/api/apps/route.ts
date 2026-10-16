@@ -7,8 +7,8 @@ import { query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/apps */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{

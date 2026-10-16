@@ -10,8 +10,8 @@ import { execute, query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/tags */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{
@@ -35,7 +35,7 @@ export async function GET(_req: Request): Promise<Response> {
 
 /** POST /api/tags */
 export async function POST(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { name?: string };
@@ -64,7 +64,7 @@ export async function POST(req: Request): Promise<Response> {
 
 /** PUT /api/tags */
 export async function PUT(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { id?: string; name?: string };
@@ -105,7 +105,7 @@ export async function PUT(req: Request): Promise<Response> {
 
 /** DELETE /api/tags */
 export async function DELETE(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { id?: string };

@@ -95,13 +95,14 @@ function isDevWorkflowUrl(url: string | null): boolean {
   }
 }
 
-const DEEP_WORK_MAP: Record<number, number> = {
-  0: 0,
-  1: 40,
-  2: 60,
-  3: 75,
-  4: 85,
-};
+function deepWorkScore(count: number): number {
+  if (count <= 0) return 0;
+  if (count === 1) return 40;
+  if (count === 2) return 60;
+  if (count === 3) return 75;
+  if (count === 4) return 85;
+  return 100;
+}
 
 const WEIGHTS = {
   focus: 0.3,
@@ -178,8 +179,7 @@ export function computeScores(rows: SessionRow[]): DailyScores {
   // 2. Deep Work: count merged segments >= 30min
   const merged = mergeAdjacentSessions(sorted);
   const deepSegments = merged.filter((s) => s.totalDuration >= DEEP_WORK_THRESHOLD).length;
-  // deepSegments is 0..4 in the false branch; DEEP_WORK_MAP has every key.
-  const deepWork = deepSegments >= 5 ? 100 : (DEEP_WORK_MAP[deepSegments] ?? 0);
+  const deepWork = deepWorkScore(deepSegments);
 
   // 3. Context Switch Rate
   // Only count "deep" switches — where user stayed ≥5min in the NEW context

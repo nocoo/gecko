@@ -10,6 +10,7 @@
  */
 
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { runAutoAnalyzeTick } from "@/lib/auto-analyze";
 
 vi.mock("@/lib/settings-repo", () => ({
   settingsRepo: {
@@ -20,7 +21,7 @@ vi.mock("@/lib/settings-repo", () => ({
 vi.mock("@/lib/daily-summary-repo", () => ({
   dailySummaryRepo: {
     findByUserAndDate: vi.fn(async () => null),
-    claimForAnalysis: vi.fn(async () => true),
+    claimForAnalysis: vi.fn(async () => ({ claimed: true, token: "t" })),
     releaseAnalysisClaim: vi.fn(async () => undefined),
   },
 }));
@@ -38,7 +39,7 @@ vi.mock("@/lib/api-helpers", () => ({
 vi.mock("@/services/analyze-core", () => ({
   runAnalysis: vi.fn(async () => ({
     ok: false,
-    reason: "no_sessions",
+    reason: "ai_error",
     message: "stub",
   })),
 }));
@@ -52,8 +53,7 @@ describe("auto-analyze default deps wiring", () => {
   test("getAutoAnalyze constructs a service with working default deps", async () => {
     const { getAutoAnalyze } = await import("@/lib/auto-analyze");
     const svc = getAutoAnalyze();
-    // onTick exercises every default dep closure for one user.
-    await svc.onTick();
-    expect(svc).toBeDefined();
+    await expect(svc.runTick()).rejects.toThrow("auto-analyze failed for 1 user(s)");
+    await expect(runAutoAnalyzeTick({}, 0)).rejects.toThrow("auto-analyze failed for 1 user(s)");
   });
 });

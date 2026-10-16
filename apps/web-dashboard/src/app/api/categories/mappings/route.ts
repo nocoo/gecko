@@ -7,8 +7,8 @@ import { execute, query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/categories/mappings */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{
@@ -37,7 +37,7 @@ interface MappingEntry {
 
 /** PUT /api/categories/mappings — Upsert a batch of app->category mappings. */
 export async function PUT(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { mappings?: MappingEntry[] };

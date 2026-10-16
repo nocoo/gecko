@@ -16,8 +16,8 @@ export const dynamic = "force-dynamic";
  * Returns the key prefix + masked remainder so the user can identify it
  * without exposing the full secret.
  */
-export async function GET(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const key = await backyRepo.getPullKey(user.userId);
@@ -38,8 +38,8 @@ export async function GET(): Promise<Response> {
  * POST — Generate a new pull key. If one already exists, it is replaced.
  * Returns the full key exactly once — it cannot be retrieved again.
  */
-export async function POST(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function POST(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const key = backyRepo.generatePullKey();
@@ -51,8 +51,8 @@ export async function POST(): Promise<Response> {
 /**
  * DELETE — Revoke the pull key. Backy will no longer be able to trigger pulls.
  */
-export async function DELETE(): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function DELETE(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const existed = await backyRepo.deletePullKey(user.userId);

@@ -2,71 +2,23 @@
  * Tests for /api/backy/config and /api/backy/test route handlers.
  */
 
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
+import { humanRequest, mockD1, mockExternalFetch } from "../test-env";
 
-const originalFetch = globalThis.fetch;
-
-beforeEach(() => {
-  process.env.E2E_SKIP_AUTH = "true";
-  process.env.CF_ACCOUNT_ID = "test-account-id";
-  process.env.CF_API_TOKEN = "test-api-token";
-  process.env.CF_D1_DATABASE_ID = "test-db-id";
-});
-
-afterEach(() => {
-  delete process.env.E2E_SKIP_AUTH;
-  globalThis.fetch = originalFetch;
-});
-
-/**
- * Mock D1 with a URL-aware router:
- * - Cloudflare D1 API calls → return configured D1 responses
- * - Other URLs → return configured external responses
- */
 function mockD1WithExternal(
   d1Responses: unknown[][] = [[]],
   externalHandler?: (url: string, init: RequestInit) => Response,
 ) {
-  let d1CallIndex = 0;
-  const d1Calls: Array<{ sql: string; params: unknown[] }> = [];
-  const externalCalls: Array<{ url: string; method: string }> = [];
-
-  globalThis.fetch = vi.fn((url: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : url.url;
-
-    // D1 API calls
-    if (urlStr.includes("api.cloudflare.com")) {
-      const body = JSON.parse((init?.body ?? (url as Request).body) as string);
-      d1Calls.push({ sql: body.sql, params: body.params });
-      const results = d1Responses[d1CallIndex] ?? [];
-      d1CallIndex++;
-      return Promise.resolve(
-        new Response(
-          JSON.stringify({
-            success: true,
-            result: [
-              {
-                results,
-                success: true,
-                meta: { changes: results.length > 0 ? 1 : 0, last_row_id: 0 },
-              },
-            ],
-            errors: [],
-          }),
-          { status: 200 },
-        ),
-      );
-    }
-
-    // External calls (backy webhook)
-    externalCalls.push({ url: urlStr, method: init?.method ?? "GET" });
-    if (externalHandler) {
-      return Promise.resolve(externalHandler(urlStr, init!));
-    }
-    return Promise.resolve(new Response("OK", { status: 200 }));
-  }) as unknown as typeof fetch;
-
+  const { calls: d1Calls } = mockD1(d1Responses);
+  const { calls: externalCalls } = mockExternalFetch((url, init) => {
+    if (externalHandler) return externalHandler(url, init ?? {});
+    return new Response("OK", { status: 200 });
+  });
   return { d1Calls, externalCalls };
+}
+
+function testPost(): Request {
+  return humanRequest("http://127.0.0.1:17018/api/backy/test", { method: "POST" });
 }
 
 // ---------------------------------------------------------------------------
@@ -78,7 +30,7 @@ describe("/api/backy/config GET", () => {
     mockD1WithExternal([[]]);
     const { GET } = await import("../../app/api/backy/config/route");
 
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -96,7 +48,7 @@ describe("/api/backy/config GET", () => {
     ]);
     const { GET } = await import("../../app/api/backy/config/route");
 
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -112,7 +64,7 @@ describe("/api/backy/config GET", () => {
     mockD1WithExternal([[{ key: "backy.webhookUrl", value: "https://backy.example.com/webhook" }]]);
     const { GET } = await import("../../app/api/backy/config/route");
 
-    const res = await GET();
+    const res = await GET(humanRequest("http://127.0.0.1:17018/"));
     const data = await res.json();
     expect(data.configured).toBe(false);
   });
@@ -127,7 +79,7 @@ describe("/api/backy/config PUT", () => {
     const { d1Calls } = mockD1WithExternal([[], []]);
     const { PUT } = await import("../../app/api/backy/config/route");
 
-    const req = new Request("http://localhost/api/backy/config", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -156,7 +108,7 @@ describe("/api/backy/config PUT", () => {
     mockD1WithExternal([]);
     const { PUT } = await import("../../app/api/backy/config/route");
 
-    const req = new Request("http://localhost/api/backy/config", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ apiKey: "sk-test" }),
@@ -172,7 +124,7 @@ describe("/api/backy/config PUT", () => {
     mockD1WithExternal([]);
     const { PUT } = await import("../../app/api/backy/config/route");
 
-    const req = new Request("http://localhost/api/backy/config", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ webhookUrl: "https://example.com" }),
@@ -188,7 +140,7 @@ describe("/api/backy/config PUT", () => {
     mockD1WithExternal([]);
     const { PUT } = await import("../../app/api/backy/config/route");
 
-    const req = new Request("http://localhost/api/backy/config", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ webhookUrl: "not-a-url", apiKey: "sk-test" }),
@@ -204,7 +156,7 @@ describe("/api/backy/config PUT", () => {
     mockD1WithExternal([]);
     const { PUT } = await import("../../app/api/backy/config/route");
 
-    const req = new Request("http://localhost/api/backy/config", {
+    const req = humanRequest("http://127.0.0.1:17018/api/backy/config", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: "not json",
@@ -234,7 +186,7 @@ describe("/api/backy/test POST", () => {
     );
     const { POST } = await import("../../app/api/backy/test/route");
 
-    const res = await POST();
+    const res = await POST(testPost());
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -262,7 +214,7 @@ describe("/api/backy/test POST", () => {
     );
     const { POST } = await import("../../app/api/backy/test/route");
 
-    const res = await POST();
+    const res = await POST(testPost());
     expect(res.status).toBe(200);
 
     const data = await res.json();
@@ -274,7 +226,7 @@ describe("/api/backy/test POST", () => {
     mockD1WithExternal([[]]);
     const { POST } = await import("../../app/api/backy/test/route");
 
-    const res = await POST();
+    const res = await POST(testPost());
     expect(res.status).toBe(422);
 
     const data = await res.json();
@@ -295,7 +247,7 @@ describe("/api/backy/test POST", () => {
     );
     const { POST } = await import("../../app/api/backy/test/route");
 
-    const res = await POST();
+    const res = await POST(testPost());
     expect(res.status).toBe(502);
 
     const data = await res.json();

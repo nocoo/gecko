@@ -36,5 +36,10 @@ coverage/
 # local test database
 .local/
 
+# Cloudflare / Miniflare state and generated types
+.cloudflare/
+.wrangler/
+worker-configuration.d.ts
+
 # TypeScript build info
 *.tsbuildinfo

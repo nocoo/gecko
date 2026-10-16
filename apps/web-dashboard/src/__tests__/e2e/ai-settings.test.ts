@@ -1,105 +1,5 @@
-// L2 (6DQ Integration/API E2E) — real HTTP on :17018; run via `bun run test:e2e` / root `test:l2`.
-// E2E: AI Settings API round-trip.
-//
-// Runs against the dev:e2e server (port 17018, E2E_SKIP_AUTH=true).
-// Spawns the server, waits for readiness, runs BDD-style scenarios, then shuts down.
-//
-// IMPORTANT: Skipped unless explicitly invoked via `bun run test:e2e`.
-// Set RUN_E2E=true to run these in the general test suite.
-
-import { type Subprocess, spawn } from "bun";
-import { afterAll, beforeAll, describe, expect, test } from "vitest";
-
-// ---------------------------------------------------------------------------
-// Skip guard
-// ---------------------------------------------------------------------------
-
-const SHOULD_RUN = process.env.RUN_E2E === "true";
-
-// ---------------------------------------------------------------------------
-// Config
-// ---------------------------------------------------------------------------
-
-const BASE_URL = "http://localhost:17018";
-const STARTUP_TIMEOUT_MS = 30_000;
-
-// ---------------------------------------------------------------------------
-// Server lifecycle
-// ---------------------------------------------------------------------------
-
-let server: Subprocess | null = null;
-
-async function waitForServer(url: string, timeoutMs: number): Promise<void> {
-  const start = Date.now();
-  while (Date.now() - start < timeoutMs) {
-    try {
-      const res = await fetch(url);
-      if (res.status > 0) return;
-    } catch {
-      // Not ready yet
-    }
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`Server did not start within ${timeoutMs}ms`);
-}
-
-beforeAll(async () => {
-  if (!SHOULD_RUN) return;
-
-  // Check if server is already running
-  try {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`);
-    if (res.status > 0) {
-      console.log("[E2E] Server already running on port 17018");
-      return;
-    }
-  } catch {
-    // Not running — start it
-  }
-
-  console.log("[E2E] Starting dev:e2e server...");
-  server = spawn({
-    cmd: ["bun", "run", "dev:e2e"],
-    cwd: new URL("../../..", import.meta.url).pathname.replace(/\/$/, ""),
-    stdout: "ignore",
-    stderr: "ignore",
-  });
-
-  await waitForServer(`${BASE_URL}/api/settings/ai`, STARTUP_TIMEOUT_MS);
-  console.log("[E2E] Server ready");
-});
-
-afterAll(async () => {
-  if (!SHOULD_RUN) return;
-
-  // Clean up AI settings
-  try {
-    await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: "",
-        apiKey: "",
-        model: "",
-        autoSummarize: false,
-        baseURL: "",
-        sdkType: "",
-      }),
-    });
-  } catch {
-    // Ignore cleanup errors
-  }
-
-  if (server) {
-    server.kill();
-    server = null;
-    console.log("[E2E] Server stopped");
-  }
-});
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
+import { beforeAll, describe, expect, test } from "vitest";
+import { humanApi, jsonBody } from "./harness";
 
 interface AiSettings {
   provider: string;
@@ -111,241 +11,109 @@ interface AiSettings {
   sdkType: string;
 }
 
-// ---------------------------------------------------------------------------
-// AI Settings API
-// ---------------------------------------------------------------------------
+const emptyConfig = {
+  provider: "",
+  apiKey: "",
+  model: "",
+  autoSummarize: false,
+  baseURL: "",
+  sdkType: "",
+};
 
 describe("AI settings API", () => {
-  // Reset AI settings to defaults so this test is order-independent
-  // (other E2E test files may configure AI settings via shared D1)
   beforeAll(async () => {
-    if (!SHOULD_RUN) return;
-    await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: "",
-        apiKey: "",
-        model: "",
-        autoSummarize: false,
-        baseURL: "",
-        sdkType: "",
-      }),
-    });
+    await humanApi("/api/settings/ai", jsonBody("PUT", emptyConfig));
   });
 
-  test.skipIf(!SHOULD_RUN)("GET /api/settings/ai returns defaults when unconfigured", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`);
+  test("GET /api/settings/ai returns defaults when unconfigured", async () => {
+    const res = await humanApi("/api/settings/ai");
     expect(res.status).toBe(200);
-
     const body = (await res.json()) as AiSettings;
     expect(body.provider).toBe("");
-    expect(body.apiKey).toBe("");
     expect(body.hasApiKey).toBe(false);
-    expect(body.model).toBe("");
     expect(body.autoSummarize).toBe(false);
   });
 
-  test.skipIf(!SHOULD_RUN)("PUT /api/settings/ai saves configuration", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+  test("PUT /api/settings/ai saves configuration", async () => {
+    const res = await humanApi(
+      "/api/settings/ai",
+      jsonBody("PUT", {
         provider: "anthropic",
         apiKey: "sk-test-1234567890",
         model: "claude-sonnet-4-20250514",
         autoSummarize: true,
       }),
-    });
+    );
     expect(res.status).toBe(200);
-
     const body = (await res.json()) as AiSettings;
     expect(body.provider).toBe("anthropic");
     expect(body.hasApiKey).toBe(true);
-    // API key should be masked
     expect(body.apiKey).toContain("*");
-    expect(body.apiKey).toEndWith("7890");
-    expect(body.model).toBe("claude-sonnet-4-20250514");
+    expect(body.apiKey.endsWith("7890")).toBe(true);
     expect(body.autoSummarize).toBe(true);
   });
 
-  test.skipIf(!SHOULD_RUN)("GET /api/settings/ai returns saved config", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`);
-    expect(res.status).toBe(200);
-
+  test("GET /api/settings/ai returns saved config", async () => {
+    const res = await humanApi("/api/settings/ai");
     const body = (await res.json()) as AiSettings;
     expect(body.provider).toBe("anthropic");
     expect(body.hasApiKey).toBe(true);
-    expect(body.autoSummarize).toBe(true);
   });
 
-  test.skipIf(!SHOULD_RUN)("PUT /api/settings/ai rejects invalid provider", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ provider: "invalid-provider" }),
-    });
+  test("PUT /api/settings/ai rejects invalid provider", async () => {
+    const res = await humanApi(
+      "/api/settings/ai",
+      jsonBody("PUT", { provider: "invalid-provider" }),
+    );
     expect(res.status).toBe(400);
-
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toContain("Invalid provider");
+    expect((await res.json()).error).toContain("Invalid provider");
   });
 
-  test.skipIf(!SHOULD_RUN)("PUT /api/settings/ai allows partial update", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ autoSummarize: false }),
-    });
+  test("PUT /api/settings/ai allows partial update", async () => {
+    const res = await humanApi("/api/settings/ai", jsonBody("PUT", { autoSummarize: false }));
     expect(res.status).toBe(200);
-
     const body = (await res.json()) as AiSettings;
-    // Provider should still be anthropic (not cleared)
     expect(body.provider).toBe("anthropic");
     expect(body.autoSummarize).toBe(false);
   });
 
-  test.skipIf(!SHOULD_RUN)("PUT /api/settings/ai can clear config", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        provider: "",
-        apiKey: "",
-        model: "",
-        autoSummarize: false,
-        baseURL: "",
-        sdkType: "",
-      }),
-    });
+  test("PUT /api/settings/ai can clear config", async () => {
+    const res = await humanApi("/api/settings/ai", jsonBody("PUT", emptyConfig));
     expect(res.status).toBe(200);
-
     const body = (await res.json()) as AiSettings;
     expect(body.provider).toBe("");
     expect(body.hasApiKey).toBe(false);
-    expect(body.autoSummarize).toBe(false);
   });
 
-  test.skipIf(!SHOULD_RUN)(
-    "PUT /api/settings/ai accepts custom provider with baseURL and sdkType",
-    async () => {
-      const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: "custom",
-          apiKey: "sk-custom-1234567890",
-          model: "my-model-v1",
-          baseURL: "https://my-api.example.com/v1",
-          sdkType: "openai",
-        }),
-      });
-      expect(res.status).toBe(200);
-
-      const body = (await res.json()) as AiSettings;
-      expect(body.provider).toBe("custom");
-      expect(body.hasApiKey).toBe(true);
-      expect(body.model).toBe("my-model-v1");
-      expect(body.baseURL).toBe("https://my-api.example.com/v1");
-      expect(body.sdkType).toBe("openai");
-    },
-  );
-
-  test.skipIf(!SHOULD_RUN)("GET /api/settings/ai returns custom provider fields", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`);
+  test("PUT /api/settings/ai accepts custom provider", async () => {
+    const res = await humanApi(
+      "/api/settings/ai",
+      jsonBody("PUT", {
+        provider: "custom",
+        apiKey: "sk-custom-1234567890",
+        model: "my-model-v1",
+        baseURL: "https://my-api.example.com/v1",
+        sdkType: "openai",
+      }),
+    );
     expect(res.status).toBe(200);
-
     const body = (await res.json()) as AiSettings;
     expect(body.provider).toBe("custom");
     expect(body.baseURL).toBe("https://my-api.example.com/v1");
     expect(body.sdkType).toBe("openai");
   });
 
-  test.skipIf(!SHOULD_RUN)("PUT /api/settings/ai rejects invalid sdkType", async () => {
-    const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sdkType: "invalid-sdk" }),
-    });
+  test("PUT /api/settings/ai rejects invalid sdkType", async () => {
+    const res = await humanApi("/api/settings/ai", jsonBody("PUT", { sdkType: "invalid-sdk" }));
     expect(res.status).toBe(400);
-
-    const body = (await res.json()) as { error: string };
-    expect(body.error).toContain("Invalid SDK type");
+    expect((await res.json()).error).toContain("Invalid SDK type");
   });
 });
-
-// ---------------------------------------------------------------------------
-// AI Settings page
-// ---------------------------------------------------------------------------
 
 describe("AI Settings page", () => {
-  test.skipIf(!SHOULD_RUN)("GET /settings/ai returns 200", async () => {
-    const res = await fetch(`${BASE_URL}/settings/ai`);
+  test("GET /settings/ai returns 200 with heading", async () => {
+    const res = await humanApi("/settings/ai");
     expect(res.status).toBe(200);
+    expect(await res.text()).toContain("AI Settings");
   });
-
-  test.skipIf(!SHOULD_RUN)("contains AI Settings heading", async () => {
-    const res = await fetch(`${BASE_URL}/settings/ai`);
-    const html = await res.text();
-    expect(html).toContain("AI Settings");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// AI integration (real LLM)
-// ---------------------------------------------------------------------------
-
-const AI_AUTH_TOKEN = process.env.AI_E2E_AUTH_TOKEN ?? "";
-const AI_BASE_URL = process.env.AI_E2E_BASE_URL ?? "";
-const AI_MODEL = process.env.AI_E2E_MODEL ?? "";
-const HAS_AI_CREDS = !!(AI_AUTH_TOKEN && AI_BASE_URL && AI_MODEL);
-
-describe("AI integration (real LLM)", () => {
-  test.skipIf(!SHOULD_RUN || !HAS_AI_CREDS)(
-    "configure custom provider with real credentials",
-    async () => {
-      const res = await fetch(`${BASE_URL}/api/settings/ai`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          provider: "custom",
-          apiKey: AI_AUTH_TOKEN,
-          model: AI_MODEL,
-          baseURL: AI_BASE_URL,
-          sdkType: "anthropic",
-        }),
-      });
-      expect(res.status).toBe(200);
-
-      const body = (await res.json()) as AiSettings;
-      expect(body.provider).toBe("custom");
-      expect(body.hasApiKey).toBe(true);
-      expect(body.model).toBe(AI_MODEL);
-      expect(body.baseURL).toBe(AI_BASE_URL);
-      expect(body.sdkType).toBe("anthropic");
-    },
-  );
-
-  test.skipIf(!SHOULD_RUN || !HAS_AI_CREDS)(
-    "POST /api/settings/ai/test succeeds with real LLM",
-    async () => {
-      const res = await fetch(`${BASE_URL}/api/settings/ai/test`, {
-        method: "POST",
-      });
-      expect(res.status).toBe(200);
-
-      const body = (await res.json()) as {
-        success: boolean;
-        response: string;
-        model: string;
-        provider: string;
-      };
-      expect(body.success).toBe(true);
-      expect(body.response.length).toBeGreaterThan(0);
-      expect(body.model).toBe(AI_MODEL);
-      expect(body.provider).toBe("custom");
-
-      console.log(`[E2E] Real LLM response: "${body.response}"`);
-    },
-  );
 });

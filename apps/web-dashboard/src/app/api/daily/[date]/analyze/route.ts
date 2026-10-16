@@ -6,7 +6,6 @@
  */
 
 import { getUserTimezone, jsonError, jsonOk, requireSession } from "@/lib/api-helpers";
-import { ensureAutoAnalyze } from "@/lib/auto-analyze";
 import { dailySummaryRepo } from "@/lib/daily-summary-repo";
 import { settingsRepo } from "@/lib/settings-repo";
 import { todayInTz } from "@/lib/timezone";
@@ -28,12 +27,6 @@ import {
   type TimeSegment,
 } from "@/services/analyze-core";
 import { sendAnalysisEmail } from "@/services/email-notification";
-
-// Wire up the hourly auto-analyze scheduler once at module load time.
-// This must live in a route module (not instrumentation.ts) because vinext
-// production builds only bundle route modules — instrumentation.ts is only
-// loaded by the Vite dev server, not by `vinext start`.
-ensureAutoAnalyze();
 
 export const dynamic = "force-dynamic";
 
@@ -108,7 +101,7 @@ export async function POST(
   req: Request,
   { params }: { params: Promise<{ date: string }> },
 ): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const tz = await getUserTimezone(user.userId);
@@ -123,7 +116,6 @@ export async function POST(
   const url = new URL(req.url);
   const force = url.searchParams.get("force") === "true";
 
-  // Check if AI result already exists (skip if force=true)
   if (!force) {
     const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
     if (cached?.ai_result_json) {
@@ -140,11 +132,30 @@ export async function POST(
     }
   }
 
-  // Delegate to analyze-core pipeline
-  const outcome = await runAnalysis(user.userId, date, tz);
+  const claim = await dailySummaryRepo.claimForAnalysis(user.userId, date, { force });
+  if (!claim.claimed) {
+    if (claim.reason === "cached") {
+      const cached = await dailySummaryRepo.findByUserAndDate(user.userId, date);
+      if (cached?.ai_result_json) {
+        return jsonOk({
+          score: cached.ai_score,
+          result: JSON.parse(cached.ai_result_json) as AiAnalysisResult,
+          model: cached.ai_model,
+          generatedAt: cached.ai_generated_at,
+          cached: true,
+          prompt: cached.ai_prompt ?? null,
+          usage: null,
+          durationMs: null,
+        });
+      }
+    }
+    return jsonError("Analysis already in progress", 409);
+  }
+
+  const outcome = await runAnalysis(user.userId, date, tz, { claimToken: claim.token });
 
   if (!outcome.ok) {
-    // Map reason to HTTP status codes
+    await dailySummaryRepo.releaseAnalysisClaim(user.userId, date, claim.token);
     switch (outcome.reason) {
       case "no_ai_config":
         return jsonError(outcome.message, 400);
@@ -156,20 +167,23 @@ export async function POST(
       }
       case "parse_error":
         return jsonError(outcome.message, 502);
+      case "persist_error":
+        return jsonError(outcome.message, 500);
     }
   }
 
-  // Optional: send email notification for manual analysis (user must opt-in)
   const onManual = await settingsRepo.findByKey(user.userId, "notification.email.onManualAnalyze");
   if (onManual?.value === "true") {
-    sendAnalysisEmail({
-      userId: user.userId,
-      date,
-      result: outcome.result,
-      stats: outcome.stats,
-    }).catch(() => {
-      // fire-and-forget; sendAnalysisEmail already handles errors
-    });
+    try {
+      await sendAnalysisEmail({
+        userId: user.userId,
+        date,
+        result: outcome.result,
+        stats: outcome.stats,
+      });
+    } catch {
+      // notification failure does not undo persisted analysis
+    }
   }
 
   return jsonOk({

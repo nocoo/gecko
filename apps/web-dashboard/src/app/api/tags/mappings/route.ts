@@ -8,8 +8,8 @@ import { execute, query } from "@/lib/d1";
 export const dynamic = "force-dynamic";
 
 /** GET /api/tags/mappings */
-export async function GET(_req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+export async function GET(req: Request): Promise<Response> {
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const rows = await query<{
@@ -38,7 +38,7 @@ interface TagMappingEntry {
 
 /** PUT /api/tags/mappings — Upsert a batch of app->tag mappings. */
 export async function PUT(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { mappings?: TagMappingEntry[] };
@@ -92,7 +92,7 @@ interface AppTagSet {
  * If tagIds is empty or missing for an app, all its tags are removed.
  */
 export async function POST(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   let body: { apps?: AppTagSet[] };

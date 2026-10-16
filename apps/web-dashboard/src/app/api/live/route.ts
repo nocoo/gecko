@@ -1,8 +1,5 @@
-// GET /api/live — Surety-standard health probe.
-// Returns process + database health for uptime monitors.
-// No auth, no cache.
-
-import { getD1Config, isLocalMode, query } from "@/lib/d1";
+import { query } from "@/lib/d1";
+import { textBinding } from "@/lib/runtime-env";
 import { APP_VERSION } from "@/lib/version";
 
 export const dynamic = "force-dynamic";
@@ -10,21 +7,12 @@ export const dynamic = "force-dynamic";
 const COMPONENT = "gecko-dashboard";
 const HEADERS = { "Cache-Control": "no-store" } as const;
 
-/** Sanitise error messages: strip the word "ok" to avoid false positives. */
 function sanitise(msg: string): string {
   return msg.replace(/\bok\b/gi, "***");
 }
 
-/** Probe the D1 database. Returns connectivity status. */
-async function probeDatabase(): Promise<{
-  connected: boolean;
-  error?: string;
-}> {
+async function probeDatabase(): Promise<{ connected: boolean; error?: string }> {
   try {
-    const cfg = getD1Config();
-    if (!isLocalMode() && (!cfg.accountId || !cfg.apiToken || !cfg.databaseId)) {
-      return { connected: false, error: "database not configured" };
-    }
     await query("SELECT 1 AS probe");
     return { connected: true };
   } catch (err) {
@@ -33,42 +21,35 @@ async function probeDatabase(): Promise<{
   }
 }
 
-/** GET /api/live */
 export async function GET(): Promise<Response> {
   try {
     const db = await probeDatabase();
     const healthy = db.connected;
-
+    const runId = textBinding("RESOURCE_ENV") === "test" ? textBinding("TEST_RUN_ID") : "";
     return Response.json(
       {
         status: healthy ? "ok" : "error",
         version: APP_VERSION,
         component: COMPONENT,
         timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
+        storage: "d1",
         database: db,
+        ...(runId ? { runId } : {}),
       },
-      {
-        status: healthy ? 200 : 503,
-        headers: HEADERS,
-      },
+      { status: healthy ? 200 : 503, headers: HEADERS },
     );
   } catch (err) {
     const message = sanitise(err instanceof Error ? err.message : "unexpected failure");
-
     return Response.json(
       {
         status: "error",
         version: APP_VERSION,
         component: COMPONENT,
         timestamp: new Date().toISOString(),
-        uptime: Math.floor(process.uptime()),
+        storage: "d1",
         reason: message,
       },
-      {
-        status: 503,
-        headers: HEADERS,
-      },
+      { status: 503, headers: HEADERS },
     );
   }
 }

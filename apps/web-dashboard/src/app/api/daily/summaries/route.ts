@@ -39,7 +39,7 @@ function daysBetween(from: string, to: string): number {
 }
 
 export async function GET(req: Request): Promise<Response> {
-  const { user, error } = await requireSession();
+  const { user, error } = await requireSession(req);
   if (error) return error;
 
   const url = new URL(req.url);
