@@ -1,2 +1,6 @@
 # OSV-Scanner configuration
-# No ignored vulnerabilities: image-size uses the released 2.0.4 fix.
+# image-size uses the released 2.0.4 fix.
+
+[[IgnoredVulns]]
+id = "GHSA-vfj7-8cjw-p6xm"
+reason = "One-time bypass: braces<=3.0.3 has no patched release. Transitive via vinext → vite-plugin-commonjs → fast-glob → micromatch; Worker runtime does not expand attacker globs. Remove when braces ships a fix."
