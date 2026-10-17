@@ -1,5 +1,9 @@
 # Retrospective
 
+## 2026-10-17 — image-size must be a direct dependency for Node CI
+
+CI L1 runs Vitest under Node. `image-size` was only an override of a vinext transitive dependency, so bun's install layout was enough for local bun tests and for vinext's own import, but Node `require("image-size")` from the security regression child process failed with `MODULE_NOT_FOUND`. Resolving the package from the parent test file used the same Node resolver and failed the same way. Add `image-size` as a direct `devDependency` so `apps/web-dashboard/node_modules/image-size` exists for Node.
+
 ## 2026-09-07 — Isolate the native unit-test host
 
 The required native pre-commit suite stalled during application-host startup before reporting any test cases. The web gates had passed. The test target loads `Gecko.app`, whose SwiftUI initializer creates production settings, Keychain access, the shared database, and permission/tracking services.
