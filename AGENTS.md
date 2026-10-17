@@ -18,8 +18,8 @@ This file is the contract; hooks, CI and configuration enforce it. Raise weaker 
 
 ## Project Invariants
 
-- Production vinext runs on Node, not Bun: large authenticated POST bodies hang under the Bun runtime. Bun remains the install/build/test tool; preserve the Dockerfile's Node runtime stage.
-- Google identity uses stable `account.providerAccountId`, not the random JWT-mode `user.id` / initial `token.sub`. A changed identity callback requires existing users to sign in again. Preserve the email allowlist; an empty `ALLOWED_EMAILS` currently permits every successful Google login.
+- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=http`.
+- Dashboard identity is the verified Cloudflare Access email in lowercase as `user_id`. Access Allow is the admission list. Machine APIs keep device keys and Backy webhook keys.
 - Native device keys stay in Keychain; local sessions remain queued through network outages. Tests use local SQLite, fake providers and injected preferences rather than real user data or paid model calls.
 - Use a stable Apple Development signature for installed TCC-sensitive builds. The unit-test host must start only its test event loop, without production settings, Keychain, tracking or permission services.
 - Store injected `UserDefaults` and use it in every setter. Resume a suspended GCD source before canceling it; essential menubar startup belongs in `MenuBarExtra` / AppDelegate, not a deferred Window task.
@@ -30,16 +30,16 @@ This file is the contract; hooks, CI and configuration enforce it. Raise weaker 
 
 | Component | Choice |
 |---|---|
-| Web | TypeScript 7, React/vinext, NextAuth, Node ≥22.12; Bun install/scripts, CI Bun 1.4.2 |
+| Web | TypeScript 7, React/vinext on Workers, Cloudflare Access; Bun install/scripts, CI Bun 1.4.2 |
 | Native | macOS 14+, SwiftUI/AppKit, Xcode 16+, XcodeGen, SwiftLint |
-| Data | Local SQLite or explicit Cloudflare D1 REST mode; native SQLite and Keychain |
+| Data | Production D1 binding; local Miniflare D1; native SQLite and Keychain |
 | `apps/web-dashboard/` | App/API, services, database adapters, Vitest and HTTP/browser suites |
 | `apps/mac-client/` | Native app, `project.yml`, generated Xcode project and tests |
 | `scripts/` | Coordinated version release and DMG packaging |
 
 ## Commands
 
-Run each line from the root. Install both dependency graphs; only the root install restores the repository's Husky wrappers. Web tests need no real OAuth or D1 credential; browser tests require Chromium. Native tests require full Xcode and SwiftLint; when Command Line Tools is selected, use the per-command `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` override.
+Run each line from the root. Install both dependency graphs; only the root install restores the repository's Husky wrappers. Web tests need no Access session or production D1 credential; browser tests require Chromium. Native tests require full Xcode and SwiftLint; when Command Line Tools is selected, use the per-command `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` override.
 
 ```bash
 bun install --frozen-lockfile
@@ -56,7 +56,7 @@ xcodebuild -resolvePackageDependencies -project apps/mac-client/Gecko.xcodeproj 
 xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests
 ```
 
-The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and set `D1_LOCAL_PATH` plus test-auth variables. `db:init` deletes its selected database before rebuilding it: never pass a production or daily-dev path. Keep `CF_ACCOUNT_ID`, `CF_API_TOKEN` and `CF_D1_DATABASE_ID` out of automated test environments. Gitleaks/OSV and the SQLite native ABI must be available.
+The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables. Keep `CF_ACCOUNT_ID`, `CF_API_TOKEN` and `CF_D1_DATABASE_ID` out of automated test environments. Gitleaks/OSV must be available.
 
 ## Verification
 
@@ -66,14 +66,14 @@ The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and s
 |---|---|---|---|
 | L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | planned | The index-snapshot commit gate enforces four 95.5% thresholds, rejects focused/skipped/empty suites, and checks real test reports |
 | L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | Required unsigned GeckoTests use isolated DerivedData and cloned GRDB dependencies. Xccov measures all application files; interim lines 26% / functions 38% regression floors remain below the unchanged 95% target. Statements/branches are unsupported by Swift; no native CI lane |
-| L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/SQLite suites; exhaustive endpoint/method and server-identity checks are not enforced |
+| L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/D1 suites; exhaustive endpoint/method and server-identity checks are not enforced |
 | L3 web | Critical dashboard journeys in Chromium | enforced | CI and root `test:l3` / `test:e2e:bdd` use Playwright |
 | L3 native | Tracking, sleep/lock, permissions and sync as user journeys | planned | Native unit tests exist; complete desktop system acceptance is not enforced |
 | L1 static web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs check-only types/lint; vinext regenerates route types from the snapshot |
 | L1 static native | Warnings-as-errors compilation and strict SwiftLint | planned | Local hook requires native tools and uses compiler warnings as errors plus strict SwiftLint; CI covers only web |
 | G2 web | Dependency and secret scans; missing tools fail | enforced | Push scans the web lock/history and image-size regression; shared CI security also scans root dependencies |
 | G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |
-| D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | Web suites share a fixed test DB and may reuse servers; `db:init` removes arbitrary supplied paths without a test marker/guard |
+| D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | L2/L3 allocate per-run persist and reject remote fallback; daily 7018 must stay idle |
 | Build | Real vinext bundle and native executable | manual | Web `build`, Xcode build/test; native packaging via `scripts/build-dmg.sh` |
 | Docs / release | Synchronized web/native versions and publication proof | planned | `bun run release` plus GitHub Release workflow; production evidence is the proven SHA's Actions run and `/api/live` version |
 
@@ -88,11 +88,11 @@ Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-
 
 | Lane | Port / store | Boundary |
 |---|---|---|
-| Daily web | 7018, `gecko.dev.hexly.ai` | Explicit local development DB or optional remote D1; never an automated target |
-| L2 | 17018, web `.local/gecko-test.db` | Local HTTP; fixed database and existing-server reuse remain gaps |
-| L3 | 27018, same test DB | Browser lane needs its own fresh storage; do not overlap L2 |
+| Daily web | 7018, `gecko.dev.hexly.ai` | Local Miniflare D1 persist; never an automated production target |
+| L2 | 17018, per-run persist | Local HTTP; do not overlap daily 7018 |
+| L3 | 27018, per-run persist | Browser lane needs its own storage; do not overlap L2 |
 
-Vinext has a single development-instance lock. Arrange an idle local server before L2/L3; do not terminate a user's 7018 session to force a gate through. Required harnesses allocate verified per-run SQLite paths, reject remote fallback and guard resets/cleanup. No remote `-test` Worker/database is required.
+Vinext has a single development-instance lock. Arrange an idle local server before L2/L3; do not terminate a user's 7018 session to force a gate through. Required harnesses allocate verified per-run persist, reject remote fallback and guard resets/cleanup. No remote `-test` Worker/database is required.
 
 ## Operations / Release
 

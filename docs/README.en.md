@@ -45,11 +45,11 @@ On first launch, follow the app's prompts to grant Accessibility and Automation 
 
 ### Web and sync
 
-Open the [website](https://gecko.hexly.ai) or your own deployment and sign in with Google. Create a device API key on the API integration page, enter the key and deployment URL in the Mac app's sync settings, and enable sync. The key is stored in macOS Keychain.
+Open the [website](https://gecko.hexly.ai) or your own deployment and sign in with Cloudflare Access. Create a device API key on the API integration page, enter the key and deployment URL in the Mac app's sync settings, and enable sync. The key is stored in macOS Keychain.
 
 The Mac app currently defaults to the development URL `https://gecko.dev.hexly.ai`. Change it to `https://gecko.hexly.ai` for the public deployment, or to your own HTTPS URL when self-hosting. Sync requires a reachable service and a valid key.
 
-The web app uses `ALLOWED_EMAILS` to control which accounts may sign in. Set your own allowlist when deploying; in the current implementation, an empty list permits any account that completes Google OAuth. Categories, tags, AI settings, and backup settings are managed in the web dashboard.
+Production Worker `gecko` is published by GitHub Actions after main CI succeeds. People sign in through the Cloudflare Access Allow policy; machine sync uses API keys. Categories, tags, AI settings, and backup settings are managed in the web dashboard.
 
 ## Development
 
@@ -84,25 +84,22 @@ From the repository root, enter the web app and install dependencies:
 cd apps/web-dashboard
 bun install --frozen-lockfile
 cp .env.example .env.local
+cp .dev.vars.example .dev.vars
 ```
 
-Fill in Google OAuth's `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`, the session secret `NEXTAUTH_SECRET`, the actual `NEXTAUTH_URL`, and `ALLOWED_EMAILS` in `.env.local`. Local HTTP development can use `NEXTAUTH_URL=http://localhost:7018`, with the Google OAuth callback at `/api/auth/callback/google`.
-
-There are two database modes. Set `CF_ACCOUNT_ID`, `CF_API_TOKEN`, and `CF_D1_DATABASE_ID` for your own Cloudflare D1 database and apply the [drizzle migrations](../apps/web-dashboard/drizzle/) in order, or set `D1_LOCAL_PATH` to an initialized local SQLite file. These commands create a local development database and select it when starting the app:
+Local identity defaults to `LOCAL_USER_EMAIL`. Put Dove webhook values in `.dev.vars` and do not commit that file. Daily development uses `https://gecko.dev.hexly.ai` or `http://localhost:7018`. Apply local D1 migrations before starting:
 
 ```bash
-bun run db:init .local/gecko-dev.db
-D1_LOCAL_PATH=.local/gecko-dev.db bun run dev
+bun run db:local
+bun run dev
 ```
 
-Open `http://localhost:7018`. `db:init` deletes and recreates the selected database; run it only to initialize or reset that local database. AI, Dove, and Backy are optional and are not prerequisites for the basic pages.
-
-From `apps/web-dashboard/`, use `bun run build` to build and `bun run start` to start the production server. The production runtime is Node.js; the [Dockerfile](../apps/web-dashboard/Dockerfile) uses Bun for installation/build and Node to run the app. Root `bun run typecheck` and `bun run lint` check web types and code style.
+AI, Dove, and Backy are optional and are not prerequisites for the basic pages. Use `bun run build` for the production bundle. GitHub's Release workflow publishes the Worker; do not treat a local `vinext start` as production. Root `bun run typecheck` and `bun run lint` check web types and code style.
 
 ```text
 apps/mac-client/       SwiftUI app, tracking and sync services, XCTest
-apps/web-dashboard/    React / vinext pages, APIs, and local/remote database access
-apps/web-dashboard/drizzle/  Cloud database migrations
+apps/web-dashboard/    React / vinext pages, APIs, and D1 access
+apps/web-dashboard/migrations/  D1 migrations
 scripts/               Mac builds and development tools
 docs/                  Design records and this English README
 ```
@@ -118,7 +115,7 @@ Run from the repository root:
 | Web browser tests | `bun run --cwd apps/web-dashboard test:bdd` |
 | Mac unit and integration tests | `xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests` |
 
-Before the first browser run, execute `bunx playwright install chromium` in `apps/web-dashboard/`. HTTP and browser tests use ports `17018` and `27018`, respectively, and recreate `.local/gecko-test.db`. Stop other vinext development servers first and run these suites sequentially. Ordinary tests do not need a cloud database. Real AI integration scenarios require credentials as described in `.env.e2e.example` and are skipped when they are absent.
+Before the first browser run, execute `bunx playwright install chromium` in `apps/web-dashboard/`. HTTP and browser tests use ports `17018` and `27018`, respectively, each with isolated local D1 persist. Stop other vinext development servers first and run these suites sequentially. Ordinary tests do not need a cloud database. Real AI integration scenarios require credentials as described in `.env.e2e.example` and are skipped when they are absent.
 
 Mac tests require full Xcode and the generated project. Environments running tests without signing can append `CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""`. The web app's `test:coverage` generates a coverage report, and `test:watch` enables watch mode.
 
@@ -136,11 +133,15 @@ Mac tests require full Xcode and the generated project. Environments running tes
 | --- | --- |
 | Mac app | Swift, SwiftUI, AppKit / NSWorkspace, AppleScript, GRDB |
 | Web | TypeScript, React, vinext / Vite, Tailwind CSS, Radix UI, Recharts |
-| Data and identity | Local SQLite, Cloudflare D1 REST API, NextAuth / Google OAuth |
+| Data and identity | Mac local SQLite, Cloudflare D1 binding, Cloudflare Access |
 | AI | AI SDK, `@nocoo/next-ai`, Anthropic / OpenAI-compatible APIs |
 | Tests | XCTest, Vitest, Bun HTTP tests, Playwright |
 
 See the [Mac project configuration](../apps/mac-client/project.yml) and [web package.json](../apps/web-dashboard/package.json) for dependencies.
+
+## Release
+
+Maintainers run `bun run release` from the repository root (patch by default; `-- minor`, `-- major`, an explicit version, or `-- --dry-run`). The script aligns Web/Mac versions, changelog, tag, GitHub Release, and DMG. Successful main CI publishes Worker `gecko` through [`.github/workflows/release.yml`](../.github/workflows/release.yml). Credentials live in GitHub environment `gecko / production`. After a release, check that SHA's CI and Release runs and the `version` at `https://gecko.hexly.ai/api/live`. See [GitHub CI/CD](15-github-cicd.md).
 
 ## Documentation
 

@@ -45,11 +45,11 @@ Mac 界面采用侧栏导航、常驻追踪控制和深浅色主题；记录列�
 
 ### Web 与同步
 
-打开[站点](https://gecko.hexly.ai)或自己的部署，通过 Google 登录。在 API 集成页面创建设备 API key，将 key 和部署地址填入 Mac 应用的同步设置并启用同步。key 保存在 macOS Keychain。
+打开[站点](https://gecko.hexly.ai)或自己的部署，通过 Cloudflare Access 登录。在 API 集成页面创建设备 API key，将 key 和部署地址填入 Mac 应用的同步设置并启用同步。key 保存在 macOS Keychain。
 
 Mac 端当前默认地址为开发域名 `https://gecko.dev.hexly.ai`；使用线上站点时，需要主动改为 `https://gecko.hexly.ai`，自行部署则填写自己的 HTTPS 地址。同步需要可访问的服务和有效 key。
 
-Web 端通过 `ALLOWED_EMAILS` 配置登录邮箱范围。自行部署时应填写自己的允许列表；空列表在当前实现中允许任何能够完成 Google OAuth 的账号。分类、标签、AI 设置和备份配置在 Web 控制台中管理。
+生产 Worker `gecko` 由 GitHub Actions 在 main CI 通过后发布。人的登录由 Cloudflare Access Allow 策略控制；机器同步走 API key。分类、标签、AI 设置和备份配置在 Web 控制台中管理。
 
 ## 开发
 
@@ -84,25 +84,22 @@ cd ../..
 cd apps/web-dashboard
 bun install --frozen-lockfile
 cp .env.example .env.local
+cp .dev.vars.example .dev.vars
 ```
 
-在 `.env.local` 填写 Google OAuth 的 `GOOGLE_CLIENT_ID`、`GOOGLE_CLIENT_SECRET`、会话密钥 `NEXTAUTH_SECRET`、实际访问地址 `NEXTAUTH_URL` 和 `ALLOWED_EMAILS`。本机 HTTP 开发可用 `NEXTAUTH_URL=http://localhost:7018`，Google OAuth 回调对应 `/api/auth/callback/google`。
-
-数据库有两种模式：配置 `CF_ACCOUNT_ID`、`CF_API_TOKEN`、`CF_D1_DATABASE_ID` 使用自己的 Cloudflare D1，并按编号应用 [drizzle 迁移](apps/web-dashboard/drizzle/)；或用 `D1_LOCAL_PATH` 指向已初始化的本地 SQLite。下面的命令创建本地开发库，然后在启动时选择它：
+本机默认身份是 `LOCAL_USER_EMAIL`。Dove webhook 写在 `.dev.vars`，不要提交。日常开发走 `https://gecko.dev.hexly.ai` 或 `http://localhost:7018`。先应用本地 D1 迁移再启动：
 
 ```bash
-bun run db:init .local/gecko-dev.db
-D1_LOCAL_PATH=.local/gecko-dev.db bun run dev
+bun run db:local
+bun run dev
 ```
 
-打开 `http://localhost:7018`。`db:init` 会删除并重建指定数据库，只在需要初始化或清空该本地库时运行。AI、Dove 和 Backy 是可选配置，不是基础页面启动的前提。
-
-在 `apps/web-dashboard/` 中运行 `bun run build` 构建，`bun run start` 启动生产服务。生产运行时使用 Node.js；[Dockerfile](apps/web-dashboard/Dockerfile) 用 Bun 安装/构建、Node 运行。根目录 `bun run typecheck` 与 `bun run lint` 检查 Web 类型和代码风格。
+AI、Dove 和 Backy 是可选配置，不是基础页面启动的前提。生产构建用 `bun run build`；现网由 GitHub Release workflow 发布 Worker，不要用本机 `vinext start` 当生产。根目录 `bun run typecheck` 与 `bun run lint` 检查 Web 类型和代码风格。
 
 ```text
 apps/mac-client/       SwiftUI 应用、跟踪与同步服务、XCTest
-apps/web-dashboard/    React / vinext 页面、API 和本地/远端数据库访问
-apps/web-dashboard/drizzle/  云端数据库迁移
+apps/web-dashboard/    React / vinext 页面、API 和 D1 访问
+apps/web-dashboard/migrations/  D1 迁移
 scripts/               Mac 构建与开发工具
 docs/                  设计记录与英文 README
 ```
@@ -118,7 +115,7 @@ docs/                  设计记录与英文 README
 | Web 浏览器测试 | `bun run --cwd apps/web-dashboard test:bdd` |
 | Mac 单元与集成测试 | `xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests` |
 
-浏览器测试首次运行前，在 `apps/web-dashboard/` 执行 `bunx playwright install chromium`。HTTP 与浏览器测试分别使用端口 `17018` 和 `27018`，会重建 `.local/gecko-test.db`；先停止其他 vinext 开发服务，并顺序运行这两组测试。普通测试不需要云端数据库；真实 AI 集成场景需按 `.env.e2e.example` 提供凭据，未配置时跳过。
+浏览器测试首次运行前，在 `apps/web-dashboard/` 执行 `bunx playwright install chromium`。HTTP 与浏览器测试分别使用端口 `17018` 和 `27018`，各自使用隔离的本地 D1 persist；先停止其他 vinext 开发服务，并顺序运行这两组测试。普通测试不需要云端数据库；真实 AI 集成场景需按 `.env.e2e.example` 提供凭据，未配置时跳过。
 
 Mac 测试需要完整 Xcode 和已生成的项目；测试无需签名的环境可追加 `CODE_SIGNING_ALLOWED=NO CODE_SIGN_IDENTITY=""`。Web 的 `test:coverage` 生成覆盖率报告，`test:watch` 进入监听模式。
 
@@ -136,11 +133,15 @@ Mac 测试需要完整 Xcode 和已生成的项目；测试无需签名的环境
 | --- | --- |
 | Mac 应用 | Swift、SwiftUI、AppKit / NSWorkspace、AppleScript、GRDB |
 | Web | TypeScript、React、vinext / Vite、Tailwind CSS、Radix UI、Recharts |
-| 数据与身份 | 本地 SQLite、Cloudflare D1 REST API、NextAuth / Google OAuth |
+| 数据与身份 | Mac 本地 SQLite、Cloudflare D1 binding、Cloudflare Access |
 | AI | AI SDK、`@nocoo/next-ai`，Anthropic / OpenAI 兼容接口 |
 | 测试 | XCTest、Vitest、Bun HTTP 测试、Playwright |
 
 依赖以 [Mac 项目配置](apps/mac-client/project.yml) 和 [Web package.json](apps/web-dashboard/package.json) 为准。
+
+## 发版
+
+维护者从仓库根运行 `bun run release`（默认 patch；`-- minor`、`-- major`、显式版本或 `-- --dry-run`）。脚本对齐 Web/Mac 版本、changelog、tag、GitHub Release 和 DMG。成功的 main CI 经 [`.github/workflows/release.yml`](.github/workflows/release.yml) 发布 Worker `gecko`。凭据在 GitHub environment `gecko / production`。发版后核对该 SHA 的 CI 与 Release，以及 `https://gecko.hexly.ai/api/live` 的 `version`。详见 [GitHub CI/CD](docs/15-github-cicd.md)。
 
 ## 文档
 

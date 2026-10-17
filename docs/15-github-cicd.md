@@ -27,12 +27,13 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 
 | 来源 | 事实 |
 |---|---|
-| `.github/workflows/ci.yml` | `quality.yml@0394178…`，Bun 1.4.2，`install-policy: project`，web L1/L2/L3；无 `permissions` 块 |
-| `AGENTS.md` | 仍写 CI pin `ad43150…`，且「没有 GitHub deployment workflow」 |
+| `.github/workflows/ci.yml` | `quality.yml@0394178…`，Bun 1.4.2，`permissions: contents: read`，web L1/L2/L3 |
+| `.github/workflows/release.yml` | `deploy-worker.yml@0394178…`；`GECKO_DEPLOY_STAGE=http`；environment `gecko / production` |
+| `AGENTS.md` / README | CI/Release 钉同一 SHA；发版证据为该 SHA 的 Actions 与 `/api/live` |
 | 生产 Worker `gecko` | 已绑 `gecko.hexly.ai`，无 Cron，`/api/live` 为 `storage=d1` version `1.13.1` |
-| `cloudflare.config.ts` | `CLOUDFLARE_DEPLOY=production` 才是生产；`GECKO_DEPLOY_STAGE` 缺省时 `domains` 为空 |
-| GitHub | environment `gecko / production` 已存在，当前无 secrets |
-| `scripts/release.ts` | commit / tag / push / GH Release / DMG；不部署 Worker |
+| `cloudflare.config.ts` | `CLOUDFLARE_DEPLOY=production` 才是生产；CD 必须设 `GECKO_DEPLOY_STAGE` |
+| GitHub | environment `gecko / production` 已存在；`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 待写入 |
+| `scripts/release.ts` | commit / tag / push / GH Release / DMG；不部署 Worker，push 后由 Release workflow 发 |
 
 ## 3. 目标流程
 
