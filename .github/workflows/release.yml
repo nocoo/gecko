@@ -1,0 +1,68 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      source-run-id:
+        description: Successful main CI run ID to deploy
+        required: false
+        type: string
+      tag:
+        description: Tag to deploy (e.g. v1.13.1)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  deploy:
+    name: Deploy Worker
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' &&
+       (inputs.source-run-id != '' || inputs.tag != '')) ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    uses: nocoo/base-ci/.github/workflows/deploy-worker.yml@0394178ebcff0418c442d84a84119220f31f8987 # v2026.9
+    with:
+      expected-workflow-path: ".github/workflows/ci.yml"
+      expected-workflow-name: "CI"
+      expected-branch: ${{ github.event_name == 'push' && github.ref_name || inputs.tag || 'main' }}
+      source-run-id: ${{ github.event_name == 'workflow_run' && format('{0}', github.event.workflow_run.id) || inputs.source-run-id || '' }}
+      tag: ${{ github.event_name == 'push' && github.ref_name || inputs.tag || '' }}
+      package-version-match: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tag != '') }}
+      package-json-path: apps/web-dashboard/package.json
+      runtime-version: "1.4.2"
+      node-version: "26.8.1"
+      working-directory: apps/web-dashboard
+      install-policy: project
+      deploy-cli: cf
+      cf-version: 1.0.0-beta.13
+      d1-migrations: true
+      d1-databases: f66490d2-e7b3-43e8-a30c-2b34111141d7
+      deploy-script: CLOUDFLARE_DEPLOY=production GECKO_DEPLOY_STAGE=http bun run scripts/cd-publish.ts
+      environment: gecko / production
+      concurrency-group: deploy-gecko-production
+      timeout-minutes: 20
+      verify-command: |
+        EXPECTED=$(jq -r .version package.json)
+        HTTP=$(curl -fsS -o /tmp/gecko-live.json -w "%{http_code}" https://gecko.hexly.ai/api/live || echo "000")
+        jq -e --arg version "$EXPECTED" --arg http "$HTTP" '
+          $http == "200" and .status == "ok" and .storage == "d1" and .version == $version
+        ' /tmp/gecko-live.json
+      verify-retries: 6
+      verify-retry-seconds: 5
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
