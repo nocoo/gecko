@@ -39,6 +39,7 @@ export default defineConfig({
         "scripts/remap-user-ids.ts",
         "scripts/deploy.ts",
         "scripts/cutover-cf.ts",
+        "scripts/cd-publish.ts",
       ],
       exclude: [
         "**/*.test.ts",

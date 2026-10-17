@@ -1,0 +1,3 @@
+# Local Worker secrets. Copy to .dev.vars and never commit the copy.
+DOVE_WEBHOOK_URL=
+DOVE_WEBHOOK_TOKEN=

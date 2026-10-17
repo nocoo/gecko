@@ -23,6 +23,7 @@ export default defineConfig(() => {
     | ReturnType<typeof bindings.d1>
     | ReturnType<typeof bindings.text>
     | ReturnType<typeof bindings.assets>
+    | ReturnType<typeof bindings.secret>
   > = {
     DB: bindings.d1({
       id: databaseId(resource),
@@ -36,8 +37,8 @@ export default defineConfig(() => {
     CF_ACCESS_AUD: bindings.text(ACCESS_AUD),
     DASHBOARD_URL: bindings.text("https://gecko.hexly.ai"),
     DOVE_TEMPLATE_SLUG: bindings.text("daily-analysis"),
-    DOVE_WEBHOOK_URL: bindings.text(process.env.DOVE_WEBHOOK_URL ?? ""),
-    DOVE_WEBHOOK_TOKEN: bindings.text(process.env.DOVE_WEBHOOK_TOKEN ?? ""),
+    DOVE_WEBHOOK_URL: bindings.secret(),
+    DOVE_WEBHOOK_TOKEN: bindings.secret(),
   };
   if (resource === "local") {
     env.LOCAL_USER_EMAIL = bindings.text(process.env.LOCAL_USER_EMAIL ?? "local@gecko.local");

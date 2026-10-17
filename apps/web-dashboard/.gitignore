@@ -15,6 +15,7 @@ next-env.d.ts
 .env.local
 .env.*.local
 .env.e2e
+.dev.vars
 
 # IDE
 .idea/

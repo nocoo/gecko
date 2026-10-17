@@ -26,7 +26,8 @@
     "gate:security": "bun run scripts/gate-security.ts",
     "cutover:baseline": "bun run scripts/cutover-cf.ts baseline",
     "cutover:remap": "bun run scripts/cutover-cf.ts remap",
-    "cutover:deploy": "bun run scripts/cutover-cf.ts deploy"
+    "cutover:deploy": "bun run scripts/cutover-cf.ts deploy",
+    "cd:publish": "bun run scripts/cd-publish.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
