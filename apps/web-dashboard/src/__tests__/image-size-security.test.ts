@@ -1,9 +1,13 @@
 import { execFile } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import { describe, expect, test } from "vitest";
+
+const require = createRequire(import.meta.url);
 
 const execFileAsync = promisify(execFile);
 const CHILD_TIMEOUT_MS = 2_000;
@@ -60,17 +64,24 @@ const EXPECTED_RESULTS: Record<Format, unknown> = {
   PNG: { ok: true, value: { width: 1, height: 1 } },
 };
 
+function resolvedImageSizeModules(format: Format): { imageSize: string; parser: string } {
+  return {
+    imageSize: require.resolve("image-size"),
+    parser: require.resolve(`image-size/types/${format.toLowerCase()}`),
+  };
+}
+
 function buildChildScript(format: Format, moduleSystem: ModuleSystem): string {
-  const parserPath = `image-size/types/${format.toLowerCase()}`;
+  const modules = resolvedImageSizeModules(format);
   const imports =
     moduleSystem === "cjs"
       ? `
-const { imageSize } = require("image-size");
-const { ${format}: directParser } = require("${parserPath}");
+const { imageSize } = require(${JSON.stringify(modules.imageSize)});
+const { ${format}: directParser } = require(${JSON.stringify(modules.parser)});
 `
       : `
-import { imageSize } from "image-size";
-import { ${format} as directParser } from "${parserPath}";
+import { imageSize } from ${JSON.stringify(pathToFileURL(modules.imageSize).href)};
+import { ${format} as directParser } from ${JSON.stringify(pathToFileURL(modules.parser).href)};
 `;
 
   return `${imports}
