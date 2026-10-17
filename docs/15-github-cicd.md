@@ -1,6 +1,6 @@
 # 15 — GitHub CI/CD：base-ci 质量门与 Worker 发版
 
-> **状态**：计划已锁定，待落地。HTTP 切流已完成；本文件把 push/发版接到 `nocoo/base-ci` 的 CI 与 Worker 发布，替代本机 `cutover-cf` 手发。Cron 仍手开。\
+> **状态**：代码已落地。CI/Release 钉 base-ci v2026.9；CD 默认 HTTP 阶段。等 GitHub environment secrets、Worker Dove secrets 与 main push。Cron 仍手开。\
 > **日期**：2026-10-17\
 > **范围**：GitHub Actions、生产 Worker 发布、`bun run release` 与手册事实。不改 Mac 协议。\
 > **主路径**：现有 `.github/workflows/ci.yml` + 新增 `release.yml` 调用 `deploy-worker.yml`；`deploy-cli: cf`；GitHub environment `gecko / production`。\

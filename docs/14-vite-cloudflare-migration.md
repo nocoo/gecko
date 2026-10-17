@@ -414,7 +414,7 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 
 ## 10. 上线顺序与验收
 
-1. D3/D5 获确认、第 9 节本地门槛完成；Caddy 7018 浏览器路径可用。固定并核验 Worker 构建 revision、版本及实际旧托管连接；本仓没有部署 workflow，push 不等于发布。
+1. D3/D5 获确认、第 9 节本地门槛完成；Caddy 7018 浏览器路径可用。固定并核验 Worker 构建 revision、版本及实际旧托管连接。切流完成后的 GitHub 发布见 [15](15-github-cicd.md)；未证明来源的 push 仍不等于已上线。
 2. 确认账号和 **现有** D1 ID、Paid 配额、备份恢复点、迁移 schema/账本；本地与远程动作明确分开。按 3.2 的预备阶段部署不对外、不带 Cron 的 Worker，核对生成配置及远端无公开入口/定时触发；不得为方便冒烟新建公开 `-test` Worker/库。
 3. 准备 Access 主应用、Allow 名单、机器路径 bypass 及 `/api/sync/status` 更具体 Allow 策略；生产 vars 为 production，无本地身份。确认 DNS/自定义域切换方案和旧流量去向后才操作，避免 Access 提前拦住现有 Mac。
 4. 按 5.3 停全部旧写入/定时器、等在途任务结束并处理队列，证明静默后再执行已核准 baseline/remap，验证完整性与恢复条件。未通过不放开新写入；临时维护响应为 503。
@@ -430,6 +430,6 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 
 - Mac 跟踪、Keychain、本地 SQLite、同步 JSON/批次和客户端错误处理修改。
 - 产品路线图 08 的新可视化、Basalt 视觉审计或凭空引入队列/缓存服务。
-- 远程 `-test` Worker / D1、Workers Builds / GitHub 自动部署。
+- 远程 `-test` Worker / D1、Workers Builds。GitHub Worker 发布见 [15](15-github-cicd.md)。
 - 未满足第 9.2 节并另获确认时重写 React Router / Hono。
 - 本轮不部署生产 Worker、不 remap 现网 D1、不改 Access 策略、不改 DNS/Caddy/证书、不 push。

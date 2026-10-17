@@ -12,8 +12,8 @@ This file is the contract; hooks, CI and configuration enforce it. Raise weaker 
 |---|---|
 | Human docs | [README.md](README.md), [English guide](docs/README.en.md) and numbered architecture/feature docs |
 | Version | Root/web `package.json`; Mac `project.yml` `MARKETING_VERSION`, `Gecko/Sources/Views/AboutView.swift` fallback and regenerated `Gecko.xcodeproj` must match |
-| Enforcement | `.husky/`, `.github/workflows/ci.yml`, web Vitest/Playwright configs, Xcode `GeckoTests` |
-| Local secrets | Ignored web `.env.local`; Google/NextAuth variables and optional remote D1 credentials; native keys in Keychain |
+| Enforcement | `.husky/`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, web Vitest/Playwright configs, Xcode `GeckoTests` |
+| Local secrets | Ignored web `.env.local` / `.dev.vars`; Access JWT and Worker secrets in Cloudflare; native keys in Keychain |
 | Machine rules / accidents | Global `AGENTS.md` and `rules/`; [Retrospective.md](Retrospective.md) |
 
 ## Project Invariants
@@ -75,14 +75,14 @@ The L2/L3 entrypoints initialize `.local/gecko-test.db` in the web package and s
 | G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |
 | D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | Web suites share a fixed test DB and may reuse servers; `db:init` removes arbitrary supplied paths without a test marker/guard |
 | Build | Real vinext bundle and native executable | manual | Web `build`, Xcode build/test; native packaging via `scripts/build-dmg.sh` |
-| Docs / release | Synchronized web/native versions and publication proof | manual | README/changelog and maintainer review |
+| Docs / release | Synchronized web/native versions and publication proof | planned | `bun run release` plus GitHub Release workflow; production evidence is the proven SHA's Actions run and `/api/live` version |
 
 | Hook | Current behavior | Required follow-up |
 |---|---|---|
 | pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Raise native coverage to 95%, resolve unsupported Swift metrics, improve toward <30s |
 | pre-push | Web L2 and G2 in parallel | Validate commits named by stdin push refs, <3min |
 
-Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI pins shared workflows at `ad43150de3a2be2fa464b5cd2f921dc4fa9f8f0f`.
+Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI and Release pin shared workflows at `0394178ebcff0418c442d84a84119220f31f8987` (base-ci v2026.9).
 
 ## Resources / Isolation
 
@@ -97,7 +97,7 @@ Vinext has a single development-instance lock. Arrange an idle local server befo
 ## Operations / Release
 
 Authorized maintainers use `bun run release` (patch default; `-- minor`, `-- major`, explicit version, or `-- --dry-run`). It updates all version locations, regenerates the Mac project with XcodeGen, prepares changelog/tag/Release and builds/uploads the DMG; packaging also needs `create-dmg` and the intended signature.
-The repository has no GitHub deployment workflow. Verify the actual hosting connection before treating a push as a web deployment, then check the deployed version and sync behavior. Preserve coordinated web/Mac releases and the normal gates.
+Successful main-push CI deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=http`). Production credentials live in GitHub environment `gecko / production`. After a release, verify the exact SHA's CI and Release runs and `https://gecko.hexly.ai/api/live` version. Cron stays off until explicitly approved. See [docs/15](docs/15-github-cicd.md).
 
 ## Retrospective
 
