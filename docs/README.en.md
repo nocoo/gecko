@@ -35,7 +35,13 @@ Without sync, records remain in the Mac database. Enabling sync uploads session 
 
 ### Mac app
 
-Requires macOS 14+. The latest GitHub Release currently contains source only; build and run the Mac app using the development steps below.
+Requires macOS 14+. GitHub Releases include a DMG. After dragging Gecko into Applications, run:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Gecko.app
+```
+
+You can also build from source using the development steps below.
 
 On first launch, follow the app's prompts to grant Accessibility and Automation permissions, then start tracking. The app stays in the menu bar, where you can open sessions or settings. Its default database is:
 

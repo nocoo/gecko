@@ -35,7 +35,13 @@ Mac 界面采用侧栏导航、常驻追踪控制和深浅色主题；记录列�
 
 ### Mac 应用
 
-需要 macOS 14+。当前最新 GitHub Release 仅提供源码，按下方开发步骤构建并运行 Mac 应用。
+需要 macOS 14+。GitHub Release 提供 DMG。拖入 Applications 后执行：
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Gecko.app
+```
+
+也可按下方开发步骤从源码构建。
 
 首次启动后，按应用提示授予辅助功能和自动化权限，再开始跟踪。应用常驻菜单栏，可打开记录窗口或设置页面。默认数据库路径为：
 
