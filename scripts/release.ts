@@ -5,6 +5,8 @@
  * Bumps version across all package.json files and source constants,
  * syncs lockfile, generates CHANGELOG entries from conventional commits,
  * commits, tags, pushes, and creates a GitHub release.
+ * Worker `gecko` is published by GitHub Release after proven CI; this
+ * script does not deploy the Worker.
  *
  * Usage:
  *   bun run release              # patch bump (default)
@@ -349,6 +351,8 @@ async function main() {
   buildAndUploadDmg(nextVersion, dry);
 
   console.log(`\n✅ Released v${nextVersion}!`);
+  console.log("Worker: GitHub Release workflow deploys after proven CI.");
+  console.log("Verify that SHA's Release run and GET https://gecko.hexly.ai/api/live");
 }
 
 main().catch((err) => {
