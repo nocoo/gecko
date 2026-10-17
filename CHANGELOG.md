@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-10-17
+
+### Added
+- publish worker from proven ci
+- wire cf production cutover adapters
+- move dashboard runtime to workers
+
+### Fixed
+- apply remap sql as separate d1 queries
+- drop scoped cf tokens from cutover env
+- spawn vinext deploy with node
+
+### CI
+- wire base-ci worker release
+- upgrade base-ci to v2026.9
+
+### Documentation
+- align handbooks with worker cicd
+- record github worker deployment
+- add github worker cicd plan
+- record access status destination evidence
+- record http worker cutover evidence
+- record approved gecko cutover mapping
+- confirm worker migration prerequisites
+- close migration failure reporting gaps
+- preserve cached results during analysis
+- guard cron cutover and test scope
+- define durable sync and analysis results
+- tighten migration acceptance checks
+- correct cloudflare migration design
+- switch plan to vinext on workers
+- add vite cloudflare migration plan
+- record release proxy and dmg recovery
+
+### Maintenance
+- note worker cd after release
+- add guarded d1 cutover tooling
+- ignore unpatched braces advisory
+- upgrade basalt to 2.2.0
+
 ## [1.13.1] - 2026-10-01
 
 ### Security
