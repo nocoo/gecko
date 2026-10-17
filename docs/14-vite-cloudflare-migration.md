@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`，无 Cron；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。**缺** gecko-auth 更具体 destination `gecko.hexly.ai/api/sync/status`（现继承 `/api/sync` bypass，无 JWT）。Cron 等 HTTP 验收后再开。\
+> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`，无 Cron；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。gecko-auth 已加 destination `gecko.hexly.ai/api/sync/status`（同一 aud）；未登录 GET 该路径 302 到 `nocoo.cloudflareaccess.com`。浏览器登录与 Mac 同步仍待验收。Cron 等 HTTP 验收后再开。\
 > **日期**：2026-10-17\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
@@ -26,7 +26,7 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 | vinext `1.1.0` tarball `init-cloudflare.js` | 默认写 **`cloudflare.config.ts`**；已有 `wrangler.jsonc` 会拒绝，除非 `--legacy-wrangler-cloudflare-init`。Gecko 不走该遗留开关。App Router 插件 `viteEnvironment.name = "rsc"`、`childEnvironments: ["ssr"]`。默认会建议 KV/Images/Response Store，Gecko **不采用** |
 | 隔离探针 `/tmp/gecko-cf-workerd-probe` | 锁定 `cf@1.0.0-beta.13`、`@cloudflare/vite-plugin@2.0.0-beta.sha-c82c3efb3`。`cf workers types` 写出 `.cloudflare/types/index.d.ts`，runtime `workerd@1.20261006.1` + `compatibilityDate: 2026-10-16` + `nodejs_compat`。插件类型仍有 `persistState` / `remoteBindings` / `inspectorPort`。`cf d1 migrations apply <id> --local --persist-to --dir` 成功；`cf d1 raw --local` INSERT 由 `miniflare.db` 返回 success，但 CLI 进程可能不退出，harness 必须有超时与进程组清理。未跑完整 vinext RSC 构建 |
 | `cf auth whoami` / `cf d1 get` / `cf workers get gecko` | 账号 `d51a8fde361e4be31db17d8c56737c1f`（Zheng Li Workspace）。现有 D1 `gecko` / `f66490d2-e7b3-43e8-a30c-2b34111141d7`：10 表、APAC。Worker **`gecko`** 已部署并绑 `gecko.hexly.ai`，workers.dev 关闭、无 Cron |
-| `cf zero-trust access applications list` | 应用 `gecko-auth` id `9f4a898e-6231-4711-99ff-bfeaa8762dd8`，aud 与哥提供的一致，域 `gecko.hexly.ai`，Allow `architie@gmail.com`，IdP `7ea46ecc-2463-4ac5-b492-9a4870c12f98`，team `nocoo`。`gecko-bypass` 已存在，覆盖 `/api/live` `/api/sync` `/api/backy/pull` `/api/v1/*`。**缺**更具体的 `/api/sync/status` Allow（会继承 `/api/sync` bypass）。HTTP 切流前须告知，不自动建 Access 应用 |
+| `cf zero-trust access applications list` | 应用 `gecko-auth` id `9f4a898e-6231-4711-99ff-bfeaa8762dd8`，aud 与哥提供的一致，Allow `architie@gmail.com`，IdP `7ea46ecc-2463-4ac5-b492-9a4870c12f98`，team `nocoo`。destinations：`gecko.hexly.ai`、`gecko.hexly.ai/api/sync/status`。`gecko-bypass` 覆盖 `/api/live` `/api/sync` `/api/backy/pull` `/api/v1/*`。未登录 GET `/api/sync/status` 302 到 team login，`kid` 为 gecko-auth aud |
 | GeekHub `8226bd0` | Access JWT 用 `jose` 验 `sub`+`email`，User.id 用 `sub`；Gecko D3 用 **email 小写** 作 `user_id`，不能照搬 GeekHub 的 id 字段。其 Wrangler 隔离 harness 结构可参考，配置文件不可照搬 |
 | Giraffe `ac2d1e3` | 机器 API 独立鉴权、专用 Access 路径应用；不扩大 dashboard bypass |
 | [vinext Cloudflare 文档](https://vinext.dev/docs/deploying/cloudflare) / [cf typed config](https://developers.cloudflare.com/cf/projects/cloudflare-config/) | `assets.runWorkerFirst` 必须含 `["/*", "!/_next/static/*", "!/*/_next/static/*"]`。cf 配置在 Bun 下不能加载；实施与 CI 的 `cf` 命令用 Node ≥22.18 |
@@ -160,7 +160,7 @@ export default {
 
 ### 4.1 边缘路径策略
 
-Access 主应用 `gecko-auth` 已保护 `gecko.hexly.ai`；team `nocoo`，aud `bc4c0722bcd5e327e650d26a24358aa80ec6077782a1f484e9ec48d09bdaeb13`，Allow `architie@gmail.com`。不能复制 GeekHub/Giraffe 的 audience。机器路径 bypass 与 `/api/sync/status` 更具体 Allow 尚未配置，本轮不自动创建。
+Access 主应用 `gecko-auth` 已保护 `gecko.hexly.ai`，并另有更具体 destination `gecko.hexly.ai/api/sync/status`；team `nocoo`，aud `bc4c0722bcd5e327e650d26a24358aa80ec6077782a1f484e9ec48d09bdaeb13`，Allow `architie@gmail.com`。不能复制 GeekHub/Giraffe 的 audience。`gecko-bypass` 覆盖机器路径。未登录 GET `/api/sync/status` 302 到 `nocoo.cloudflareaccess.com`，不再继承 `/api/sync` bypass。
 
 | Access 路径应用 | Worker 允许的机器/公开请求 | Worker 中的最终检查 |
 |---|---|---|
