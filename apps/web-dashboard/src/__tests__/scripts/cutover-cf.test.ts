@@ -289,7 +289,7 @@ describe("cutover-cf", () => {
         if (sql.includes("FROM settings")) {
           return { stdout: queryStdout([{ user_id: "old-google-1", key: "timezone" }]) };
         }
-        if (sql.includes("UPDATE")) {
+        if (sql.includes("UPDATE") || sql.includes("DELETE")) {
           applied.push(sql);
           return { stdout: queryStdout([]) };
         }
@@ -303,6 +303,11 @@ describe("cutover-cf", () => {
     ]);
     await store.applyStatements(["UPDATE settings SET user_id='a@b.com'"]);
     expect(applied[0]).toContain("UPDATE settings");
+    expect(applied[0].trim().endsWith(";")).toBe(true);
+    await store.applyStatements(["UPDATE a SET x=1", "DELETE FROM a WHERE x=1;"]);
+    expect(
+      applied.filter((item) => item.includes("UPDATE a") || item.includes("DELETE FROM a")),
+    ).toHaveLength(2);
     await store.applyStatements([]);
     await expect(
       createRemapStore(async () => ({ stdout: "", stderr: "apply fail", code: 1 }), {

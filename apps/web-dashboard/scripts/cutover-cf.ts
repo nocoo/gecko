@@ -265,13 +265,16 @@ export function createRemapStore(
     },
     async applyStatements(sql) {
       if (sql.length === 0) return;
-      const result = await cf(exec, ["d1", "query", PRODUCTION_DB_ID, "--sql", sql.join("\n")], {
-        cwd: options.cwd,
-        env: options.env,
-        timeoutMs: 180_000,
-      });
-      if (result.code !== 0)
-        throw new Error(result.stderr || result.stdout || "remap apply failed");
+      for (const statement of sql) {
+        const query = statement.endsWith(";") ? statement : `${statement};`;
+        const result = await cf(exec, ["d1", "query", PRODUCTION_DB_ID, "--sql", query], {
+          cwd: options.cwd,
+          env: options.env,
+          timeoutMs: 180_000,
+        });
+        if (result.code !== 0)
+          throw new Error(result.stderr || result.stdout || "remap apply failed");
+      }
     },
   };
 }
