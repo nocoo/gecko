@@ -1,7 +1,7 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：D1–D5 已确认；本地 Workers 切片已可运行。生产 Worker 名 **`gecko` 已批准**。cutover CLI 已接 `cf`；现网 D1 账本空、0001–0008 schema 已证、0009 未加。哥批准生产 cutover，单用户五 ID 直接映射到 Access email `architie@gmail.com`（`--allow-merges --merge-keep first`，Google ID 排第一）。DNS 仍指向 Railway。不切 HTTP/Cron、不改 Access 策略，直到 prep 完成且静默后才 remap。\
-> **日期**：2026-10-16\
+> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`，无 Cron；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。**缺** gecko-auth 更具体 destination `gecko.hexly.ai/api/sync/status`（现继承 `/api/sync` bypass，无 JWT）。Cron 等 HTTP 验收后再开。\
+> **日期**：2026-10-17\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
 > **退出原则**：只有证明是 vinext 集成阻塞、且 Hono 能消除阻塞，才另审 Vite SPA + Hono 方案；不自动重写。
@@ -25,7 +25,7 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 | Gecko 实施基线 `d7e7449`（应用代码与 `4493bed` 一致） | 仓库仍装 vinext `1.0.0-beta.0`；实施切片升级到 `1.1.0`。30 个 `route.ts` / 51 个显式方法不变 |
 | vinext `1.1.0` tarball `init-cloudflare.js` | 默认写 **`cloudflare.config.ts`**；已有 `wrangler.jsonc` 会拒绝，除非 `--legacy-wrangler-cloudflare-init`。Gecko 不走该遗留开关。App Router 插件 `viteEnvironment.name = "rsc"`、`childEnvironments: ["ssr"]`。默认会建议 KV/Images/Response Store，Gecko **不采用** |
 | 隔离探针 `/tmp/gecko-cf-workerd-probe` | 锁定 `cf@1.0.0-beta.13`、`@cloudflare/vite-plugin@2.0.0-beta.sha-c82c3efb3`。`cf workers types` 写出 `.cloudflare/types/index.d.ts`，runtime `workerd@1.20261006.1` + `compatibilityDate: 2026-10-16` + `nodejs_compat`。插件类型仍有 `persistState` / `remoteBindings` / `inspectorPort`。`cf d1 migrations apply <id> --local --persist-to --dir` 成功；`cf d1 raw --local` INSERT 由 `miniflare.db` 返回 success，但 CLI 进程可能不退出，harness 必须有超时与进程组清理。未跑完整 vinext RSC 构建 |
-| `cf auth whoami` / `cf d1 get` / `cf workers get gecko` | 账号 `d51a8fde361e4be31db17d8c56737c1f`（Zheng Li Workspace）。现有 D1 `gecko` / `f66490d2-e7b3-43e8-a30c-2b34111141d7`：10 表、约 81MB、`running_in_region: APAC`。名为 `gecko` 的 Worker **不存在** |
+| `cf auth whoami` / `cf d1 get` / `cf workers get gecko` | 账号 `d51a8fde361e4be31db17d8c56737c1f`（Zheng Li Workspace）。现有 D1 `gecko` / `f66490d2-e7b3-43e8-a30c-2b34111141d7`：10 表、APAC。Worker **`gecko`** 已部署并绑 `gecko.hexly.ai`，workers.dev 关闭、无 Cron |
 | `cf zero-trust access applications list` | 应用 `gecko-auth` id `9f4a898e-6231-4711-99ff-bfeaa8762dd8`，aud 与哥提供的一致，域 `gecko.hexly.ai`，Allow `architie@gmail.com`，IdP `7ea46ecc-2463-4ac5-b492-9a4870c12f98`，team `nocoo`。`gecko-bypass` 已存在，覆盖 `/api/live` `/api/sync` `/api/backy/pull` `/api/v1/*`。**缺**更具体的 `/api/sync/status` Allow（会继承 `/api/sync` bypass）。HTTP 切流前须告知，不自动建 Access 应用 |
 | GeekHub `8226bd0` | Access JWT 用 `jose` 验 `sub`+`email`，User.id 用 `sub`；Gecko D3 用 **email 小写** 作 `user_id`，不能照搬 GeekHub 的 id 字段。其 Wrangler 隔离 harness 结构可参考，配置文件不可照搬 |
 | Giraffe `ac2d1e3` | 机器 API 独立鉴权、专用 Access 路径应用；不扩大 dashboard bypass |
