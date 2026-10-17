@@ -150,6 +150,8 @@ See the [Mac project configuration](../apps/mac-client/project.yml) and [web pac
 - [Tracking engine architecture](06-energy-phase3-architecture.md)
 - [Daily review](07-daily-review.md)
 - [AI integration](10-next-ai-package.md)
+- [vinext on Cloudflare / Access](14-vite-cloudflare-migration.md)
+- [GitHub CI/CD](15-github-cicd.md)
 - [Changelog](../CHANGELOG.md)
 
 Design documents retain historical plans; this README and the source describe current runtime behavior and feature boundaries.
