@@ -55,7 +55,7 @@ xattr -dr com.apple.quarantine /Applications/Gecko.app
 
 Mac 端当前默认地址为开发域名 `https://gecko.dev.hexly.ai`；使用线上站点时，需要主动改为 `https://gecko.hexly.ai`，自行部署则填写自己的 HTTPS 地址。同步需要可访问的服务和有效 key。
 
-生产 Worker `gecko` 由 GitHub Actions 在 main CI 通过后发布。人的登录由 Cloudflare Access Allow 策略控制；机器同步走 API key。分类、标签、AI 设置和备份配置在 Web 控制台中管理。
+生产 Worker `gecko` 由 GitHub Actions 在 main CI 通过后发布，并启用每小时 Cron。人的登录由 Cloudflare Access Allow 策略控制；机器同步走 API key。分类、标签、AI 设置和备份配置在 Web 控制台中管理。
 
 ## 开发
 

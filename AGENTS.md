@@ -18,7 +18,7 @@ This file is the contract; hooks, CI and configuration enforce it. Raise weaker 
 
 ## Project Invariants
 
-- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=http`.
+- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=cron`.
 - Dashboard identity is the verified Cloudflare Access email in lowercase as `user_id`. Access Allow is the admission list. Machine APIs keep device keys and Backy webhook keys.
 - Native device keys stay in Keychain; local sessions remain queued through network outages. Tests use local SQLite, fake providers and injected preferences rather than real user data or paid model calls.
 - Use a stable Apple Development signature for installed TCC-sensitive builds. The unit-test host must start only its test event loop, without production settings, Keychain, tracking or permission services.
@@ -97,7 +97,7 @@ Vinext has a single development-instance lock. Arrange an idle local server befo
 ## Operations / Release
 
 Authorized maintainers use `bun run release` (patch default; `-- minor`, `-- major`, explicit version, or `-- --dry-run`). It updates all version locations, regenerates the Mac project with XcodeGen, prepares changelog/tag/Release and builds/uploads the DMG; packaging also needs `create-dmg` and the intended signature.
-Successful main-push CI deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=http`). Production credentials live in GitHub environment `gecko / production`. After a release, verify the exact SHA's CI and Release runs and `https://gecko.hexly.ai/api/live` version. Cron stays off until explicitly approved. See [docs/15](docs/15-github-cicd.md).
+Successful main-push CI deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=cron`). Production credentials live in GitHub environment `gecko / production`. Dove webhook URL/token are Worker secrets. After a release, verify the exact SHA's CI and Release runs, `https://gecko.hexly.ai/api/live` version, and Cron `0 * * * *`. See [docs/15](docs/15-github-cicd.md).
 
 ## Retrospective
 

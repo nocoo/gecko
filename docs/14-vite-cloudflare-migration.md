@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`，无 Cron；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。gecko-auth 已加 destination `gecko.hexly.ai/api/sync/status`（同一 aud）；未登录 GET 该路径 302 到 `nocoo.cloudflareaccess.com`。浏览器登录与 Mac 同步仍待验收。Cron 等 HTTP 验收后再开。\
+> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。gecko-auth 已加 destination `gecko.hexly.ai/api/sync/status`（同一 aud）；未登录 GET 该路径 302 到 `nocoo.cloudflareaccess.com`。Dove URL/token 为 Worker `secret_text`。GitHub CD 使用 `GECKO_DEPLOY_STAGE=cron`（`0 * * * *`）。浏览器登录与 Mac 同步仍按人工验收。\
 > **日期**：2026-10-17\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\

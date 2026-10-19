@@ -1,6 +1,6 @@
 # 15 — GitHub CI/CD：base-ci 质量门与 Worker 发版
 
-> **状态**：代码已落地。CI/Release 钉 base-ci v2026.9；CD 默认 HTTP 阶段。等 GitHub environment secrets、Worker Dove secrets 与 main push。Cron 仍手开。\
+> **状态**：CI/Release 钉 base-ci v2026.9。CD 默认 `GECKO_DEPLOY_STAGE=cron`。GitHub environment `gecko / production` 与 Dove Worker secrets 已写入。\
 > **日期**：2026-10-17\
 > **范围**：GitHub Actions、生产 Worker 发布、`bun run release` 与手册事实。不改 Mac 协议。\
 > **主路径**：现有 `.github/workflows/ci.yml` + 新增 `release.yml` 调用 `deploy-worker.yml`；`deploy-cli: cf`；GitHub environment `gecko / production`。\
@@ -15,7 +15,7 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 | C1 | 共享流程 | 继续钉 `nocoo/base-ci` **v2026.9** 完整 SHA `0394178ebcff0418c442d84a84119220f31f8987`。CI 已用 `quality.yml`；CD 用 `deploy-worker.yml`。禁止浮动 tag / `v2026` 别名 |
 | C2 | 触发 | 成功的 **main push CI**（`workflow_run`）自动发 Worker；`v*.*.*` tag 发同一 SHA；`workflow_dispatch` 传入已成功的 CI run id。PR / fork CI 不发 |
 | C3 | CLI | `deploy-cli: cf`，`cf-version: 1.0.0-beta.13`，工作目录 `apps/web-dashboard`。不写 Wrangler、不混 `wrangler.jsonc` |
-| C4 | 阶段 | CD 默认 `GECKO_DEPLOY_STAGE=http`（绑 `gecko.hexly.ai`、triggers `[]`）。未设 stage 的 production 配置会丢掉自定义域。Cron 等哥批准后再把 workflow 改成 `cron` |
+| C4 | 阶段 | CD 默认 `GECKO_DEPLOY_STAGE=cron`（绑 `gecko.hexly.ai`、Cron `0 * * * *`）。未设 stage 的 production 配置会丢掉自定义域。HTTP 阶段只用于切流验收 |
 | C5 | 构建 | vinext / `cloudflare.config.ts` 必须由 **Node** 加载。发布脚本 spawn `node` 跑 `@vinext/cloudflare deploy`。Bun 只做 install 与脚本宿主 |
 | C6 | 迁移 | `d1-migrations: true`，`d1-databases` 用生产 UUID `f66490d2-e7b3-43e8-a30c-2b34111141d7`。共享步骤在发布前 `cf d1 migrations apply <id>`。不再走 cutover `deploy.ts --approve` |
 | C7 | Dove | `DOVE_WEBHOOK_URL` / `DOVE_WEBHOOK_TOKEN` 改为 `bindings.secret()`。值留在 Worker secrets，不进 GitHub reusable workflow（后者只声明 CF token/account）。首次 CD 前由哥写入现网 secret；缺失时邮件路径静默跳过 |
@@ -28,9 +28,9 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 | 来源 | 事实 |
 |---|---|
 | `.github/workflows/ci.yml` | `quality.yml@0394178…`，Bun 1.4.2，`permissions: contents: read`，web L1/L2/L3 |
-| `.github/workflows/release.yml` | `deploy-worker.yml@0394178…`；`GECKO_DEPLOY_STAGE=http`；environment `gecko / production` |
+| `.github/workflows/release.yml` | `deploy-worker.yml@0394178…`；`GECKO_DEPLOY_STAGE=cron`；environment `gecko / production` |
 | `AGENTS.md` / README | CI/Release 钉同一 SHA；发版证据为该 SHA 的 Actions 与 `/api/live` |
-| 生产 Worker `gecko` | 已绑 `gecko.hexly.ai`，无 Cron，`/api/live` 为 `storage=d1` version `1.13.1` |
+| 生产 Worker `gecko` | 已绑 `gecko.hexly.ai`，Cron `0 * * * *`，`/api/live` 为 `storage=d1`；Dove URL/token 为 `secret_text` |
 | `cloudflare.config.ts` | `CLOUDFLARE_DEPLOY=production` 才是生产；CD 必须设 `GECKO_DEPLOY_STAGE` |
 | GitHub | environment `gecko / production` 已存在；`CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID` 待写入 |
 | `scripts/release.ts` | commit / tag / push / GH Release / DMG；不部署 Worker，push 后由 Release workflow 发 |
@@ -48,7 +48,7 @@ push main / bun run release
         │ prove source-run-id or tag SHA
         │ frozen install apps/web-dashboard
         │ cf d1 migrations apply <prod uuid>
-        │ GECKO_DEPLOY_STAGE=http node vinext-cloudflare deploy
+        │ GECKO_DEPLOY_STAGE=cron node vinext-cloudflare deploy
         ▼
    verify /api/live version + storage=d1
 ```
@@ -71,7 +71,7 @@ push main / bun run release
 | `apps/web-dashboard/package.json` | `cd:publish` 脚本 |
 | `AGENTS.md` | pin、CI/CD 命令、发版证据 |
 
-不改 Mac 客户端、不改 Access、不在 CD 里开 Cron、不新建远程 `-test` 资源。
+不改 Mac 客户端、不改 Access、不新建远程 `-test` 资源。
 
 ## 5. `release.yml` 合同
 
@@ -90,7 +90,7 @@ push main / bun run release
 - `install-policy: project`
 - `deploy-cli: cf`，`cf-version: 1.0.0-beta.13`
 - `d1-migrations: true`，`d1-databases: f66490d2-e7b3-43e8-a30c-2b34111141d7`
-- `deploy-script`: `CLOUDFLARE_DEPLOY=production GECKO_DEPLOY_STAGE=http bun run scripts/cd-publish.ts`
+- `deploy-script`: `CLOUDFLARE_DEPLOY=production GECKO_DEPLOY_STAGE=cron bun run scripts/cd-publish.ts`
 - `environment: gecko / production`
 - `concurrency-group: deploy-gecko-production`
 - `timeout-minutes: 20`
@@ -123,12 +123,12 @@ push main / bun run release
 1. 在 GitHub environment `gecko / production` 写入 `CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID`（Workers + D1 权限；不要用仅 D1 的 scoped token）。
 2. 把现网 Dove webhook 写成 Worker secrets `DOVE_WEBHOOK_URL`、`DOVE_WEBHOOK_TOKEN`（首次 CD 前）。本地用 `.dev.vars`，不要提交。
 3. 授权把含 workflow 的 main **push** 上去之后，CI/CD 才会真正跑。本轮不擅自 push。
-4. Cron 仍等 HTTP/浏览器/Mac 同步验收后，再改 `GECKO_DEPLOY_STAGE=cron` 并批准一次 Release。
+4. Cron 已批准：CD 使用 `GECKO_DEPLOY_STAGE=cron`。Dove URL/token 已转为 Worker `secret_text`。
 
 ## 9. 验收
 
 - main 上一次成功 CI 的 `workflow_run` 打出 Release，`target-sha` 等于该 commit。
 - `https://gecko.hexly.ai/api/live` 的 `version` 等于该 commit 的 package version，`storage=d1`。
-- `cf workers get gecko` 无 Cron，域仍是 `gecko.hexly.ai`。
+- 生产 Worker 绑 `gecko.hexly.ai`，Cron 为 `0 * * * *`；Dove URL/token 为 `secret_text`。
 - PR 的 CI 不发生产。
 - `bun run release` 打出的 tag 对应同一 SHA；Worker 不靠本机 `cutover-cf deploy`。

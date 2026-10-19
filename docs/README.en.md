@@ -147,7 +147,7 @@ See the [Mac project configuration](../apps/mac-client/project.yml) and [web pac
 
 ## Release
 
-Maintainers run `bun run release` from the repository root (patch by default; `-- minor`, `-- major`, an explicit version, or `-- --dry-run`). The script aligns Web/Mac versions, changelog, tag, GitHub Release, and DMG. Successful main CI publishes Worker `gecko` through [`.github/workflows/release.yml`](../.github/workflows/release.yml). Credentials live in GitHub environment `gecko / production`. After a release, check that SHA's CI and Release runs and the `version` at `https://gecko.hexly.ai/api/live`. See [GitHub CI/CD](15-github-cicd.md).
+Maintainers run `bun run release` from the repository root (patch by default; `-- minor`, `-- major`, an explicit version, or `-- --dry-run`). The script aligns Web/Mac versions, changelog, tag, GitHub Release, and DMG. Successful main CI publishes Worker `gecko` through [`.github/workflows/release.yml`](../.github/workflows/release.yml) with hourly Cron. Credentials live in GitHub environment `gecko / production`; Dove webhook URL/token are Worker secrets. After a release, check that SHA's CI and Release runs, the `version` at `https://gecko.hexly.ai/api/live`, and Cron `0 * * * *`. See [GitHub CI/CD](15-github-cicd.md).
 
 ## Documentation
 
