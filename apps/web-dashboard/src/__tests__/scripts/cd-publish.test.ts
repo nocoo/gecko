@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, test } from "vitest";
 import {
   assertPublishConfig,
@@ -51,6 +54,16 @@ describe("cd-publish", () => {
     expect(stage).toBe("cron");
     expect(config.domains).toEqual([PRODUCTION_DOMAIN]);
     expect(config.triggers).toEqual([{ cron: CRON_SCHEDULE }]);
+  });
+
+  test("release workflow publishes the cron stage", () => {
+    const workflowPath = resolve(
+      dirname(fileURLToPath(import.meta.url)),
+      "../../../../../.github/workflows/release.yml",
+    );
+    const workflow = readFileSync(workflowPath, "utf8");
+    expect(workflow).toContain("GECKO_DEPLOY_STAGE=cron");
+    expect(workflow).not.toMatch(/GECKO_DEPLOY_STAGE=http/);
   });
 
   test("runPublish returns the vinext deployment id", async () => {
