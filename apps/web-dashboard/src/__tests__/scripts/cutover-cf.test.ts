@@ -530,6 +530,43 @@ describe("cutover-cf", () => {
     expect(commands.every((command) => command === "node")).toBe(true);
   });
 
+  test("default vinext deploy strips bun CF tokens and keeps CLOUDFLARE_API_TOKEN", async () => {
+    let spawnEnv: NodeJS.ProcessEnv | undefined;
+    const fake = ((_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+      spawnEnv = options.env;
+      const child = new EventEmitter() as EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        kill: () => void;
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.kill = () => {
+        child.emit("exit", 1);
+      };
+      queueMicrotask(() => {
+        child.stdout.emit("data", "22222222-2222-2222-2222-222222222222");
+        child.emit("exit", 0);
+      });
+      return child;
+    }) as unknown as typeof import("node:child_process").spawn;
+    await defaultVinextDeploy(
+      {
+        CF_API_TOKEN: "bun-injected",
+        CF_ACCOUNT_ID: "bun-account",
+        CF_D1_DATABASE_ID: "bun-d1",
+        CLOUDFLARE_API_TOKEN: "gh-token",
+        CLOUDFLARE_DEPLOY: "production",
+      },
+      process.cwd(),
+      fake,
+    );
+    expect(spawnEnv?.CF_API_TOKEN).toBeUndefined();
+    expect(spawnEnv?.CF_ACCOUNT_ID).toBeUndefined();
+    expect(spawnEnv?.CF_D1_DATABASE_ID).toBeUndefined();
+    expect(spawnEnv?.CLOUDFLARE_API_TOKEN).toBe("gh-token");
+  });
+
   test("vinext deploy records stderr, spawn errors, and ignores late errors", async () => {
     const fake = (mode: "stderr" | "error" | "late-error") =>
       (() => {

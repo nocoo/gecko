@@ -102,7 +102,7 @@ export function ledgerInsertSql(names: string[]): string {
 ${inserts}`;
 }
 
-function productionEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
+export function productionEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   const next = { ...env };
   delete next.GECKO_TEST_STATE;
   delete next.TEST_AUTH_MODE;
@@ -376,7 +376,7 @@ export async function defaultVinextDeploy(
     const child: ChildProcess = spawnFn(
       "node",
       [resolve(cwd, "node_modules/@vinext/cloudflare/dist/cli.js"), "deploy"],
-      { cwd, env, stdio: ["ignore", "pipe", "pipe"] },
+      { cwd, env: productionEnv(env), stdio: ["ignore", "pipe", "pipe"] },
     );
     let stdout = "";
     let stderr = "";
@@ -401,7 +401,12 @@ export async function defaultVinextDeploy(
       if (timedOut) return;
       clearTimeout(timer);
       if (code !== 0) {
-        reject(new Error(stderr || stdout || `vinext-cloudflare deploy exited ${code}`));
+        reject(
+          new Error(
+            [stderr.trim(), stdout.trim()].filter(Boolean).join("\n") ||
+              `vinext-cloudflare deploy exited ${code}`,
+          ),
+        );
         return;
       }
       resolvePromise({ id: parseDeployedId(`${stdout}\n${stderr}`) });
