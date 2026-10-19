@@ -1,6 +1,6 @@
 # 14 — vinext 直接部署 Cloudflare，Google 迁 Access
 
-> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway 已静默。`/api/live` 返回 `storage=d1`。gecko-auth 已加 destination `gecko.hexly.ai/api/sync/status`（同一 aud）；未登录 GET 该路径 302 到 `nocoo.cloudflareaccess.com`。Dove URL/token 为 Worker `secret_text`。GitHub CD 使用 `GECKO_DEPLOY_STAGE=cron`（`0 * * * *`）。浏览器登录与 Mac 同步仍按人工验收。\
+> **状态**：HTTP 切流完成。Worker **`gecko`** 绑 `gecko.hexly.ai`；D1 已登记 0001–0009；五 ID 已 remap 到 `architie@gmail.com`；Railway gecko 项目 `3b1a041d-e739-4416-9221-19e77d7c5061` 已退役（`deletedAt` 2026-10-21）。`/api/live` 返回 `storage=d1`。gecko-auth 已加 destination `gecko.hexly.ai/api/sync/status`（同一 aud）；未登录 GET 该路径 302 到 `nocoo.cloudflareaccess.com`。Dove URL/token 为 Worker `secret_text`。GitHub CD 使用 `GECKO_DEPLOY_STAGE=cron`（`0 * * * *`）。浏览器登录与 Mac 同步仍按人工验收。\
 > **日期**：2026-10-17\
 > **范围**：Web 控制台与托管。保留 Mac 同步路径、JSON、API key 和批次大小。\
 > **主路径**：vinext `1.1.0` + `cloudflare.config.ts` + `cf` + `@cloudflare/vite-plugin` v2 + D1 binding + Access。\
@@ -40,7 +40,7 @@ Gecko 已经使用 Vite；缺的是 Workers 目标，不是 SPA 路由器。本�
 | 层 | 现在的真实路径 / 行为 | 目标与原因 |
 |---|---|---|
 | 页面 / API | `vite.config.ts` 只有 `vinext()`；`src/app/**` | 保留 App Router，增加 Cloudflare RSC 运行环境，不搬成 `src/web` + `src/worker` |
-| 托管 | `Dockerfile`：Bun 构建、`node:22-slim` 运行 `vinext start :7018`；历史 Railway 部署 | Worker `gecko` / `gecko.hexly.ai`；实际旧托管连接须切换前确认 |
+| 托管 | `Dockerfile`：Bun 构建、`node:22-slim` 运行 `vinext start :7018`；Railway gecko 已退役 | Worker `gecko` / `gecko.hexly.ai` |
 | 数据 | `src/lib/d1.ts`：远程 D1 REST 或本地 `better-sqlite3` | 单一 `env.DB`；本地也用 Miniflare D1，消除原生 SQLite ABI 和业务 CF token |
 | 人的身份 | `src/auth.ts`：Google `account.providerAccountId`；空 `ALLOWED_EMAILS` 当前允许全部 Google 登录 | Access JWT + 明确 Allow 策略；D3 映射完成才开放控制台 |
 | 机器身份 | `src/lib/api-helpers.ts`：API key；`src/app/api/backy/pull/route.ts`：`X-Webhook-Key` | 两种机器凭据各自保留，不要求 Mac / Backy 携带 Access service token |
@@ -422,7 +422,7 @@ D3/D5 已确认。本文件本轮提交只记录前置条件；下一步才改�
 6. **GET** `https://gecko.hexly.ai/api/live` 同时核对 HTTP 200、body `status=ok`、版本、`storage=d1` 与 DB 探测；不用 `curl -I` 读取不存在的 body，不以 `cf-ray` 单独判定切换。无凭据的机器 API 是 JSON 401、Backy HEAD 是无 body 的 401，不能跳登录页。
 7. 浏览器验证 Access 允许/拒绝、直接页面与 `/api/me`、timezone 日览、key 管理、设置、退出及 private cache；验证 `/api/sync/status` 仍要求人的身份。以原 Mac key 上传一批并读 D1/控制台确认已持久化、重传无重复；Backy HEAD/POST 和原 webhook key 验收，副作用由哥批准。
 8. HTTP 验收通过且哥批准后，再经部署脚本启用最终 Cron `0 * * * *`（UTC 调度，业务按用户 timezone），记录变更及传播后的实际 trigger；若工具需要重新构建/部署，重新核对 revision/版本并做健康回归。验证 scheduled 事件的实际 outcome、完整分析/持久化/邮件与重复触发保护，并按 5.6 关联脱敏日志/trace；真实付费模型仅在哥批准的烟测范围调用。不需要先访问某个 route 才启动 Cron。
-9. 全部通过后退役 Railway/旧域或旁路访问、旧 OAuth 凭据；按恢复检查点处理备份，不留双运行时兼容分支。记录证据并完成协调发布；本轮审文档不执行这些外部动作。
+9. **已完成**：Railway gecko 项目 `3b1a041d-e739-4416-9221-19e77d7c5061`（含自定义域 `gecko.hexly.ai`）已 scheduled delete，`railway list --json` 的 `deletedAt` 为 `2026-10-21T02:49:45.305Z`。旧 OAuth 凭据随项目删除；不留双运行时兼容分支。
 
 验收结论必须同时覆盖：vinext App Router 保留、Cloudflare 部署来源可证明、Access 人机边界、原 Mac 协议、D1 binding/现有数据、无悬空后台 Promise、完整 L2/L3/隔离和全部删除调用点。日常 / L2 / L3 端口仍是 **7018 / 17018 / 27018**。
 
