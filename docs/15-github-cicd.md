@@ -18,7 +18,7 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 | C4 | 阶段 | CD 默认 `GECKO_DEPLOY_STAGE=cron`（绑 `gecko.hexly.ai`、Cron `0 * * * *`）。未设 stage 的 production 配置会丢掉自定义域。HTTP 阶段只用于切流验收 |
 | C5 | 构建 | vinext / `cloudflare.config.ts` 必须由 **Node** 加载。发布脚本 spawn `node` 跑 `@vinext/cloudflare deploy`。Bun 只做 install 与脚本宿主 |
 | C6 | 迁移 | `d1-migrations: true`，`d1-databases` 用生产 UUID `f66490d2-e7b3-43e8-a30c-2b34111141d7`。共享步骤在发布前 `cf d1 migrations apply <id>`。不再走 cutover `deploy.ts --approve` |
-| C7 | Dove | `DOVE_WEBHOOK_URL` / `DOVE_WEBHOOK_TOKEN` 改为 `bindings.secret()`。值留在 Worker secrets，不进 GitHub reusable workflow（后者只声明 CF token/account）。首次 CD 前由哥写入现网 secret；缺失时邮件路径静默跳过 |
+| C7 | Dove | `DOVE_WEBHOOK_URL` / `DOVE_WEBHOOK_TOKEN` 改为 `bindings.secret()`。值留在 Worker secrets，不进 GitHub reusable workflow（后者只声明 CF token/account）。用 `cf workers secrets` 或首次 `--secrets-file` 写入；禁止 Workers settings PATCH（会把 `last_deployed_from` 标成 `api`，CI `cf deploy --strict` 直接中止）。缺失时邮件路径静默跳过 |
 | C8 | 环境 | GitHub environment 名精确为已有的 `gecko / production`。生产凭据只进该 environment：`CLOUDFLARE_API_TOKEN`、`CLOUDFLARE_ACCOUNT_ID` |
 | C9 | 验活 | `GET https://gecko.hexly.ai/api/live`：HTTP 200，`status=ok`，`storage=d1`，`version` 等于该 SHA 的 `apps/web-dashboard/package.json` |
 | C10 | 发版 | `bun run release` 仍只做版本面、changelog、tag、GitHub Release、DMG。Worker 由 Release workflow 发布；push 之后以该 SHA 的 Actions 与 `/api/live` 为证据 |

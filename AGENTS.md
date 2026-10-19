@@ -18,7 +18,7 @@ This file is the contract; hooks, CI and configuration enforce it. Raise weaker 
 
 ## Project Invariants
 
-- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=cron`.
+- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=cron`. Do not PATCH production Worker settings via the script API; that marks `last_deployed_from=api` and CI `cf deploy --strict` aborts. Dove secrets stay on the Worker through `cf` inherit.
 - Dashboard identity is the verified Cloudflare Access email in lowercase as `user_id`. Access Allow is the admission list. Machine APIs keep device keys and Backy webhook keys.
 - Native device keys stay in Keychain; local sessions remain queued through network outages. Tests use local SQLite, fake providers and injected preferences rather than real user data or paid model calls.
 - Use a stable Apple Development signature for installed TCC-sensitive builds. The unit-test host must start only its test event loop, without production settings, Keychain, tracking or permission services.

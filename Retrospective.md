@@ -1,5 +1,11 @@
 # Retrospective
 
+## 2026-10-19 — script-API Worker edits abort CI `cf deploy --strict`
+
+Release CD for v2.0.1 failed with only vinext warnings and `cf deploy failed with exit code 1`. Dove URL/token had been converted from `plain_text` to `secret_text` with a Workers settings PATCH, so the live version's `last_deployed_from` became `api`. `cf deploy` always sets `strict: true`. In GitHub Actions (non-TTY / `CI=true`) the API-override confirm returns false and aborts. vinext pipes cf stdout, so the abort line often never reaches the job log.
+
+Follow-up: put Worker secrets with `cf` (inherit on later deploys or `--secrets-file` on first upload). Do not PATCH `/workers/scripts/<name>/settings` before CD. After an API mutation, one successful `cf deploy` resets `source` to `cf_cli` and CI can proceed.
+
 ## 2026-10-17 — image-size must be a direct dependency for Node CI
 
 CI L1 runs Vitest under Node. `image-size` was only an override of a vinext transitive dependency, so bun's install layout was enough for local bun tests and for vinext's own import, but Node `require("image-size")` from the security regression child process failed with `MODULE_NOT_FOUND`. Resolving the package from the parent test file used the same Node resolver and failed the same way. Add `image-size` as a direct `devDependency` so `apps/web-dashboard/node_modules/image-size` exists for Node.
