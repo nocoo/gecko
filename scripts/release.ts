@@ -331,7 +331,16 @@ async function main() {
 
   // 7. GitHub release
   console.log("\n🎉 Creating GitHub release...");
-  const releaseNotes = changelogEntry || `Release v${nextVersion}`;
+  const macosNotes = `
+## macOS
+
+Download \`Gecko-${nextVersion}.dmg\`, open it, and drag Gecko into Applications. Then run:
+
+\`\`\`bash
+xattr -dr com.apple.quarantine /Applications/Gecko.app
+\`\`\`
+`;
+  const releaseNotes = `${changelogEntry || `Release v${nextVersion}`}${macosNotes}`;
   const notesFile = pathResolve(PROJECT_ROOT, ".release-notes-tmp.md");
   if (!dry) {
     writeFileSync(notesFile, releaseNotes);
