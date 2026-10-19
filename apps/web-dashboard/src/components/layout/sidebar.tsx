@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@nocoo/basalt/components/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@nocoo/basalt/components/avatar";
 import { Badge } from "@nocoo/basalt/components/badge";
 import {
   Sidebar as BasaltSidebar,
@@ -115,6 +115,7 @@ export function Sidebar() {
 
   const userName = user?.name ?? "User";
   const userEmail = user?.email ?? "";
+  const userAvatar = user?.avatar;
   const userInitial = userName[0] ?? "?";
 
   return (
@@ -188,6 +189,7 @@ export function Sidebar() {
                 <TooltipTrigger asChild>
                   <button type="button" onClick={accessLogout} className="cursor-pointer">
                     <Avatar className="h-9 w-9">
+                      {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
                       <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
                         {userInitial}
                       </AvatarFallback>
@@ -273,6 +275,7 @@ export function Sidebar() {
                 email={userEmail}
                 avatar={
                   <Avatar className="h-9 w-9 shrink-0">
+                    {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
                     <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
                       {userInitial}
                     </AvatarFallback>

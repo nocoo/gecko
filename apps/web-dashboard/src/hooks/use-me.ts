@@ -6,6 +6,7 @@ export interface MeUser {
   id: string;
   email: string;
   name: string;
+  avatar: string | null;
 }
 
 export function useMe(): { user: MeUser | null; loading: boolean } {

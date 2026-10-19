@@ -186,7 +186,7 @@ Access 主应用 `gecko-auth` 已保护 `gecko.hexly.ai`，并另有更具体 de
 
 本地身份仅在**配置选择的本地运行模式**、`ENVIRONMENT=local`、`RESOURCE_ENV=local|test`、本地 DB 绑定和回环监听同时成立时启用；test 还必须显式选择第 7.2 节的 stub 模式，jwt 模式永不短路。请求中的 Host/header 不能开启该模式。回环 URL 可用于测试；Caddy `gecko.dev.hexly.ai` 须由本机代理覆写可信 loopback peer header，并清理来路伪造值。没有该配置证据时拒绝短路，不放宽检查。本轮不修改 Caddy/证书。生产部署脚本拒绝上述本地变量、身份和资源。测试身份再要求 `_test_marker` 的 env 与本轮 run ID 匹配；测试中机器鉴权**不短路**，使用 fixture 创建并散列的真实格式 key。
 
-`GET /api/me` 返回最小 `{ user: { id, email, name } }`，不返回 JWT、模型密钥或 webhook key；本轮测试身份信息只在受限 test 模式额外提供。UI logout 使用 Access 的 `/cdn-cgi/access/logout`，本地不显示虚假退出流程；缺 avatar 时沿用现有头像占位。
+`GET /api/me` 返回最小 `{ user: { id, email, name, avatar } }`，不返回 JWT、模型密钥或 webhook key；本轮测试身份信息只在受限 test 模式额外提供。Name/avatar 来自公开作者档案 `GET https://lizheng.blog/api/authors/profile?hash=<sha256(email.trim().toLowerCase())>`（超时 2500ms）；miss / 429 / 网络失败时 name 回退 Access/JWT 或邮箱 local-part，avatar 为 `null`，侧栏沿用彩色 initial 占位。UI logout 使用 Access 的 `/cdn-cgi/access/logout`，本地不显示虚假退出流程。
 
 ### 4.3 必改和删除路径
 
