@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.1] - 2026-10-19
+
+### Fixed
+- add dmg xattr notes to releases
+- add image-size as a direct dependency
+- resolve image-size paths in ci
+
+### CI
+- enable production worker cron
+
+### Documentation
+- record cron and dove secrets
+- add dmg quarantine instructions
+- record image-size ci resolution
+
 ## [2.0.0] - 2026-10-17
 
 ### Added
