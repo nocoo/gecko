@@ -77,7 +77,7 @@ export default defineConfig(() => {
       assets: {
         htmlHandling: "none",
         notFoundHandling: "none",
-        runWorkerFirst: RUN_WORKER_FIRST,
+        runWorkerFirst: isProd ? RUN_WORKER_FIRST : undefined,
       },
       env,
       triggers: isProd ? scheduled : [],

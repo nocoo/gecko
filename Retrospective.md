@@ -191,3 +191,22 @@ release asset with the local artifact before claiming publication success.
 修正文档，保留首个提交，不 amend。今后提交命令使用 `set -e` 或完整的 `&&`
 依赖链，全部前置校验成功后才 stage/commit；整文件替换也不在同一 patch 中对同一路径
 同时声明 delete/add。
+
+## 2026-10-20 - Verify styled, hydrated pages during UI upgrades
+
+Basalt 3.2.0 added minimum dimensions that overrode Gecko's compact icon-button
+sizes. Reset those minimums only for the existing 24px and 32px variants, and
+assert their rendered dimensions in the browser rather than inspecting classes.
+
+The stronger browser checks also exposed an existing local routing failure:
+the production Worker-first wildcard intercepted Vite CSS and client entry
+requests, returning application 404 pages. Server-rendered headings still existed,
+so the previous heading-only smoke could miss an unstyled, noninteractive app.
+Keep the production routing rule restricted to production; local and isolated
+test servers must let Vite serve their assets. Verify rendered CSS and hydrated
+API-key actions before handing a local preview to the user.
+
+Once hydration worked, local stats returned 500 because migrations used
+`.cloudflare/local` while Vite defaulted to `.cloudflare/state`. Reuse the local
+migration path in Vite, retaining the isolated test-state override. A successful
+`/api/live` database probe alone does not prove that the application schema exists.

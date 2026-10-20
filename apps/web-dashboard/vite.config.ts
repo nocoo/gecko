@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { cloudflare } from "@cloudflare/vite-plugin";
 import vinext from "vinext";
 import { defineConfig } from "vite";
+import { localPersistPath } from "./scripts/db-local";
 
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,9 +14,7 @@ export default defineConfig({
       viteEnvironment: { name: "rsc", childEnvironments: ["ssr"] },
       remoteBindings: false,
       inspectorPort: false,
-      persistState: process.env.GECKO_TEST_STATE
-        ? { path: process.env.GECKO_TEST_STATE }
-        : undefined,
+      persistState: { path: process.env.GECKO_TEST_STATE || localPersistPath(rootDir) },
     }),
   ],
   resolve: {
