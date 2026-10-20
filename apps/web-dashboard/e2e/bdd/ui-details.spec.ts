@@ -39,6 +39,19 @@ for (const width of [320, 390, 1440]) {
           expect(
             await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
           ).toBe(true);
+          await expect
+            .poll(() =>
+              page.locator("[data-basalt-header]").evaluate((header) => {
+                const leading = header
+                  .querySelector("[data-basalt-header-leading]")
+                  ?.getBoundingClientRect();
+                const actions = header
+                  .querySelector("[data-basalt-header-actions]")
+                  ?.getBoundingClientRect();
+                return !!leading && !!actions && leading.right <= actions.left;
+              }),
+            )
+            .toBe(true);
           expect(errors).toEqual([]);
           if (route === "/") {
             await expect(page.getByRole("radio", { name: "7 Days", exact: true })).toHaveCSS(

@@ -103,7 +103,7 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
                     <Menu aria-hidden="true" strokeWidth={1.5} />
                   </Button>
                 )}
-                <Breadcrumbs items={allBreadcrumbs} />
+                <Breadcrumbs items={isMobile ? allBreadcrumbs.slice(-1) : allBreadcrumbs} />
               </div>
             }
             actions={

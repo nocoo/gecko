@@ -251,3 +251,8 @@ local override is a template default. Preserve native links and verify default
 control geometry, collapsed logo alignment, mobile focus return, and text wrapping
 in both themes. The application-owned react-day-picker calendar retains its
 specialized score-ring layout; shared Basalt popover padding stays untouched.
+
+The final 320px screenshot caught header breadcrumb/action overlap after restoring
+native icon sizes. A page can avoid horizontal overflow while its children still
+collide. Show only the final breadcrumb on mobile and assert separation between
+header regions; do not shrink the shared header buttons or breadcrumb typography.
