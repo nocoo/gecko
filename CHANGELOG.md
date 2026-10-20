@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.3] - 2026-10-20
+
+### Fixed
+- Keep mobile period controls within narrow layouts with wider fallback fonts, without overriding Basalt control styles.
+- Wait for client hydration before browser interactions and cover slow startup in regression tests.
+- Build signed macOS disk images without temporary mounts; verify app versions and image checksums, and preserve existing artifacts.
+- Verify tagged deployments against successful main CI for the exact release commit.
+
 ## [2.0.2] - 2026-10-20
 
 ### Added
