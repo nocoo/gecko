@@ -53,7 +53,7 @@ push main / bun run release
    verify /api/live version + storage=d1
 ```
 
-`bun run release` 先 push main 再 push tag。main 的 `workflow_run` 是可靠发布路径；tag 任务在 CI 尚未完成时允许失败，不改 `release.ts` 去同步等待。
+`bun run release` 先 push main 再 push tag。main 的 `workflow_run` 是可靠发布路径；tag 任务也必须找到同一 SHA 在 main 上成功的 CI，不能把 tag 名当作 CI 分支。CI 尚未完成时 tag 任务会被拦截。恢复发布应先验证 main CI 与 DMG，再推 tag；不改写已发布的 tag，也不跳过来源校验。
 
 ## 4. 要改的文件
 
@@ -79,7 +79,7 @@ push main / bun run release
 
 - `expected-workflow-path: .github/workflows/ci.yml`
 - `expected-workflow-name: CI`
-- `expected-branch: main`（tag 任务传 tag 名）
+- `expected-branch: main`（包括 tag 任务；tag 单独用于锁定 SHA 和核对版本）
 - `source-run-id`：仅 `workflow_run`
 - `tag`：仅 tag push / 手动 tag
 - `package-version-match`：tag 路径为 true

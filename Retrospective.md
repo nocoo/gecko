@@ -291,3 +291,12 @@ Keep existing artifacts and staging for inspection rather than clearing build/.
 Check the embedded app version and signature, refuse artifact overwrites, and
 verify the finished image. An isolated fixture exercised stale-version rejection,
 the complete packaging path and overwrite rejection before adoption.
+
+## 2026-10-20 - Verify tag releases against the CI branch
+
+The tag deployment passed the tag name as expected-branch, but CI only runs push
+jobs on main. The pinned release-source resolver filters runs by that branch and
+also checks head_branch, so even a completed main CI could never prove a tag run.
+Set expected-branch to main for every release entrypoint. Keep the tag parameter,
+exact-SHA comparison, successful push-CI requirement and package-version match;
+the tag selects the revision, not the branch on which its evidence was produced.

@@ -38,7 +38,7 @@ jobs:
     with:
       expected-workflow-path: ".github/workflows/ci.yml"
       expected-workflow-name: "CI"
-      expected-branch: ${{ github.event_name == 'push' && github.ref_name || inputs.tag || 'main' }}
+      expected-branch: main
       source-run-id: ${{ github.event_name == 'workflow_run' && format('{0}', github.event.workflow_run.id) || inputs.source-run-id || '' }}
       tag: ${{ github.event_name == 'push' && github.ref_name || inputs.tag || '' }}
       package-version-match: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.tag != '') }}
