@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.4] - 2026-10-20
+
+### Fixed
+- Keep the dashboard shell mounted across page and daily-date navigation, preserving sidebar state and user identity.
+- Update shared breadcrumbs with the active route without overriding Basalt styles.
+
+### Tests
+- Cover shell continuity across all dashboard pages, date selection, browser history and mobile drawer focus restoration.
+
 ## [2.0.3] - 2026-10-20
 
 ### Fixed
