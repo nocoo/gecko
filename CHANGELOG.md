@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.2] - 2026-10-20
+
+### Added
+- load sidebar avatar from lizheng.blog
+
+### Fixed
+- avoid mobile header overlap
+- restore basalt control defaults
+- keep period controls on one row
+- align basalt theme and ui details
+- strip bun cf tokens from vinext deploy
+
+### Documentation
+- retire railway gecko project
+- record api last-deployed cd abort
+
+### Maintenance
+- upgrade basalt to 3.2.0
+
 ## [2.0.1] - 2026-10-19
 
 ### Fixed
