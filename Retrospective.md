@@ -256,3 +256,23 @@ The final 320px screenshot caught header breadcrumb/action overlap after restori
 native icon sizes. A page can avoid horizontal overflow while its children still
 collide. Show only the final breadcrumb on mobile and assert separation between
 header regions; do not shrink the shared header buttons or breadcrumb typography.
+
+## 2026-10-20 - Verify hydration and cross-platform layout before publishing
+
+The v2.0.2 tag and Release were published before Linux L3 finished. Local browser
+checks passed, but Linux reported eight failures and production correctly stayed
+on v2.0.1. Do not treat local hooks as exact-revision CI evidence. For the recovery
+release, retain the published tag and wait for the new commit's CI and native
+artifact before publishing its tag and Release.
+
+A six-times CPU slowdown reproduced lost clicks before client hydration: the tag
+dialog and daily calendar opened only after Basalt's AccentProvider client effect
+completed. Browser navigation now waits for that existing effect's data-accent
+attribute, with a slow-start interaction regression. Do not add arbitrary sleeps
+or weaken visibility/focus assertions to accommodate server-rendered controls.
+
+The period selector also relied on macOS font metrics: a wider fallback font
+reproduced horizontal overflow at 320px. Use compact mobile labels with unchanged
+accessible names and period values, leaving Basalt typography, padding and control
+geometry untouched. Test the parent layout with a wider fallback font as well as
+the default theme and viewport matrix.

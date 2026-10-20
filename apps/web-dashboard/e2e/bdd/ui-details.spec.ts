@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { humanApi, jsonBody, makeSession, syncSessions } from "../../src/__tests__/e2e/harness";
+import { visit } from "./navigation";
 
 const routes = [
   "/",
@@ -14,6 +15,45 @@ const routes = [
   "/settings/ai",
 ];
 
+test("controls respond after slow hydration", async ({ page }) => {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+
+  await visit(page, "/sessions");
+  await page.getByRole("textbox", { name: "Filter sessions" }).fill("Safari");
+  await page.getByRole("button", { name: "Clear session filter" }).click();
+  await expect(page.getByRole("textbox", { name: "Filter sessions" })).toHaveValue("");
+
+  await visit(page, "/settings/tags");
+  await page.getByRole("button", { name: "New Tag", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await visit(page, "/daily");
+  await page.getByRole("button", { name: "Choose review date" }).click();
+  await expect(page.getByRole("grid")).toBeVisible();
+});
+
+test("period controls fit a narrow viewport with a wider fallback font", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 900 });
+  await visit(page, "/");
+  await page.addStyleTag({ content: ":root { --basalt-font-sans: monospace; }" });
+  await expect
+    .poll(() =>
+      page.locator("[data-basalt-island]").evaluate((island) => {
+        const group = island.querySelector('[aria-label="Time period"]')!;
+        const style = getComputedStyle(island);
+        const contentWidth =
+          island.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+        return group.getBoundingClientRect().width <= contentWidth;
+      }),
+    )
+    .toBe(true);
+  const all = page.getByRole("radio", { name: "All Time", exact: true });
+  await all.click();
+  await expect(all).toHaveAttribute("aria-checked", "true");
+});
+
 for (const width of [320, 390, 1440]) {
   for (const theme of ["light", "dark"]) {
     test.describe(`${width}px ${theme}`, () => {
@@ -25,7 +65,7 @@ for (const width of [320, 390, 1440]) {
         test(`${route} keeps its content within the viewport`, async ({ page }) => {
           const errors: string[] = [];
           page.on("pageerror", (error) => errors.push(error.message));
-          await page.goto(route);
+          await visit(page, route);
           await expect(page.locator("h1").first()).toBeVisible();
           await expect(page.locator("html")).toHaveAttribute("data-accent", "green");
           await expect(page.locator("html")).toHaveAttribute("data-mode", theme);
@@ -89,7 +129,7 @@ for (const width of [320, 390, 1440]) {
         });
       }
       test("API actions retain one line and matching control heights", async ({ page }) => {
-        await page.goto("/integrations/api");
+        await visit(page, "/integrations/api");
         const create = page.getByRole("button", { name: "Create", exact: true });
         const name = page.getByLabel("Create New Key");
         await expect(create).toHaveCSS("height", "34px");
@@ -106,7 +146,7 @@ for (const width of [320, 390, 1440]) {
 
 test("sidebar uses native links, neutral surfaces and a stable logo", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/integrations/api");
+  await visit(page, "/integrations/api");
   const sidebar = page.locator("[data-basalt-sidebar]");
   const logo = sidebar.getByAltText("Gecko", { exact: true });
   const x = (await logo.boundingBox())!.x;
@@ -165,7 +205,7 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
 
 test("session search uses the native input group and clear action", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto("/sessions");
+  await visit(page, "/sessions");
   const filter = page.getByRole("textbox", { name: "Filter sessions" });
   await filter.fill("Safari");
   const clear = page.getByRole("button", { name: "Clear session filter" });
@@ -182,7 +222,7 @@ for (const [route, label] of [
   ["/settings/tags", "New Tag"],
 ] as const) {
   test(`${label} dialog restores keyboard focus`, async ({ page }) => {
-    await page.goto(route);
+    await visit(page, route);
     const opener = page.getByRole("button", { name: label, exact: true });
     await opener.focus();
     await page.keyboard.press("Enter");
@@ -195,7 +235,7 @@ for (const [route, label] of [
 
 test("AI variable menu fits mobile and preserves editing focus", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 844 });
-  await page.goto("/settings/ai");
+  await visit(page, "/settings/ai");
   await expect(page.getByRole("combobox", { name: "Provider" })).toBeVisible();
   const opener = page.getByRole("button", { name: "Insert Variable" });
   await expect(opener).toHaveCSS("height", "28px");
@@ -230,7 +270,7 @@ test("app metadata controls preserve real assignments on mobile", async ({ page 
   ).toBe(true);
   expect((await humanApi("/api/tags", jsonBody("POST", { name: tagName }))).ok).toBe(true);
   await page.setViewportSize({ width: 320, height: 900 });
-  await page.goto("/apps");
+  await visit(page, "/apps");
   const category = page.getByRole("combobox", { name: `Category for ${appName}` });
   await category.click();
   await page.getByRole("option", { name: categoryName, exact: true }).click();
@@ -271,7 +311,7 @@ test("app metadata controls preserve real assignments on mobile", async ({ page 
   await expect(category).toContainText("Uncategorized");
   await expect(page.getByRole("button", { name: "Save 1 change", exact: true })).toHaveCount(0);
   for (const route of ["/settings/categories", "/settings/tags"]) {
-    await page.goto(route);
+    await visit(page, route);
     await expect(
       page.getByRole("button", {
         name: `Edit ${route.endsWith("tags") ? tagName : categoryName}`,
@@ -289,7 +329,7 @@ test("app metadata controls preserve real assignments on mobile", async ({ page 
 for (const width of [320, 390, 1440]) {
   test(`daily calendar stays within the ${width}px viewport`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
-    await page.goto("/daily");
+    await visit(page, "/daily");
     await page.getByRole("button", { name: "Choose review date" }).click();
     const calendar = page.getByRole("grid");
     await expect(calendar).toBeVisible();
@@ -305,7 +345,7 @@ for (const width of [320, 390, 1440]) {
 }
 
 test("AI custom model editor hands focus back to the preset selector", async ({ page }) => {
-  await page.goto("/settings/ai");
+  await visit(page, "/settings/ai");
   await page.getByRole("combobox", { name: "Provider", exact: true }).click();
   await page.getByRole("option", { name: "Anthropic", exact: true }).click();
   await page.getByRole("combobox", { name: "Model", exact: true }).click();
@@ -317,7 +357,7 @@ test("AI custom model editor hands focus back to the preset selector", async ({ 
 
 test("daily calendar moves keyboard focus before selecting a date", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
-  await page.goto("/daily");
+  await visit(page, "/daily");
   await page.getByRole("button", { name: "Choose review date" }).click();
   const calendar = page.getByRole("grid");
   const selected = calendar.locator('[aria-selected="true"] button');

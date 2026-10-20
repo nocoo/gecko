@@ -204,11 +204,11 @@ export default function DashboardPage() {
 // Period Selector
 // =============================================================================
 
-const PERIODS: { value: Period; label: string }[] = [
-  { value: "today", label: "Today" },
-  { value: "week", label: "7 Days" },
-  { value: "month", label: "30 Days" },
-  { value: "all", label: "All Time" },
+const PERIODS: { value: Period; label: string; compact: string }[] = [
+  { value: "today", label: "Today", compact: "Today" },
+  { value: "week", label: "7 Days", compact: "7d" },
+  { value: "month", label: "30 Days", compact: "30d" },
+  { value: "all", label: "All Time", compact: "All" },
 ];
 
 function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
@@ -222,8 +222,9 @@ function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Peri
       aria-label="Time period"
     >
       {PERIODS.map((period) => (
-        <ToggleGroupItem key={period.value} value={period.value}>
-          {period.label}
+        <ToggleGroupItem key={period.value} value={period.value} aria-label={period.label}>
+          <span className="sm:hidden">{period.compact}</span>
+          <span className="hidden sm:inline">{period.label}</span>
         </ToggleGroupItem>
       ))}
     </ToggleGroup>

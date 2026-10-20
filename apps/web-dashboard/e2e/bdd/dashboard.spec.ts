@@ -1,5 +1,6 @@
 // L3 (6DQ System/E2E) — Playwright; run via `bun run test:bdd` / root `test:l3`.
 import { expect, test } from "@playwright/test";
+import { visit } from "./navigation";
 
 test.describe("Dashboard — BDD Smoke", () => {
   test("Given the app is running, When I visit the dashboard, Then I see the page heading", async ({
@@ -8,7 +9,7 @@ test.describe("Dashboard — BDD Smoke", () => {
     // Given: app is running (webServer handles this)
 
     // When: visit dashboard
-    await page.goto("/");
+    await visit(page, "/");
 
     // Then: page loads with dashboard heading
     await expect(page.locator("h1")).toBeVisible({ timeout: 15_000 });
@@ -19,7 +20,7 @@ test.describe("Dashboard — BDD Smoke", () => {
   });
 
   test("API key actions retain native icon dimensions", async ({ page }) => {
-    await page.goto("/integrations/api");
+    await visit(page, "/integrations/api");
 
     for (const title of ["Rename", "Delete"]) {
       const action = page.getByTitle(title, { exact: true });
