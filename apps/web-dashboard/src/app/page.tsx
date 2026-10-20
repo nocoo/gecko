@@ -220,10 +220,9 @@ function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Peri
         if (next) onChange(next as Period);
       }}
       aria-label="Time period"
-      className="min-w-0 shrink flex-wrap"
     >
       {PERIODS.map((period) => (
-        <ToggleGroupItem key={period.value} value={period.value}>
+        <ToggleGroupItem key={period.value} value={period.value} className="px-basalt-space-sm">
           {period.label}
         </ToggleGroupItem>
       ))}

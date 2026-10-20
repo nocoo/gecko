@@ -228,3 +228,9 @@ Dialog input `autoFocus` runs before Radix's opening focus event, so capturing t
 opener there originally captured an input about to disappear. Let Radix perform
 initial focus; verify Escape restores the actual opener. API origin text must
 also initialize after hydration rather than branch on `window` during render.
+
+The final screenshots exposed a second layout problem: letting the segmented
+period group wrap kept it inside the viewport but misplaced its moving selection
+indicator. Keep that shared control on one line using the package's compact
+spacing token. Browser acceptance must compare the indicator and selected item
+rectangles, not just assert that the outer page has no horizontal overflow.

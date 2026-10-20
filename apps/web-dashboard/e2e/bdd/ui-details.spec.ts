@@ -47,6 +47,25 @@ for (const width of [320, 390, 1440]) {
                 (element) => element.getBoundingClientRect().right <= innerWidth,
               ),
             ).toBe(true);
+            await expect
+              .poll(() =>
+                page.locator('[aria-label="Time period"]').evaluate((group) => {
+                  const selected = group
+                    .querySelector('[aria-checked="true"]')
+                    ?.getBoundingClientRect();
+                  const marker = group
+                    .querySelector('[data-slot="selection-indicator"]')
+                    ?.getBoundingClientRect();
+                  return (
+                    !!selected &&
+                    !!marker &&
+                    (["x", "y", "width", "height"] as const).every(
+                      (key) => Math.abs(selected[key] - marker[key]) < 1,
+                    )
+                  );
+                }),
+              )
+              .toBe(true);
           }
         });
       }
