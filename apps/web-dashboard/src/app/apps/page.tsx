@@ -24,7 +24,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CategoryPill } from "@/components/category-pill";
-import { AppShell } from "@/components/layout";
 import { TagBadge } from "@/components/tag-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -412,137 +411,133 @@ export default function AppsPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <AppShell breadcrumbs={[{ label: "Apps" }]}>
-      <div className="space-y-6 max-w-3xl">
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Apps</h1>
-            <p className="mt-1 text-sm text-basalt-muted-foreground">
-              Manage categories, tags, and notes for all your tracked apps.
-            </p>
-          </div>
-          {totalPending > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
-                <X />
-                Discard
-              </Button>
-              <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save />
-                {saving
-                  ? "Saving..."
-                  : `Save ${totalPending} change${totalPending === 1 ? "" : "s"}`}
-              </Button>
-            </div>
-          )}
+    <div className="space-y-6 max-w-3xl">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Apps</h1>
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
+            Manage categories, tags, and notes for all your tracked apps.
+          </p>
         </div>
-
-        {/* Error banner */}
-        {error && (
-          <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
-            <AlertTriangle className="size-4 shrink-0" />
-            {error}
+        {totalPending > 0 && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
+              <X />
+              Discard
+            </Button>
+            <Button size="sm" onClick={handleSave} disabled={saving}>
+              <Save />
+              {saving ? "Saving..." : `Save ${totalPending} change${totalPending === 1 ? "" : "s"}`}
+            </Button>
           </div>
-        )}
-
-        {loading ? (
-          <AppsSkeleton />
-        ) : apps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-10 px-6 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
-              <AppWindow className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
-            </div>
-            <p className="text-sm font-medium">No tracked apps yet</p>
-            <p className="mt-1 text-xs text-basalt-muted-foreground max-w-xs">
-              Start using the Gecko macOS app and your tracked apps will appear here.
-            </p>
-          </div>
-        ) : (
-          <>
-            {/* Filter + sort controls */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="min-w-40 flex-1">
-                <InputGroup>
-                  <InputGroup.Addon>
-                    <Search aria-hidden="true" />
-                  </InputGroup.Addon>
-                  <InputGroup.Input
-                    aria-label="Filter apps"
-                    placeholder="Filter by name or bundle ID..."
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  />
-                </InputGroup>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <ArrowUpDown className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
-                <Select
-                  value={`${sortField}-${sortDir}`}
-                  onValueChange={(value) => {
-                    const [field, dir] = value.split("-") as [SortField, SortDir];
-                    setSortField(field);
-                    setSortDir(dir);
-                  }}
-                >
-                  <SelectTrigger
-                    aria-label={`Sort apps by ${sortField}, ${sortDir === "asc" ? "ascending" : "descending"}`}
-                    className="w-44"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="duration-desc">Most used</SelectItem>
-                    <SelectItem value="duration-asc">Least used</SelectItem>
-                    <SelectItem value="name-asc">Name A-Z</SelectItem>
-                    <SelectItem value="name-desc">Name Z-A</SelectItem>
-                    <SelectItem value="sessions-desc">Most sessions</SelectItem>
-                    <SelectItem value="sessions-asc">Fewest sessions</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* App list */}
-            <div className="space-y-3">
-              {filteredApps.map((app) => (
-                <AppRow
-                  key={app.bundleId}
-                  app={app}
-                  categories={categories}
-                  tags={tags}
-                  effectiveCategoryId={getEffectiveCategory(app.bundleId)}
-                  effectiveTagIds={getEffectiveTags(app.bundleId)}
-                  effectiveNote={getEffectiveNote(app.bundleId)}
-                  hasChange={hasAppChange(app.bundleId)}
-                  isCatExpanded={expandedCatApp === app.bundleId}
-                  isTagExpanded={expandedTagApp === app.bundleId}
-                  isNoteExpanded={expandedNoteApp === app.bundleId}
-                  onCategoryChange={(catId) => handleCategoryChange(app.bundleId, catId)}
-                  onToggleTag={(tagId) => toggleTag(app.bundleId, tagId)}
-                  onNoteChange={(note) => handleNoteChange(app.bundleId, note)}
-                  onCreateTag={createTag}
-                  onToggleCatExpand={() =>
-                    setExpandedCatApp(expandedCatApp === app.bundleId ? null : app.bundleId)
-                  }
-                  onToggleTagExpand={() =>
-                    setExpandedTagApp(expandedTagApp === app.bundleId ? null : app.bundleId)
-                  }
-                  onToggleNoteExpand={() =>
-                    setExpandedNoteApp(expandedNoteApp === app.bundleId ? null : app.bundleId)
-                  }
-                />
-              ))}
-              {filteredApps.length === 0 && (
-                <p className="text-sm text-basalt-muted-foreground py-4 text-center">
-                  No apps match your filter.
-                </p>
-              )}
-            </div>
-          </>
         )}
       </div>
-    </AppShell>
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
+          <AlertTriangle className="size-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <AppsSkeleton />
+      ) : apps.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-10 px-6 text-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
+            <AppWindow className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+          </div>
+          <p className="text-sm font-medium">No tracked apps yet</p>
+          <p className="mt-1 text-xs text-basalt-muted-foreground max-w-xs">
+            Start using the Gecko macOS app and your tracked apps will appear here.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Filter + sort controls */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-40 flex-1">
+              <InputGroup>
+                <InputGroup.Addon>
+                  <Search aria-hidden="true" />
+                </InputGroup.Addon>
+                <InputGroup.Input
+                  aria-label="Filter apps"
+                  placeholder="Filter by name or bundle ID..."
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+              </InputGroup>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <ArrowUpDown className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+              <Select
+                value={`${sortField}-${sortDir}`}
+                onValueChange={(value) => {
+                  const [field, dir] = value.split("-") as [SortField, SortDir];
+                  setSortField(field);
+                  setSortDir(dir);
+                }}
+              >
+                <SelectTrigger
+                  aria-label={`Sort apps by ${sortField}, ${sortDir === "asc" ? "ascending" : "descending"}`}
+                  className="w-44"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="duration-desc">Most used</SelectItem>
+                  <SelectItem value="duration-asc">Least used</SelectItem>
+                  <SelectItem value="name-asc">Name A-Z</SelectItem>
+                  <SelectItem value="name-desc">Name Z-A</SelectItem>
+                  <SelectItem value="sessions-desc">Most sessions</SelectItem>
+                  <SelectItem value="sessions-asc">Fewest sessions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* App list */}
+          <div className="space-y-3">
+            {filteredApps.map((app) => (
+              <AppRow
+                key={app.bundleId}
+                app={app}
+                categories={categories}
+                tags={tags}
+                effectiveCategoryId={getEffectiveCategory(app.bundleId)}
+                effectiveTagIds={getEffectiveTags(app.bundleId)}
+                effectiveNote={getEffectiveNote(app.bundleId)}
+                hasChange={hasAppChange(app.bundleId)}
+                isCatExpanded={expandedCatApp === app.bundleId}
+                isTagExpanded={expandedTagApp === app.bundleId}
+                isNoteExpanded={expandedNoteApp === app.bundleId}
+                onCategoryChange={(catId) => handleCategoryChange(app.bundleId, catId)}
+                onToggleTag={(tagId) => toggleTag(app.bundleId, tagId)}
+                onNoteChange={(note) => handleNoteChange(app.bundleId, note)}
+                onCreateTag={createTag}
+                onToggleCatExpand={() =>
+                  setExpandedCatApp(expandedCatApp === app.bundleId ? null : app.bundleId)
+                }
+                onToggleTagExpand={() =>
+                  setExpandedTagApp(expandedTagApp === app.bundleId ? null : app.bundleId)
+                }
+                onToggleNoteExpand={() =>
+                  setExpandedNoteApp(expandedNoteApp === app.bundleId ? null : app.bundleId)
+                }
+              />
+            ))}
+            {filteredApps.length === 0 && (
+              <p className="text-sm text-basalt-muted-foreground py-4 text-center">
+                No apps match your filter.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

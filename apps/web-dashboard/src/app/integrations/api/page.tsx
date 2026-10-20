@@ -13,7 +13,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -648,25 +647,23 @@ export default function ApiPage() {
   }, [fetchKeys]);
 
   return (
-    <AppShell breadcrumbs={[{ label: "Integrations" }, { label: "API" }]}>
-      <div className="space-y-8 max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-semibold">API</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Access your Gecko data programmatically. Manage API keys and test endpoints.
-          </p>
-        </div>
-
-        <EndpointSection />
-
-        <Separator />
-
-        <ApiKeysSection keys={keys} loading={loading} onRefresh={fetchKeys} />
-
-        <Separator />
-
-        <TestSection />
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-semibold">API</h1>
+        <p className="mt-1 text-sm text-basalt-muted-foreground">
+          Access your Gecko data programmatically. Manage API keys and test endpoints.
+        </p>
       </div>
-    </AppShell>
+
+      <EndpointSection />
+
+      <Separator />
+
+      <ApiKeysSection keys={keys} loading={loading} onRefresh={fetchKeys} />
+
+      <Separator />
+
+      <TestSection />
+    </div>
   );
 }

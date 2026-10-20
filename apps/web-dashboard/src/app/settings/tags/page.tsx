@@ -2,7 +2,6 @@
 
 import { AlertTriangle, Pencil, Plus, Tags as TagsIcon, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { AppShell } from "@/components/layout";
 import { TagBadge } from "@/components/tag-badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,24 +54,22 @@ export default function TagsPage() {
   }, [fetchTags]);
 
   return (
-    <AppShell breadcrumbs={[{ label: "Settings", href: "/settings" }, { label: "Tags" }]}>
-      <div className="space-y-8 max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-semibold">Tags</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Create tags to label your apps. Each app can have multiple tags.
-          </p>
-        </div>
-
-        <TagsSection
-          tags={tags}
-          loading={loading}
-          error={error}
-          setError={setError}
-          onRefresh={fetchTags}
-        />
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-semibold">Tags</h1>
+        <p className="mt-1 text-sm text-basalt-muted-foreground">
+          Create tags to label your apps. Each app can have multiple tags.
+        </p>
       </div>
-    </AppShell>
+
+      <TagsSection
+        tags={tags}
+        loading={loading}
+        error={error}
+        setError={setError}
+        onRefresh={fetchTags}
+      />
+    </div>
   );
 }
 

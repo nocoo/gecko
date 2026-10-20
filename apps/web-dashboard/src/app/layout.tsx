@@ -2,6 +2,7 @@ import { AccentProvider } from "@nocoo/basalt/providers/accent";
 import { ThemeProvider } from "@nocoo/basalt/providers/theme";
 import type { Metadata } from "next";
 import googleFonts from "next/font/google";
+import { AppShell } from "@/components/layout/app-shell";
 import "./globals.css";
 
 const Inter = googleFonts.Inter;
@@ -50,7 +51,7 @@ export default function RootLayout({
       <body className={`${inter.variable} ${dmSans.variable} antialiased`}>
         <ThemeProvider>
           <AccentProvider defaultAccent="green" persist={false}>
-            {children}
+            <AppShell>{children}</AppShell>
           </AccentProvider>
         </ThemeProvider>
       </body>

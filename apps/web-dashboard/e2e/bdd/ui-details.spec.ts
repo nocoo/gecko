@@ -201,6 +201,7 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   await drawer.getByRole("link", { name: "Categories", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/categories$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(opener).toBeFocused();
 });
 
 test("session search uses the native input group and clear action", async ({ page }) => {

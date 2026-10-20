@@ -10,7 +10,6 @@ import {
 import { Switch } from "@nocoo/basalt/components/switch";
 import { AlertTriangle, Bell, Check, Globe, Loader2, Mail, Sparkles, User } from "lucide-react";
 import { useEffect, useState } from "react";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,30 +24,28 @@ export default function SettingsPage() {
   const { user } = useMe();
 
   return (
-    <AppShell breadcrumbs={[{ label: "Settings" }]}>
-      <div className="space-y-8 max-w-2xl">
-        {/* Page header */}
-        <div>
-          <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Manage your profile and preferences.
-          </p>
-        </div>
-
-        {/* Profile section */}
-        <ProfileSection user={user} />
-
-        <Separator />
-
-        {/* Timezone section */}
-        <TimezoneSection />
-
-        <Separator />
-
-        {/* Notifications section */}
-        <NotificationsSection />
+    <div className="space-y-8 max-w-2xl">
+      {/* Page header */}
+      <div>
+        <h1 className="text-2xl font-semibold">Settings</h1>
+        <p className="mt-1 text-sm text-basalt-muted-foreground">
+          Manage your profile and preferences.
+        </p>
       </div>
-    </AppShell>
+
+      {/* Profile section */}
+      <ProfileSection user={user} />
+
+      <Separator />
+
+      {/* Timezone section */}
+      <TimezoneSection />
+
+      <Separator />
+
+      {/* Notifications section */}
+      <NotificationsSection />
+    </div>
   );
 }
 

@@ -300,3 +300,19 @@ also checks head_branch, so even a completed main CI could never prove a tag run
 Set expected-branch to main for every release entrypoint. Keep the tag parameter,
 exact-SHA comparison, successful push-CI requirement and package-version match;
 the tag selects the revision, not the branch on which its evidence was produced.
+
+## 2026-10-20 - Keep dashboard chrome above changing route segments
+
+Daily date navigation used RSC fetches rather than document requests, but every
+page owned its own AppShell. A new date mounted a new sidebar, header and content
+island: the collapsed rail reset, the user briefly became "User", and /api/me
+ran again. Passing page.goto-based viewport checks did not prove navigation
+continuity. Inspect both network request types and retained component state
+before calling the symptom a full-page reload or changing container styles.
+
+Mount the shared shell once in the root layout and derive its breadcrumbs from
+the pathname. Keep business loading states inside the content island and retain
+the pathname-triggered mobile drawer close. Regression checks must navigate
+through links, the date picker and browser history, assert that shell DOM nodes
+remain connected, and verify sidebar state and user-request counts. No Basalt
+style overrides or routing caches are needed for this ownership correction.

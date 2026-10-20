@@ -15,7 +15,6 @@ import {
   X,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { CHART_COLORS } from "@/lib/palette";
 
@@ -118,96 +117,91 @@ export default function SessionsPage() {
     : sessions;
 
   return (
-    <AppShell>
-      <div className="space-y-4">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Sessions</h1>
-            <p className="mt-1 text-sm text-basalt-muted-foreground">
-              Browse all recorded focus sessions.
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 sm:w-60">
-              <InputGroup>
-                <InputGroup.Addon>
-                  <Search aria-hidden="true" />
-                </InputGroup.Addon>
-                <InputGroup.Input
-                  type="text"
-                  placeholder="Filter by app, title, URL..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  aria-label="Filter sessions"
-                />
-                {search && (
-                  <InputGroup.Button
-                    aria-label="Clear session filter"
-                    onClick={() => setSearch("")}
-                  >
-                    <X />
-                  </InputGroup.Button>
-                )}
-              </InputGroup>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Refresh sessions"
-              onClick={refresh}
-              disabled={loading}
-            >
-              <RefreshCw className={loading ? "animate-spin" : undefined} />
-            </Button>
-          </div>
-        </div>
-
-        {error && (
-          <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
-            {error}
-          </div>
-        )}
-
-        {/* Sessions count */}
-        {!loading && (
-          <p className="text-xs text-basalt-muted-foreground">
-            {search
-              ? `${filtered.length} of ${sessions.length} sessions`
-              : `${sessions.length} sessions loaded`}
-            {hasMore && !search && " (scroll for more)"}
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Sessions</h1>
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
+            Browse all recorded focus sessions.
           </p>
-        )}
-
-        {/* Loading state — B-4 content-shaped skeleton */}
-        {loading ? (
-          <SessionsSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState search={search} total={sessions.length} />
-        ) : (
-          <div className="space-y-2">
-            {filtered.map((session) => (
-              <SessionRow
-                key={session.id}
-                session={session}
-                expanded={expandedId === session.id}
-                onToggle={() => setExpandedId(expandedId === session.id ? null : session.id)}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1 sm:w-60">
+            <InputGroup>
+              <InputGroup.Addon>
+                <Search aria-hidden="true" />
+              </InputGroup.Addon>
+              <InputGroup.Input
+                type="text"
+                placeholder="Filter by app, title, URL..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Filter sessions"
               />
-            ))}
-
-            {/* Load more */}
-            {hasMore && !search && (
-              <div className="flex justify-center pt-2">
-                <Button variant="ghost" onClick={loadMore} disabled={loadingMore}>
-                  {loadingMore ? <Loader2 className="animate-spin" /> : <ChevronDown />}
-                  Load more
-                </Button>
-              </div>
-            )}
+              {search && (
+                <InputGroup.Button aria-label="Clear session filter" onClick={() => setSearch("")}>
+                  <X />
+                </InputGroup.Button>
+              )}
+            </InputGroup>
           </div>
-        )}
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Refresh sessions"
+            onClick={refresh}
+            disabled={loading}
+          >
+            <RefreshCw className={loading ? "animate-spin" : undefined} />
+          </Button>
+        </div>
       </div>
-    </AppShell>
+
+      {error && (
+        <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* Sessions count */}
+      {!loading && (
+        <p className="text-xs text-basalt-muted-foreground">
+          {search
+            ? `${filtered.length} of ${sessions.length} sessions`
+            : `${sessions.length} sessions loaded`}
+          {hasMore && !search && " (scroll for more)"}
+        </p>
+      )}
+
+      {/* Loading state — B-4 content-shaped skeleton */}
+      {loading ? (
+        <SessionsSkeleton />
+      ) : filtered.length === 0 ? (
+        <EmptyState search={search} total={sessions.length} />
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((session) => (
+            <SessionRow
+              key={session.id}
+              session={session}
+              expanded={expandedId === session.id}
+              onToggle={() => setExpandedId(expandedId === session.id ? null : session.id)}
+            />
+          ))}
+
+          {/* Load more */}
+          {hasMore && !search && (
+            <div className="flex justify-center pt-2">
+              <Button variant="ghost" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? <Loader2 className="animate-spin" /> : <ChevronDown />}
+                Load more
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

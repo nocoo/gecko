@@ -26,7 +26,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact, getChartColor } from "@/lib/chart-config";
@@ -110,93 +109,91 @@ export default function DashboardPage() {
   const hasData = stats && stats.totalSessions > 0;
 
   return (
-    <AppShell>
-      <div className="space-y-6">
-        {/* Welcome header + period selector */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold">Hey, {userName}</h1>
-            <p className="mt-1 text-sm text-basalt-muted-foreground">
-              Here&apos;s your screen time overview.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <PeriodSelector value={period} onChange={setPeriod} />
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Refresh dashboard"
-              onClick={() => fetchData(period)}
-              disabled={loading}
-            >
-              <RefreshCw className={loading ? "animate-spin" : undefined} />
-            </Button>
-          </div>
+    <div className="space-y-6">
+      {/* Welcome header + period selector */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Hey, {userName}</h1>
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
+            Here&apos;s your screen time overview.
+          </p>
         </div>
-
-        {error && (
-          <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
-            {error}
-          </div>
-        )}
-
-        {/* Stats cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            icon={<Clock className="size-5" />}
-            title="Total Time"
-            value={formatDuration(stats?.totalDuration ?? 0)}
-            subtitle={periodLabel(period)}
-            loading={loading}
-            className="animate-fade-up stagger-1"
-          />
-          <StatCard
-            icon={<AppWindow className="size-5" />}
-            title="Apps Used"
-            value={stats?.totalApps?.toString() ?? "0"}
-            subtitle={periodLabel(period)}
-            loading={loading}
-            className="animate-fade-up stagger-2"
-          />
-          <StatCard
-            icon={<Monitor className="size-5" />}
-            title="Sessions"
-            value={stats?.totalSessions?.toString() ?? "0"}
-            subtitle={periodLabel(period)}
-            loading={loading}
-            className="animate-fade-up stagger-3"
-          />
-          <StatCard
-            icon={<Timer className="size-5" />}
-            title="Longest Session"
-            value={formatDuration(stats?.longestSession ?? 0)}
-            subtitle={periodLabel(period)}
-            loading={loading}
-            className="animate-fade-up stagger-4"
-          />
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodSelector value={period} onChange={setPeriod} />
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Refresh dashboard"
+            onClick={() => fetchData(period)}
+            disabled={loading}
+          >
+            <RefreshCw className={loading ? "animate-spin" : undefined} />
+          </Button>
         </div>
-
-        {/* Charts row */}
-        {loading ? (
-          <div className="grid gap-4 lg:grid-cols-5">
-            <ChartSkeleton className="lg:col-span-3" />
-            <ChartSkeleton className="lg:col-span-2" />
-          </div>
-        ) : hasData ? (
-          <div className="grid gap-4 lg:grid-cols-5">
-            <DailyChart timeline={timeline} className="lg:col-span-3" />
-            <AppDonut apps={stats.topApps} className="lg:col-span-2" />
-          </div>
-        ) : null}
-
-        {/* Top apps */}
-        {!loading && hasData ? (
-          <TopAppsTable apps={stats.topApps} totalDuration={stats.totalDuration} />
-        ) : !loading && stats && stats.topApps.length === 0 ? (
-          <EmptyState period={period} />
-        ) : null}
       </div>
-    </AppShell>
+
+      {error && (
+        <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* Stats cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={<Clock className="size-5" />}
+          title="Total Time"
+          value={formatDuration(stats?.totalDuration ?? 0)}
+          subtitle={periodLabel(period)}
+          loading={loading}
+          className="animate-fade-up stagger-1"
+        />
+        <StatCard
+          icon={<AppWindow className="size-5" />}
+          title="Apps Used"
+          value={stats?.totalApps?.toString() ?? "0"}
+          subtitle={periodLabel(period)}
+          loading={loading}
+          className="animate-fade-up stagger-2"
+        />
+        <StatCard
+          icon={<Monitor className="size-5" />}
+          title="Sessions"
+          value={stats?.totalSessions?.toString() ?? "0"}
+          subtitle={periodLabel(period)}
+          loading={loading}
+          className="animate-fade-up stagger-3"
+        />
+        <StatCard
+          icon={<Timer className="size-5" />}
+          title="Longest Session"
+          value={formatDuration(stats?.longestSession ?? 0)}
+          subtitle={periodLabel(period)}
+          loading={loading}
+          className="animate-fade-up stagger-4"
+        />
+      </div>
+
+      {/* Charts row */}
+      {loading ? (
+        <div className="grid gap-4 lg:grid-cols-5">
+          <ChartSkeleton className="lg:col-span-3" />
+          <ChartSkeleton className="lg:col-span-2" />
+        </div>
+      ) : hasData ? (
+        <div className="grid gap-4 lg:grid-cols-5">
+          <DailyChart timeline={timeline} className="lg:col-span-3" />
+          <AppDonut apps={stats.topApps} className="lg:col-span-2" />
+        </div>
+      ) : null}
+
+      {/* Top apps */}
+      {!loading && hasData ? (
+        <TopAppsTable apps={stats.topApps} totalDuration={stats.totalDuration} />
+      ) : !loading && stats && stats.topApps.length === 0 ? (
+        <EmptyState period={period} />
+      ) : null}
+    </div>
   );
 }
 

@@ -36,10 +36,10 @@ import Markdown from "react-markdown";
 import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
 import { GanttChart } from "@/components/daily/gantt-chart";
 import { ScoreCards } from "@/components/daily/score-cards";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { formatDateDisplay } from "@/lib/page-navigation";
 import { cn } from "@/lib/utils";
 import type { DailyStats } from "@/services/daily-stats";
 
@@ -99,18 +99,6 @@ function addDays(dateStr: string, days: number): string {
   const parts = dateStr.split("-").map(Number);
   const utc = new Date(Date.UTC(parts[0] ?? 0, (parts[1] ?? 1) - 1, (parts[2] ?? 1) + days));
   return `${utc.getUTCFullYear()}-${String(utc.getUTCMonth() + 1).padStart(2, "0")}-${String(utc.getUTCDate()).padStart(2, "0")}`;
-}
-
-function formatDateDisplay(dateStr: string): string {
-  // Use UTC noon to avoid date-shift from browser-local midnight parsing
-  const d = new Date(`${dateStr}T12:00:00Z`);
-  return d.toLocaleDateString("en-US", {
-    weekday: "short",
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 }
 
 function dateToObj(dateStr: string): Date {
@@ -757,83 +745,79 @@ export function DailyReviewClient({ date }: { date: string }) {
   const hasData = data && data.stats.totalSessions > 0;
 
   return (
-    <AppShell
-      breadcrumbs={[{ label: "Daily Review", href: "/daily" }, { label: formatDateDisplay(date) }]}
-    >
-      <div className="space-y-4">
-        {/* Header: Date navigation */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl md:text-2xl font-semibold">Daily Review</h1>
-            <p className="mt-1 text-sm text-basalt-muted-foreground">
-              {hasData
-                ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
-                : "View your productivity analysis for this day."}
-            </p>
-          </div>
-          <DateNavigator date={date} timezone={timezone} onChange={handleDateChange} />
+    <div className="space-y-4">
+      {/* Header: Date navigation */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl md:text-2xl font-semibold">Daily Review</h1>
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
+            {hasData
+              ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
+              : "View your productivity analysis for this day."}
+          </p>
         </div>
-
-        {/* Error */}
-        {error && (
-          <div className="rounded-basalt-widget bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
-            {error}
-          </div>
-        )}
-
-        {/* Loading skeleton */}
-        {loading && (
-          <div className="grid gap-4 lg:grid-cols-5">
-            <div className="lg:col-span-3 space-y-4">
-              <LoadingSkeleton height="h-[200px]" />
-              <LoadingSkeleton height="h-[300px]" />
-            </div>
-            <div className="lg:col-span-2">
-              <LoadingSkeleton height="h-[200px]" />
-            </div>
-          </div>
-        )}
-
-        {/* Empty state */}
-        {!loading && data && !hasData && (
-          <div className="flex flex-col items-center justify-center rounded-basalt-card bg-basalt-secondary py-16 px-6 text-center">
-            <Calendar className="size-8 text-basalt-muted-foreground mb-4" strokeWidth={1.5} />
-            <h2 className="text-lg font-semibold">No Data</h2>
-            <p className="mt-2 max-w-md text-sm text-basalt-muted-foreground">
-              No sessions recorded on {formatDateDisplay(date)}. Try selecting a different date.
-            </p>
-          </div>
-        )}
-
-        {/* Main content */}
-        {!loading && hasData && (
-          <div className="grid gap-4 lg:grid-cols-5">
-            {/* Left: Scores + Gantt */}
-            <div className="lg:col-span-3 space-y-4">
-              <ScoreCards scores={data.stats.scores} />
-              <GanttChart
-                sessions={data.stats.sessions}
-                topApps={data.stats.topApps}
-                timezone={timezone}
-              />
-            </div>
-
-            {/* Right: AI Analysis */}
-            <div className="lg:col-span-2">
-              <AiAnalysisPanel
-                ai={ai}
-                loading={aiLoading}
-                error={aiError}
-                prompt={aiPrompt}
-                promptCollapsed={promptCollapsed}
-                onTogglePrompt={() => setPromptCollapsed((c) => !c)}
-                onGenerate={generateAi}
-              />
-            </div>
-          </div>
-        )}
+        <DateNavigator date={date} timezone={timezone} onChange={handleDateChange} />
       </div>
-    </AppShell>
+
+      {/* Error */}
+      {error && (
+        <div className="rounded-basalt-widget bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
+          {error}
+        </div>
+      )}
+
+      {/* Loading skeleton */}
+      {loading && (
+        <div className="grid gap-4 lg:grid-cols-5">
+          <div className="lg:col-span-3 space-y-4">
+            <LoadingSkeleton height="h-[200px]" />
+            <LoadingSkeleton height="h-[300px]" />
+          </div>
+          <div className="lg:col-span-2">
+            <LoadingSkeleton height="h-[200px]" />
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
+      {!loading && data && !hasData && (
+        <div className="flex flex-col items-center justify-center rounded-basalt-card bg-basalt-secondary py-16 px-6 text-center">
+          <Calendar className="size-8 text-basalt-muted-foreground mb-4" strokeWidth={1.5} />
+          <h2 className="text-lg font-semibold">No Data</h2>
+          <p className="mt-2 max-w-md text-sm text-basalt-muted-foreground">
+            No sessions recorded on {formatDateDisplay(date)}. Try selecting a different date.
+          </p>
+        </div>
+      )}
+
+      {/* Main content */}
+      {!loading && hasData && (
+        <div className="grid gap-4 lg:grid-cols-5">
+          {/* Left: Scores + Gantt */}
+          <div className="lg:col-span-3 space-y-4">
+            <ScoreCards scores={data.stats.scores} />
+            <GanttChart
+              sessions={data.stats.sessions}
+              topApps={data.stats.topApps}
+              timezone={timezone}
+            />
+          </div>
+
+          {/* Right: AI Analysis */}
+          <div className="lg:col-span-2">
+            <AiAnalysisPanel
+              ai={ai}
+              loading={aiLoading}
+              error={aiError}
+              prompt={aiPrompt}
+              promptCollapsed={promptCollapsed}
+              onTogglePrompt={() => setPromptCollapsed((c) => !c)}
+              onGenerate={generateAi}
+            />
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 

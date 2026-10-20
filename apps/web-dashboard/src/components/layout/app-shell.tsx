@@ -18,6 +18,7 @@ import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getPageBreadcrumbs } from "@/lib/page-navigation";
 import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderTooltip, HexlyLink } from "./header-links";
 import { Sidebar } from "./sidebar";
@@ -26,7 +27,6 @@ import { ThemeToggle } from "./theme-toggle";
 
 interface AppShellProps {
   children: React.ReactNode;
-  breadcrumbs?: { label: string; href?: string }[];
 }
 
 function NextLinkAdapter({
@@ -46,7 +46,7 @@ function NextLinkAdapter({
   );
 }
 
-function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
+function AppShellInner({ children }: AppShellProps) {
   const isMobile = useIsMobile();
   const { mobileOpen, setMobileOpen } = useSidebar();
   const pathname = usePathname();
@@ -61,7 +61,7 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
 
   // Render breadcrumbs into AppHeader leading area using Breadcrumbs component directly,
   // rather than passing title to AppHeader (which renders an <h1> and conflicts with page headings).
-  const allBreadcrumbs = [{ label: "Home", href: "/" }, ...breadcrumbs];
+  const allBreadcrumbs = [{ label: "Home", href: "/" }, ...getPageBreadcrumbs(pathname)];
 
   return (
     <LinkProvider render={NextLinkAdapter}>
@@ -136,10 +136,10 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
   );
 }
 
-export function AppShell({ children, breadcrumbs = [] }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   return (
     <SidebarProvider>
-      <AppShellInner breadcrumbs={breadcrumbs}>{children}</AppShellInner>
+      <AppShellInner>{children}</AppShellInner>
     </SidebarProvider>
   );
 }

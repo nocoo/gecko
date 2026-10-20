@@ -14,7 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -702,30 +701,28 @@ export default function BackySettingsPage() {
   const handlePushSuccess = useCallback(() => setHistoryRefreshKey((k) => k + 1), []);
 
   return (
-    <AppShell breadcrumbs={[{ label: "Integrations" }, { label: "Backy" }]}>
-      <div className="space-y-8 max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-semibold">Backy</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Configure automatic backups with Backy. Push your data to a backup service, or let Backy
-            pull on a schedule.
-          </p>
-        </div>
-
-        <PushConfigSection onConfigured={handleConfigured} onPushSuccess={handlePushSuccess} />
-
-        {pushConfigured && (
-          <>
-            <Separator />
-            <BackupHistorySection refreshKey={historyRefreshKey} />
-          </>
-        )}
-
-        <Separator />
-
-        <PullWebhookSection />
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-semibold">Backy</h1>
+        <p className="mt-1 text-sm text-basalt-muted-foreground">
+          Configure automatic backups with Backy. Push your data to a backup service, or let Backy
+          pull on a schedule.
+        </p>
       </div>
-    </AppShell>
+
+      <PushConfigSection onConfigured={handleConfigured} onPushSuccess={handlePushSuccess} />
+
+      {pushConfigured && (
+        <>
+          <Separator />
+          <BackupHistorySection refreshKey={historyRefreshKey} />
+        </>
+      )}
+
+      <Separator />
+
+      <PullWebhookSection />
+    </div>
   );
 }
 

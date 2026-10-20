@@ -35,7 +35,6 @@ import {
 import type { FC } from "react";
 import { useCallback, useEffect, useState } from "react";
 import { AVAILABLE_ICONS, CategoryPill } from "@/components/category-pill";
-import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -125,24 +124,22 @@ export default function CategoriesPage() {
   }, [fetchCategories]);
 
   return (
-    <AppShell breadcrumbs={[{ label: "Settings", href: "/settings" }, { label: "Categories" }]}>
-      <div className="space-y-8 max-w-2xl">
-        <div>
-          <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Organize your apps into categories. Default categories cannot be edited or removed.
-          </p>
-        </div>
-
-        <CategoriesSection
-          categories={categories}
-          loading={loading}
-          error={error}
-          setError={setError}
-          onRefresh={fetchCategories}
-        />
+    <div className="space-y-8 max-w-2xl">
+      <div>
+        <h1 className="text-2xl font-semibold">Categories</h1>
+        <p className="mt-1 text-sm text-basalt-muted-foreground">
+          Organize your apps into categories. Default categories cannot be edited or removed.
+        </p>
       </div>
-    </AppShell>
+
+      <CategoriesSection
+        categories={categories}
+        loading={loading}
+        error={error}
+        setError={setError}
+        onRefresh={fetchCategories}
+      />
+    </div>
   );
 }
 
