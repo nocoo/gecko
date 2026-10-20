@@ -152,15 +152,11 @@ function EndpointSection() {
                 </div>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label={`Copy ${ep.label} endpoint`}
                   onClick={() => copy(`${baseUrl}${ep.path}`, ep.id)}
                 >
-                  {copiedId === ep.id ? (
-                    <Check className="size-3.5" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
+                  {copiedId === ep.id ? <Check /> : <Copy />}
                 </Button>
               </div>
             </div>
@@ -318,7 +314,7 @@ function ApiKeysSection({
       {/* Create new key */}
       <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         <Label htmlFor="new-key-name">Create New Key</Label>
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
           <Input
             id="new-key-name"
             className="min-w-0 flex-1"
@@ -329,7 +325,7 @@ function ApiKeysSection({
             disabled={creating}
           />
           <Button onClick={handleCreate} disabled={creating || !newKeyName.trim()}>
-            {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+            {creating ? <Loader2 className="animate-spin" /> : <Plus />}
             Create
           </Button>
         </div>
@@ -366,22 +362,17 @@ function ApiKeysSection({
                         if (e.key === "Enter") handleRename(k.id);
                         if (e.key === "Escape") cancelEditing();
                       }}
-                      className="h-7 text-sm"
                       autoFocus
                       disabled={renaming}
                     />
                     <Button
                       aria-label="Save key name"
                       variant="outline"
-                      size="icon-sm"
+                      size="icon"
                       onClick={() => handleRename(k.id)}
                       disabled={renaming || !editName.trim()}
                     >
-                      {renaming ? (
-                        <Loader2 className="size-3 animate-spin" />
-                      ) : (
-                        <Check className="size-3" />
-                      )}
+                      {renaming ? <Loader2 className="animate-spin" /> : <Check />}
                     </Button>
                   </div>
                 ) : (
@@ -400,20 +391,19 @@ function ApiKeysSection({
                 <div className="flex items-center gap-1 shrink-0">
                   <Button
                     variant="ghost"
-                    size="icon-xs"
+                    size="icon"
                     onClick={() => startEditing(k)}
                     title="Rename"
                   >
-                    <Pencil className="size-3" />
+                    <Pencil />
                   </Button>
                   <Button
                     variant="ghost"
-                    size="icon-xs"
+                    size="icon"
                     onClick={() => setDeleteTarget(k)}
                     title="Delete"
-                    className="text-basalt-destructive hover:text-basalt-destructive"
                   >
-                    <Trash2 className="size-3" />
+                    <Trash2 />
                   </Button>
                 </div>
               )}
@@ -443,15 +433,11 @@ function ApiKeysSection({
             </code>
             <Button
               variant="outline"
-              size="icon-sm"
+              size="icon"
               aria-label="Copy API key"
               onClick={() => revealedKey && copy(revealedKey, "revealed-key")}
             >
-              {copiedId === "revealed-key" ? (
-                <Check className="size-3.5" />
-              ) : (
-                <Copy className="size-3.5" />
-              )}
+              {copiedId === "revealed-key" ? <Check /> : <Copy />}
             </Button>
           </div>
 
@@ -476,11 +462,7 @@ function ApiKeysSection({
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-              {deleting ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
+              {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
               Delete
             </Button>
           </DialogFooter>
@@ -566,7 +548,6 @@ function TestSection() {
             placeholder="gk_..."
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            className="font-mono text-xs"
           />
         </div>
 
@@ -581,7 +562,7 @@ function TestSection() {
             />
           </div>
           <Button onClick={handleTest} disabled={testing || !selectedDate || !apiKey.trim()}>
-            {testing ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+            {testing ? <Loader2 className="animate-spin" /> : <Play />}
             Send Request
           </Button>
         </div>
@@ -603,15 +584,11 @@ function TestSection() {
               </span>
               <Button
                 variant="ghost"
-                size="xs"
+                size="sm"
                 onClick={() => resultJson && copy(resultJson, "test-result")}
                 className="ml-auto"
               >
-                {copiedId === "test-result" ? (
-                  <Check className="size-3" />
-                ) : (
-                  <Copy className="size-3" />
-                )}
+                {copiedId === "test-result" ? <Check /> : <Copy />}
                 Copy
               </Button>
             </div>

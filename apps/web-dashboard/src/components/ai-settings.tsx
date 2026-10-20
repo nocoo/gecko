@@ -276,9 +276,7 @@ export function AiSettingsSection() {
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Provider */}
         <div>
-          <Label htmlFor="ai-provider" className="text-sm">
-            Provider
-          </Label>
+          <Label htmlFor="ai-provider">Provider</Label>
           <Select
             value={settings.provider || "none"}
             onValueChange={(value) => handleProviderChange(value === "none" ? "" : value)}
@@ -306,9 +304,7 @@ export function AiSettingsSection() {
         {/* Model — dropdown with presets + custom option (built-in providers) */}
         {!isCustomProvider && (
           <div>
-            <Label htmlFor="ai-model" className="text-sm">
-              Model
-            </Label>
+            <Label htmlFor="ai-model">Model</Label>
             {presetModels.length > 0 && !isCustomModel ? (
               <Select
                 value={presetModels.includes(settings.model) ? settings.model : CUSTOM_MODEL_VALUE}
@@ -341,7 +337,6 @@ export function AiSettingsSection() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-9 px-2"
                   aria-label="Use preset model"
                   onClick={() => {
                     modelFocusPending.current = true;
@@ -353,7 +348,7 @@ export function AiSettingsSection() {
                     }));
                   }}
                 >
-                  <X className="h-3.5 w-3.5" />
+                  <X />
                 </Button>
               </div>
             ) : (
@@ -371,9 +366,7 @@ export function AiSettingsSection() {
         {/* Model — free text for custom provider */}
         {isCustomProvider && (
           <div>
-            <Label htmlFor="ai-model" className="text-sm">
-              Model
-            </Label>
+            <Label htmlFor="ai-model">Model</Label>
             <Input
               id="ai-model"
               value={settings.model}
@@ -387,9 +380,7 @@ export function AiSettingsSection() {
         {/* Custom provider: Base URL */}
         {isCustomProvider && (
           <div>
-            <Label htmlFor="ai-base-url" className="text-sm">
-              Base URL
-            </Label>
+            <Label htmlFor="ai-base-url">Base URL</Label>
             <Input
               id="ai-base-url"
               value={settings.baseURL}
@@ -403,9 +394,7 @@ export function AiSettingsSection() {
         {/* Custom provider: SDK Type */}
         {isCustomProvider && (
           <div>
-            <Label htmlFor="ai-sdk" className="text-sm">
-              SDK Protocol
-            </Label>
+            <Label htmlFor="ai-sdk">SDK Protocol</Label>
             <Select
               value={settings.sdkType}
               onValueChange={(value) =>
@@ -430,9 +419,7 @@ export function AiSettingsSection() {
             that require Authorization: Bearer instead of x-api-key. */}
         {isCustomProvider && (
           <div>
-            <Label htmlFor="ai-auth" className="text-sm">
-              Auth Header
-            </Label>
+            <Label htmlFor="ai-auth">Auth Header</Label>
             <Select
               value={settings.authType || "apiKey"}
               onValueChange={(value) =>
@@ -455,9 +442,7 @@ export function AiSettingsSection() {
 
         {/* API Key */}
         <div className="sm:col-span-2">
-          <Label htmlFor="ai-key" className="text-sm">
-            API Key
-          </Label>
+          <Label htmlFor="ai-key">API Key</Label>
           <Input
             id="ai-key"
             type="password"
@@ -474,18 +459,13 @@ export function AiSettingsSection() {
 
       {/* Actions */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button
-          onClick={handleSave}
-          disabled={saving || !settings.provider}
-          className="gap-2"
-          size="sm"
-        >
+        <Button onClick={handleSave} disabled={saving || !settings.provider} size="sm">
           {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="animate-spin" />
           ) : saved ? (
-            <Check className="h-3.5 w-3.5" />
+            <Check />
           ) : (
-            <Save className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Save strokeWidth={1.5} />
           )}
           {saved ? "Saved" : "Save"}
         </Button>
@@ -498,26 +478,23 @@ export function AiSettingsSection() {
             !settings.provider ||
             (!settings.hasApiKey && !apiKeyChanged)
           }
-          className="gap-2"
           size="sm"
         >
           {testStatus === "testing" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="animate-spin" />
           ) : (
-            <Plug className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Plug strokeWidth={1.5} />
           )}
           Test Connection
         </Button>
 
         {testStatus === "success" && (
-          <Badge variant="outline" className="text-xs text-basalt-success border-basalt-success">
-            <Check className="mr-1 h-3 w-3" />
+          <Badge variant="success" dot>
             Connected
           </Badge>
         )}
         {testStatus === "error" && (
-          <Badge variant="destructive" className="text-xs">
-            <X className="mr-1 h-3 w-3" />
+          <Badge variant="destructive" dot>
             {testError}
           </Badge>
         )}
@@ -717,21 +694,14 @@ export function PromptTemplateSection() {
             {/* Section header */}
             <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <Label htmlFor={`prompt-${meta.key}`} className="text-sm">
-                  {meta.label}
-                </Label>
+                <Label htmlFor={`prompt-${meta.key}`}>{meta.label}</Label>
                 <p className="text-xs text-basalt-muted-foreground">{meta.description}</p>
               </div>
               <div className="flex shrink-0 items-center gap-1">
                 {/* Per-section reset — only show when content differs from default */}
                 {sections[meta.key] !== meta.default && (
-                  <Button
-                    variant="ghost"
-                    size="xs"
-                    onClick={() => handleResetSection(meta.key)}
-                    className="gap-1 text-xs text-basalt-muted-foreground"
-                  >
-                    <RotateCcw className="h-3 w-3" />
+                  <Button variant="ghost" size="sm" onClick={() => handleResetSection(meta.key)}>
+                    <RotateCcw />
                     Reset
                   </Button>
                 )}
@@ -739,10 +709,10 @@ export function PromptTemplateSection() {
                 {meta.hasVariables && (
                   <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="xs" className="whitespace-nowrap">
-                        <Plus className="h-3 w-3" />
+                      <Button variant="outline" size="sm">
+                        <Plus />
                         Insert Variable
-                        <ChevronDown className="h-3 w-3" />
+                        <ChevronDown />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
@@ -756,16 +726,14 @@ export function PromptTemplateSection() {
                       }}
                     >
                       {PROMPT_TEMPLATE_VARIABLES.map((v) => (
-                        <DropdownMenuItem
-                          key={v.key}
-                          onSelect={() => handleInsertVariable(v.key)}
-                          className="flex-col items-start"
-                        >
-                          <code className="font-mono text-xs">{`{{${v.key}}}`}</code>
-                          <span>{v.description}</span>
-                          <span className="whitespace-pre-wrap text-xs text-basalt-muted-foreground">
-                            e.g. {v.example}
-                          </span>
+                        <DropdownMenuItem key={v.key} onSelect={() => handleInsertVariable(v.key)}>
+                          <div className="min-w-0">
+                            <code className="font-mono text-xs">{`{{${v.key}}}`}</code>
+                            <p>{v.description}</p>
+                            <p className="whitespace-pre-wrap text-xs text-basalt-muted-foreground">
+                              e.g. {v.example}
+                            </p>
+                          </div>
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuContent>
@@ -791,7 +759,6 @@ export function PromptTemplateSection() {
               value={sections[meta.key]}
               onChange={(e) => handleChange(meta.key, e.target.value)}
               rows={meta.key === "section2" ? 12 : meta.key === "section4" ? 8 : 4}
-              className="resize-y font-mono text-xs leading-relaxed"
             />
           </div>
         ))}
@@ -799,13 +766,13 @@ export function PromptTemplateSection() {
 
       {/* Save button */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button onClick={handleSave} disabled={saving || !dirty} className="gap-2" size="sm">
+        <Button onClick={handleSave} disabled={saving || !dirty} size="sm">
           {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Loader2 className="animate-spin" />
           ) : saved ? (
-            <Check className="h-3.5 w-3.5" />
+            <Check />
           ) : (
-            <Save className="h-3.5 w-3.5" strokeWidth={1.5} />
+            <Save strokeWidth={1.5} />
           )}
           {saved ? "Saved" : "Save Prompt"}
         </Button>

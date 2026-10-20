@@ -120,16 +120,16 @@ export default function DashboardPage() {
               Here&apos;s your screen time overview.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <PeriodSelector value={period} onChange={setPeriod} />
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               aria-label="Refresh dashboard"
               onClick={() => fetchData(period)}
               disabled={loading}
             >
-              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={loading ? "animate-spin" : undefined} />
             </Button>
           </div>
         </div>
@@ -222,7 +222,7 @@ function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Peri
       aria-label="Time period"
     >
       {PERIODS.map((period) => (
-        <ToggleGroupItem key={period.value} value={period.value} className="px-basalt-space-sm">
+        <ToggleGroupItem key={period.value} value={period.value}>
           {period.label}
         </ToggleGroupItem>
       ))}

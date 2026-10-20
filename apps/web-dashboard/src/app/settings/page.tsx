@@ -351,9 +351,7 @@ function NotificationsSection() {
               <Sparkles className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
-              <Label htmlFor="auto-summarize" className="text-sm font-medium">
-                Auto-summarize
-              </Label>
+              <Label htmlFor="auto-summarize">Auto-summarize</Label>
               <p className="mt-0.5 text-xs text-basalt-muted-foreground">
                 Automatically generate AI summaries for your daily screen time.
               </p>
@@ -377,9 +375,7 @@ function NotificationsSection() {
                 <Mail className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
-                <Label htmlFor="email-notifications" className="text-sm font-medium">
-                  Email notifications
-                </Label>
+                <Label htmlFor="email-notifications">Email notifications</Label>
                 <p className="mt-0.5 text-xs text-basalt-muted-foreground">
                   Receive daily analysis reports via email.
                 </p>
@@ -396,9 +392,7 @@ function NotificationsSection() {
           {/* Email address input - only show when enabled */}
           {settings.emailEnabled && (
             <div className="ml-12 space-y-2">
-              <Label htmlFor="email-address" className="text-sm">
-                Email address
-              </Label>
+              <Label htmlFor="email-address">Email address</Label>
               <Input
                 id="email-address"
                 type="email"

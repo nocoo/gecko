@@ -325,7 +325,7 @@ function CategoriesSection({
                 </h2>
               </div>
               <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4" />
+                <Plus />
                 New Category
               </Button>
             </div>
@@ -514,21 +514,19 @@ function CategoryRow({
         <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={`Edit ${category.title}`}
             onClick={onEdit}
-            className="text-basalt-muted-foreground hover:text-basalt-foreground"
           >
-            <Pencil className="size-3.5" />
+            <Pencil />
           </Button>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             aria-label={`Delete ${category.title}`}
             onClick={onDelete}
-            className="text-basalt-muted-foreground hover:text-basalt-destructive"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 />
           </Button>
         </div>
       )}

@@ -41,7 +41,13 @@ for (const width of [320, 390, 1440]) {
           ).toBe(true);
           expect(errors).toEqual([]);
           if (route === "/") {
+            await expect(page.getByRole("radio", { name: "7 Days", exact: true })).toHaveCSS(
+              "padding-left",
+              "10px",
+            );
             const refresh = page.getByRole("button", { name: "Refresh dashboard" });
+            await expect(refresh).toHaveCSS("width", "34px");
+            await expect(refresh).toHaveCSS("height", "34px");
             expect(
               await refresh.evaluate(
                 (element) => element.getBoundingClientRect().right <= innerWidth,
@@ -91,6 +97,14 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   const sidebar = page.locator("[data-basalt-sidebar]");
   const logo = sidebar.getByAltText("Gecko", { exact: true });
   const x = (await logo.boundingBox())!.x;
+  await expect(sidebar.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS(
+    "font-size",
+    "14px",
+  );
+  await expect(sidebar.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS(
+    "line-height",
+    "22px",
+  );
   await expect(sidebar.getByRole("link", { name: "API", exact: true })).toHaveAttribute(
     "href",
     "/integrations/api",
@@ -111,15 +125,43 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   );
   await page.setViewportSize({ width: 390, height: 844 });
   const opener = page.getByRole("button", { name: "Open navigation menu" });
+  await page.getByLabel("Create New Key").focus();
+  await opener.evaluate((element) => {
+    element.addEventListener("mousedown", (event) => event.preventDefault(), { once: true });
+  });
   await opener.click();
+  await expect(
+    page.getByRole("button", { name: "Open navigation menu", includeHidden: true }),
+  ).toHaveAttribute("aria-expanded", "true");
   const drawer = page.getByRole("dialog", { name: "Navigation" });
   await expect(drawer.getByRole("link", { name: "Categories", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");
+  await expect(opener).toBeFocused();
+  await expect(opener).toHaveAttribute("aria-expanded", "false");
+  await opener.click();
+  await page.locator('[data-state="open"].backdrop-blur-md').click({
+    position: { x: 380, y: 420 },
+  });
+  await expect(drawer).toHaveCount(0);
   await expect(opener).toBeFocused();
   await opener.click();
   await drawer.getByRole("link", { name: "Categories", exact: true }).click();
   await expect(page).toHaveURL(/\/settings\/categories$/);
   await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("session search uses the native input group and clear action", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.goto("/sessions");
+  const filter = page.getByRole("textbox", { name: "Filter sessions" });
+  await filter.fill("Safari");
+  const clear = page.getByRole("button", { name: "Clear session filter" });
+  expect(
+    await clear.evaluate((element) => element.getBoundingClientRect().right <= innerWidth),
+  ).toBe(true);
+  await clear.click();
+  await expect(filter).toHaveValue("");
+  await expect(clear).toHaveCount(0);
 });
 
 for (const [route, label] of [
@@ -143,7 +185,7 @@ test("AI variable menu fits mobile and preserves editing focus", async ({ page }
   await page.goto("/settings/ai");
   await expect(page.getByRole("combobox", { name: "Provider" })).toBeVisible();
   const opener = page.getByRole("button", { name: "Insert Variable" });
-  await expect(opener).toHaveCSS("height", "24px");
+  await expect(opener).toHaveCSS("height", "28px");
   await opener.click();
   const menu = page.getByRole("menu");
   await expect(menu).toBeVisible();

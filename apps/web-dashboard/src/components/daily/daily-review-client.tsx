@@ -281,21 +281,21 @@ function DateNavigator({
     <div className="flex items-center gap-2">
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="icon"
         onClick={() => onChange(addDays(date, -1))}
         aria-label="Previous day"
       >
-        <ChevronLeft className="size-4" />
+        <ChevronLeft />
       </Button>
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="font-medium" aria-label="Choose review date">
-            <Calendar className="size-4 text-basalt-muted-foreground" />
+          <Button variant="ghost" size="sm" aria-label="Choose review date">
+            <Calendar />
             <span>{formatDateDisplay(date)}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="end" alignOffset={-40} className="w-auto p-0">
+        <PopoverContent align="end">
           <CalendarPicker
             mode="single"
             selected={dateToObj(date)}
@@ -317,12 +317,12 @@ function DateNavigator({
 
       <Button
         variant="ghost"
-        size="icon-sm"
+        size="icon"
         onClick={() => onChange(addDays(date, 1))}
         disabled={!canGoForward}
         aria-label="Next day"
       >
-        <ChevronRight className="size-4" />
+        <ChevronRight />
       </Button>
     </div>
   );
@@ -508,7 +508,7 @@ function AiAnalysisPanel({
           Generate an AI-powered analysis of your day.
         </p>
         <Button onClick={() => onGenerate()} size="sm">
-          <Sparkles className="size-4 mr-1.5" />
+          <Sparkles />
           Analyze
         </Button>
       </div>
@@ -527,13 +527,13 @@ function AiAnalysisPanel({
           <h3 className="text-sm font-normal text-basalt-muted-foreground">AI Analysis</h3>
           <Button
             variant="ghost"
-            size="icon-sm"
+            size="icon"
             onClick={() => onGenerate(true)}
             disabled={loading}
             className="ml-auto"
             aria-label="Regenerate AI analysis"
           >
-            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={loading ? "animate-spin" : undefined} />
           </Button>
         </div>
 

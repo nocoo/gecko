@@ -17,7 +17,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3 text-sm", className)}
+      className={cn("text-sm", className)}
       classNames={{
         root: cn(defaultClassNames.root, "w-fit"),
         months: cn(defaultClassNames.months, "relative flex flex-col gap-4 sm:flex-row"),
@@ -32,11 +32,11 @@ function Calendar({
           "absolute inset-x-0 top-0 flex items-center justify-between",
         ),
         button_previous: cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          buttonVariants({ variant: "ghost", size: "icon" }),
           "p-0 opacity-70 hover:opacity-100",
         ),
         button_next: cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          buttonVariants({ variant: "ghost", size: "icon" }),
           "p-0 opacity-70 hover:opacity-100",
         ),
         month_grid: cn(defaultClassNames.month_grid, "w-full border-collapse"),
@@ -52,7 +52,7 @@ function Calendar({
           "[&:has([aria-selected])]:rounded-md",
         ),
         day_button: cn(
-          buttonVariants({ variant: "ghost", size: "icon-sm" }),
+          buttonVariants({ variant: "ghost", size: "icon" }),
           "relative size-9 sm:size-13 p-0 font-normal aria-selected:opacity-100",
         ),
         range_start: cn(defaultClassNames.range_start, "rounded-l-md bg-basalt-accent"),

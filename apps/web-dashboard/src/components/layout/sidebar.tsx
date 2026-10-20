@@ -36,7 +36,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { accessLogout, useMe } from "@/hooks/use-me";
-import { getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { useSidebar } from "./sidebar-context";
 
@@ -118,31 +117,31 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const userName = user?.name ?? "User";
   const userEmail = user?.email ?? "";
   const avatar = (
-    <Avatar className="size-8 shrink-0">
+    <Avatar>
       {user?.avatar && <AvatarImage src={user.avatar} alt={userName} />}
-      <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
-        {userName[0] ?? "?"}
-      </AvatarFallback>
+      <AvatarFallback>{userName[0] ?? "?"}</AvatarFallback>
     </Avatar>
   );
 
   return (
     <TooltipProvider delayDuration={0}>
-      <BasaltSidebar collapsed={collapsed} className="h-full">
-        <SidebarHeader className="gap-0 px-0">
-          <div className="flex w-basalt-rail shrink-0 justify-center">
+      <BasaltSidebar
+        collapsed={collapsed}
+        id={mobile ? "mobile-navigation" : undefined}
+        aria-label={mobile ? "Navigation" : undefined}
+      >
+        <SidebarHeader>
+          <div className="flex w-[calc(var(--basalt-size-rail)-2*var(--basalt-space-nav-inset))] shrink-0 justify-center">
             <Image src="/logo-24.png" alt="Gecko" width={24} height={24} unoptimized />
           </div>
           {!collapsed && (
-            <div className="flex min-w-0 flex-1 items-center gap-2 pr-basalt-nav-inset">
+            <div className="flex min-w-0 flex-1 items-center gap-basalt-row-gap">
               <span className="font-semibold text-basalt-foreground">Gecko</span>
-              <Badge variant="secondary" className="px-1.5 text-[11px]">
-                v{APP_VERSION}
-              </Badge>
+              <Badge variant="secondary">v{APP_VERSION}</Badge>
               {!mobile && (
                 <Button
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
                   onClick={toggle}
                   aria-label="Collapse sidebar"
                   className="ml-auto"
@@ -226,7 +225,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                   onClick={accessLogout}
                   aria-label={`${userName} - Sign out`}
                 >
-                  {avatar}
+                  <LogOut strokeWidth={1.5} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">{userName} - Sign out</TooltipContent>
@@ -241,7 +240,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="icon-sm"
+                      size="icon"
                       onClick={accessLogout}
                       aria-label="Sign out"
                     >

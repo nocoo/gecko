@@ -1,6 +1,7 @@
 "use client";
 
 import { InputArea } from "@nocoo/basalt/components/input-area";
+import { InputGroup } from "@nocoo/basalt/components/input-group";
 import { Popover, PopoverContent, PopoverTrigger } from "@nocoo/basalt/components/popover";
 import {
   Select,
@@ -424,11 +425,11 @@ export default function AppsPage() {
           {totalPending > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
-                <X className="size-4" />
+                <X />
                 Discard
               </Button>
               <Button size="sm" onClick={handleSave} disabled={saving}>
-                <Save className="size-4" />
+                <Save />
                 {saving
                   ? "Saving..."
                   : `Save ${totalPending} change${totalPending === 1 ? "" : "s"}`}
@@ -461,15 +462,18 @@ export default function AppsPage() {
           <>
             {/* Filter + sort controls */}
             <div className="flex flex-wrap items-center gap-3">
-              <div className="relative min-w-40 flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-basalt-muted-foreground" />
-                <Input
-                  aria-label="Filter apps"
-                  placeholder="Filter by name or bundle ID..."
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                  className="pl-9"
-                />
+              <div className="min-w-40 flex-1">
+                <InputGroup>
+                  <InputGroup.Addon>
+                    <Search aria-hidden="true" />
+                  </InputGroup.Addon>
+                  <InputGroup.Input
+                    aria-label="Filter apps"
+                    placeholder="Filter by name or bundle ID..."
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                  />
+                </InputGroup>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <ArrowUpDown className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
@@ -666,12 +670,12 @@ function AppRow({
             />
             <Button
               variant="ghost"
-              size="icon-xs"
+              size="icon"
               onClick={() => onCategoryChange("")}
-              className="ml-0.5 rounded-full p-0.5 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
+              className="ml-0.5"
               title="Remove category"
             >
-              <X className="size-3" strokeWidth={2} />
+              <X strokeWidth={2} />
             </Button>
           </span>
         )}
@@ -710,12 +714,12 @@ function AppRow({
             <TagBadge name={tag.name} size="sm" />
             <Button
               variant="ghost"
-              size="icon-xs"
+              size="icon"
               onClick={() => onToggleTag(tag.id)}
-              className="ml-0.5 rounded-full p-0.5 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
+              className="ml-0.5"
               title={`Remove tag "${tag.name}"`}
             >
-              <X className="size-3" strokeWidth={2} />
+              <X strokeWidth={2} />
             </Button>
           </span>
         ))}
@@ -727,7 +731,7 @@ function AppRow({
           }}
         >
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="xs" aria-label={`Edit tags for ${app.appName}`}>
+            <Button variant="ghost" size="sm" aria-label={`Edit tags for ${app.appName}`}>
               <Plus />
               Tag
             </Button>
@@ -758,7 +762,7 @@ function AppRow({
               </ToggleGroup>
             )}
             <div className="flex items-center gap-2">
-              <TagIcon className="size-4 shrink-0" />
+              <TagIcon className="shrink-0" />
               <Input
                 aria-label="New tag name"
                 value={newTagName}
@@ -787,7 +791,7 @@ function AppRow({
           <div className="flex items-start gap-2 w-full">
             <InputArea
               aria-label={`Note for ${app.appName}`}
-              className="min-w-0 flex-1 resize-none"
+              className="min-w-0 flex-1"
               rows={2}
               placeholder="Add a note (e.g. 'Work email client', 'Personal project')..."
               value={effectiveNote}
@@ -795,37 +799,27 @@ function AppRow({
             />
             <Button
               variant="ghost"
-              size="icon-xs"
+              size="icon"
               onClick={onToggleNoteExpand}
-              className="mt-1.5 rounded-md p-1 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
+              className="mt-1.5"
               title="Close"
             >
-              <X className="size-4" strokeWidth={1.5} />
+              <X strokeWidth={1.5} />
             </Button>
           </div>
         ) : hasNote ? (
           <Button
             variant="ghost"
-            size="xs"
+            size="sm"
             onClick={onToggleNoteExpand}
-            className="min-w-0 max-w-full gap-1.5 group text-left"
+            className="min-w-0 max-w-full"
           >
-            <span className="text-xs text-basalt-muted-foreground line-clamp-1">
-              {effectiveNote}
-            </span>
-            <Pencil
-              className="size-3 shrink-0 text-basalt-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-              strokeWidth={1.5}
-            />
+            <span className="line-clamp-1">{effectiveNote}</span>
+            <Pencil strokeWidth={1.5} />
           </Button>
         ) : (
-          <Button
-            variant="ghost"
-            size="xs"
-            onClick={onToggleNoteExpand}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
-          >
-            <Plus className="size-3" strokeWidth={2} />
+          <Button variant="ghost" size="sm" onClick={onToggleNoteExpand}>
+            <Plus strokeWidth={2} />
             Note
           </Button>
         )}

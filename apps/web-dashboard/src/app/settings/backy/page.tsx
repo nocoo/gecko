@@ -236,7 +236,7 @@ function PushConfigSection({
               <Button onClick={handleSave} disabled={saving || !webhookUrl || !apiKey} size="sm">
                 {saving ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
+                    <Loader2 className="animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -249,12 +249,12 @@ function PushConfigSection({
                   <Button variant="outline" size="sm" onClick={handleTest} disabled={testing}>
                     {testing ? (
                       <>
-                        <Loader2 className="size-4 animate-spin" />
+                        <Loader2 className="animate-spin" />
                         Testing...
                       </>
                     ) : (
                       <>
-                        <Plug className="size-4" />
+                        <Plug />
                         Test Connection
                       </>
                     )}
@@ -263,12 +263,12 @@ function PushConfigSection({
                   <Button variant="outline" size="sm" onClick={handlePush} disabled={pushing}>
                     {pushing ? (
                       <>
-                        <Loader2 className="size-4 animate-spin" />
+                        <Loader2 className="animate-spin" />
                         Pushing...
                       </>
                     ) : (
                       <>
-                        <HardDriveUpload className="size-4" />
+                        <HardDriveUpload />
                         Push Now
                       </>
                     )}
@@ -548,11 +548,11 @@ function PullWebhookSection() {
                 </code>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label="Copy webhook URL"
                   onClick={() => copyToClipboard(webhookUrl)}
                 >
-                  <Copy className="size-3.5" />
+                  <Copy />
                 </Button>
               </div>
             </div>
@@ -569,20 +569,11 @@ function PullWebhookSection() {
 
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleGenerate} disabled={generating}>
-                {generating ? (
-                  <Loader2 className="size-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="size-4" />
-                )}
+                {generating ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                 Regenerate Key
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRevokeOpen(true)}
-                className="text-basalt-destructive hover:text-basalt-destructive"
-              >
-                <Trash2 className="size-4" />
+              <Button variant="outline" size="sm" onClick={() => setRevokeOpen(true)}>
+                <Trash2 />
                 Revoke
               </Button>
             </div>
@@ -602,7 +593,7 @@ function PullWebhookSection() {
             <Button onClick={handleGenerate} disabled={generating} size="sm" className="mt-4">
               {generating ? (
                 <>
-                  <Loader2 className="size-4 animate-spin" />
+                  <Loader2 className="animate-spin" />
                   Generating...
                 </>
               ) : (
@@ -630,38 +621,34 @@ function PullWebhookSection() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-basalt-muted-foreground">Webhook URL</Label>
+              <Label>Webhook URL</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded-lg bg-basalt-secondary px-3 py-2 text-xs font-mono break-all select-all">
                   {webhookUrl}
                 </code>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label="Copy webhook URL"
                   onClick={() => copyToClipboard(webhookUrl)}
                 >
-                  <Copy className="size-3.5" />
+                  <Copy />
                 </Button>
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-basalt-muted-foreground">Webhook Key</Label>
+              <Label>Webhook Key</Label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 rounded-lg bg-basalt-secondary px-3 py-2.5 text-xs font-mono break-all select-all">
                   {revealedKey}
                 </code>
                 <Button
                   variant="outline"
-                  size="icon-sm"
+                  size="icon"
                   aria-label="Copy webhook key"
                   onClick={() => revealedKey && copyToClipboard(revealedKey)}
                 >
-                  {copied ? (
-                    <Check className="size-3.5 text-green-500" />
-                  ) : (
-                    <Copy className="size-3.5" />
-                  )}
+                  {copied ? <Check /> : <Copy />}
                 </Button>
               </div>
             </div>

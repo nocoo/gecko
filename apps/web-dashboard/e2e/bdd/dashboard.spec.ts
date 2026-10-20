@@ -14,18 +14,18 @@ test.describe("Dashboard — BDD Smoke", () => {
     await expect(page.locator("h1")).toBeVisible({ timeout: 15_000 });
 
     const refresh = page.locator("button:has(.lucide-refresh-cw)");
-    await expect(refresh).toHaveCSS("width", "32px");
-    await expect(refresh).toHaveCSS("height", "32px");
+    await expect(refresh).toHaveCSS("width", "34px");
+    await expect(refresh).toHaveCSS("height", "34px");
   });
 
-  test("API key actions retain compact icon dimensions", async ({ page }) => {
+  test("API key actions retain native icon dimensions", async ({ page }) => {
     await page.goto("/integrations/api");
 
     for (const title of ["Rename", "Delete"]) {
       const action = page.getByTitle(title, { exact: true });
       await expect(action).toBeVisible();
-      await expect(action).toHaveCSS("width", "24px");
-      await expect(action).toHaveCSS("height", "24px");
+      await expect(action).toHaveCSS("width", "34px");
+      await expect(action).toHaveCSS("height", "34px");
     }
   });
 });

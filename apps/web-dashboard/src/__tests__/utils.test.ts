@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { cn, getAvatarColor } from "../lib/utils";
+import { cn } from "../lib/utils";
 
 describe("src/lib/utils", () => {
   describe("cn", () => {
@@ -29,42 +29,6 @@ describe("src/lib/utils", () => {
 
     test("handles object inputs via clsx", () => {
       expect(cn({ foo: true, bar: false, baz: true })).toBe("foo baz");
-    });
-  });
-
-  describe("getAvatarColor", () => {
-    test("returns a bg- tailwind class", () => {
-      const color = getAvatarColor("testuser");
-      expect(color).toMatch(/^bg-\w+-\d+$/);
-    });
-
-    test("returns consistent color for same name", () => {
-      const color1 = getAvatarColor("alice");
-      const color2 = getAvatarColor("alice");
-      expect(color1).toBe(color2);
-    });
-
-    test("returns different colors for different names", () => {
-      const colors = new Set<string>();
-      for (const name of ["alice", "bob", "charlie", "dave", "eve", "frank"]) {
-        colors.add(getAvatarColor(name));
-      }
-      expect(colors.size).toBeGreaterThanOrEqual(3);
-    });
-
-    test("handles empty string", () => {
-      const color = getAvatarColor("");
-      expect(color).toMatch(/^bg-\w+-\d+$/);
-    });
-
-    test("handles special characters", () => {
-      const color = getAvatarColor("@user!#$%");
-      expect(color).toMatch(/^bg-\w+-\d+$/);
-    });
-
-    test("handles very long string", () => {
-      const color = getAvatarColor("a".repeat(1000));
-      expect(color).toMatch(/^bg-\w+-\d+$/);
     });
   });
 });

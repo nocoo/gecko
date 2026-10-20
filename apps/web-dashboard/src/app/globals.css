@@ -33,8 +33,7 @@
     @apply border-basalt-border;
   }
   body {
-    @apply bg-basalt-background text-basalt-foreground;
-    font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+    @apply bg-basalt-background text-basalt-foreground font-basalt-sans;
   }
 }
 

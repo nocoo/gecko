@@ -1,5 +1,6 @@
 "use client";
 
+import { InputGroup } from "@nocoo/basalt/components/input-group";
 import {
   ChevronDown,
   Clock,
@@ -16,7 +17,6 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CHART_COLORS } from "@/lib/palette";
 
 // ---------------------------------------------------------------------------
@@ -129,36 +129,36 @@ export default function SessionsPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative min-w-0 flex-1">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-basalt-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Filter by app, title, URL..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                aria-label="Filter sessions"
-                className="pl-8 pr-8 w-full sm:w-60 h-9 text-sm"
-              />
-              {search && (
-                <Button
-                  variant="ghost"
-                  size="icon-xs"
-                  aria-label="Clear session filter"
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-basalt-muted-foreground hover:text-basalt-foreground"
-                >
-                  <X className="size-3.5" />
-                </Button>
-              )}
+            <div className="min-w-0 flex-1 sm:w-60">
+              <InputGroup>
+                <InputGroup.Addon>
+                  <Search aria-hidden="true" />
+                </InputGroup.Addon>
+                <InputGroup.Input
+                  type="text"
+                  placeholder="Filter by app, title, URL..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  aria-label="Filter sessions"
+                />
+                {search && (
+                  <InputGroup.Button
+                    aria-label="Clear session filter"
+                    onClick={() => setSearch("")}
+                  >
+                    <X />
+                  </InputGroup.Button>
+                )}
+              </InputGroup>
             </div>
             <Button
               variant="ghost"
-              size="icon-sm"
+              size="icon"
               aria-label="Refresh sessions"
               onClick={refresh}
               disabled={loading}
             >
-              <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={loading ? "animate-spin" : undefined} />
             </Button>
           </div>
         </div>
@@ -198,17 +198,8 @@ export default function SessionsPage() {
             {/* Load more */}
             {hasMore && !search && (
               <div className="flex justify-center pt-2">
-                <Button
-                  variant="ghost"
-                  onClick={loadMore}
-                  disabled={loadingMore}
-                  className="text-sm"
-                >
-                  {loadingMore ? (
-                    <Loader2 className="size-4 animate-spin mr-2" />
-                  ) : (
-                    <ChevronDown className="size-4 mr-2" />
-                  )}
+                <Button variant="ghost" onClick={loadMore} disabled={loadingMore}>
+                  {loadingMore ? <Loader2 className="animate-spin" /> : <ChevronDown />}
                   Load more
                 </Button>
               </div>

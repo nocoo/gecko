@@ -213,7 +213,7 @@ function TagsSection({
           <h2 className="text-sm font-medium text-basalt-muted-foreground">Your Tags</h2>
         </div>
         <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-4" />
+          <Plus />
           New Tag
         </Button>
       </div>
@@ -369,23 +369,11 @@ function TagRow({ tag, onEdit, onDelete }: { tag: Tag; onEdit: () => void; onDel
     <div className="flex items-center justify-between rounded-2xl bg-basalt-secondary p-4">
       <TagBadge name={tag.name} />
       <div className="flex items-center gap-1 shrink-0">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Edit ${tag.name}`}
-          onClick={onEdit}
-          className="text-basalt-muted-foreground hover:text-basalt-foreground"
-        >
-          <Pencil className="size-3.5" />
+        <Button variant="ghost" size="icon" aria-label={`Edit ${tag.name}`} onClick={onEdit}>
+          <Pencil />
         </Button>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={`Delete ${tag.name}`}
-          onClick={onDelete}
-          className="text-basalt-muted-foreground hover:text-basalt-destructive"
-        >
-          <Trash2 className="size-3.5" />
+        <Button variant="ghost" size="icon" aria-label={`Delete ${tag.name}`} onClick={onDelete}>
+          <Trash2 />
         </Button>
       </div>
     </div>

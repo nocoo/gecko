@@ -234,3 +234,20 @@ period group wrap kept it inside the viewport but misplaced its moving selection
 indicator. Keep that shared control on one line using the package's compact
 spacing token. Browser acceptance must compare the indicator and selected item
 rectangles, not just assert that the outer page has no horizontal overflow.
+
+## 2026-10-20 - Keep shared controls at package defaults
+
+The UI cleanup still retained an application-owned button size adapter, control
+font and color overrides, and compact padding on the period group. These made
+the result diverge from Basalt despite using its components. Remove the adapter
+and duplicate presentation classes; use supported size and semantic variant props.
+Fix cramped rows in their parent grid/flex layout, not by shrinking the controls.
+Use InputGroup for search adornments and SidebarProvider's native overlay instead
+of stripping Sheet padding to fit another sidebar inside it.
+
+Measure the installed package before changing typography: both Gecko's navigation
+and Basalt 3.2.0 resolve to 14px with a 22px line box. Do not claim that a smaller
+local override is a template default. Preserve native links and verify default
+control geometry, collapsed logo alignment, mobile focus return, and text wrapping
+in both themes. The application-owned react-day-picker calendar retains its
+specialized score-ring layout; shared Basalt popover padding stays untouched.
