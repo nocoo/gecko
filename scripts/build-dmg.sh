@@ -28,16 +28,11 @@ done
 echo "==> Gecko DMG Builder v${VERSION}"
 echo "    Build dir: $BUILD_DIR"
 
-# Ensure create-dmg is installed
-if ! command -v create-dmg &>/dev/null; then
-  echo "ERROR: create-dmg not found. Install with: brew install create-dmg"
+if [ -e "$BUILD_DIR/$DMG_NAME" ]; then
+  echo "ERROR: $BUILD_DIR/$DMG_NAME already exists; refusing to overwrite a release artifact"
   exit 1
 fi
 
-# Clean build directory (only when building from scratch)
-if [ "$SKIP_BUILD" = false ]; then
-  rm -rf "$BUILD_DIR"
-fi
 mkdir -p "$BUILD_DIR"
 
 if [ "$SKIP_BUILD" = false ]; then
@@ -55,31 +50,31 @@ if [ "$SKIP_BUILD" = false ]; then
 fi
 
 # Locate the built .app
-APP_PATH=$(find "$BUILD_DIR/derived/Build/Products/${CONFIGURATION}" -name "${APP_NAME}.app" -maxdepth 1 2>/dev/null | head -1)
-if [ -z "$APP_PATH" ]; then
+APP_PATH="$BUILD_DIR/derived/Build/Products/${CONFIGURATION}/${APP_NAME}.app"
+if [ ! -d "$APP_PATH" ]; then
   echo "ERROR: ${APP_NAME}.app not found in build products"
   exit 1
 fi
 echo "==> App found: $APP_PATH"
 
-# Remove any previous DMG
-rm -f "$BUILD_DIR/$DMG_NAME"
+APP_VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_PATH/Contents/Info.plist")
+if [ "$APP_VERSION" != "$VERSION" ]; then
+  echo "ERROR: Built app version $APP_VERSION does not match $VERSION"
+  exit 1
+fi
+codesign --verify --deep --strict "$APP_PATH"
 
-echo "==> Creating DMG..."
-create-dmg \
-  --volname "$APP_NAME" \
-  --volicon "$MAC_CLIENT_DIR/Gecko/Resources/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" \
-  --window-pos 200 120 \
-  --window-size 600 400 \
-  --icon-size 128 \
-  --icon "$APP_NAME.app" 150 190 \
-  --app-drop-link 450 190 \
-  --no-internet-enable \
-  "$BUILD_DIR/$DMG_NAME" \
-  "$APP_PATH"
+STAGING_DIR=$(mktemp -d "$BUILD_DIR/dmg-${VERSION}.XXXXXX")
+ditto "$APP_PATH" "$STAGING_DIR/$APP_NAME.app"
+ln -s /Applications "$STAGING_DIR/Applications"
+
+echo "==> Creating DMG without mounting a temporary volume..."
+hdiutil create -volname "$APP_NAME" -srcfolder "$STAGING_DIR" -format UDZO "$BUILD_DIR/$DMG_NAME"
+hdiutil verify "$BUILD_DIR/$DMG_NAME"
 
 echo ""
 echo "==> DMG created: $BUILD_DIR/$DMG_NAME"
 echo "    Size: $(du -h "$BUILD_DIR/$DMG_NAME" | cut -f1)"
+echo "    Staging retained: $STAGING_DIR"
 echo ""
 echo "Done!"

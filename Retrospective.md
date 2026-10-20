@@ -276,3 +276,18 @@ reproduced horizontal overflow at 320px. Use compact mobile labels with unchange
 accessible names and period values, leaving Basalt typography, padding and control
 geometry untouched. Test the parent layout with a wider fallback font as well as
 the default theme and viewport matrix.
+
+## 2026-10-20 - Package native releases without temporary mounted volumes
+
+The v2.0.2 native application built with the intended Apple Development signature,
+but create-dmg could not finish. A normal diskutil eject identified Microsoft
+Defender's dlp_agent as the process refusing to release the temporary volumes.
+Do not force-detach those volumes or change endpoint security to finish a release.
+
+Use macOS hdiutil create from a dedicated staging directory instead. This path
+successfully produced a verified compressed DMG without mounting a volume; ditto
+preserves the signed application and staging includes the Applications link.
+Keep existing artifacts and staging for inspection rather than clearing build/.
+Check the embedded app version and signature, refuse artifact overwrites, and
+verify the finished image. An isolated fixture exercised stale-version rejection,
+the complete packaging path and overwrite rejection before adoption.

@@ -80,7 +80,7 @@ open Gecko.xcodeproj
 cd ../..
 ```
 
-在 Xcode 选择 Gecko scheme 构建运行。稳定的开发签名有助于保留 macOS 权限授权。需要打包 DMG 时，先安装 `create-dmg`，再从根目录运行 `bash scripts/build-dmg.sh`；脚本会重新创建根目录 `build/`。
+在 Xcode 选择 Gecko scheme 构建运行。稳定的开发签名有助于保留 macOS 权限授权。需要打包 DMG 时，从根目录运行 `bash scripts/build-dmg.sh`。脚本使用 macOS 自带的 `hdiutil`，无需挂载临时镜像；已有构建产物和本次 staging 目录保留在根目录 `build/`，同版本 DMG 不会被覆盖。
 
 ### Web
 

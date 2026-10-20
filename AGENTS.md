@@ -96,7 +96,7 @@ Vinext has a single development-instance lock. Arrange an idle local server befo
 
 ## Operations / Release
 
-Authorized maintainers use `bun run release` (patch default; `-- minor`, `-- major`, explicit version, or `-- --dry-run`). It updates all version locations, regenerates the Mac project with XcodeGen, prepares changelog/tag/Release and builds/uploads the DMG; packaging also needs `create-dmg` and the intended signature.
+Authorized maintainers use `bun run release` (patch default; `-- minor`, `-- major`, explicit version, or `-- --dry-run`). It updates all version locations, regenerates the Mac project with XcodeGen, prepares changelog/tag/Release and builds/uploads the DMG; packaging uses macOS `hdiutil` without mounting a temporary volume and requires the intended signature. It preserves existing build artifacts and retains each staging directory under ignored `build/`.
 Successful main-push CI deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=cron`). Production credentials live in GitHub environment `gecko / production`. Dove webhook URL/token are Worker secrets. After a release, verify the exact SHA's CI and Release runs, `https://gecko.hexly.ai/api/live` version, and Cron `0 * * * *`. See [docs/15](docs/15-github-cicd.md).
 
 ## Retrospective

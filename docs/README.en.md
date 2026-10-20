@@ -80,7 +80,7 @@ open Gecko.xcodeproj
 cd ../..
 ```
 
-Select the Gecko scheme in Xcode to build and run. A stable development signature helps retain macOS permission grants. To package a DMG, install `create-dmg` and run `bash scripts/build-dmg.sh` from the root; the script recreates the root `build/` directory.
+Select the Gecko scheme in Xcode to build and run. A stable development signature helps retain macOS permission grants. To package a DMG, run `bash scripts/build-dmg.sh` from the root. It uses macOS `hdiutil` without mounting a temporary image, retains existing artifacts and each staging directory under root `build/`, and refuses to overwrite an existing versioned DMG.
 
 ### Web
 
