@@ -1,5 +1,15 @@
 "use client";
 
+import { InputArea } from "@nocoo/basalt/components/input-area";
+import { Popover, PopoverContent, PopoverTrigger } from "@nocoo/basalt/components/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@nocoo/basalt/components/select";
+import { ToggleGroup, ToggleGroupItem } from "@nocoo/basalt/components/toggle-group";
 import {
   AlertTriangle,
   AppWindow,
@@ -11,13 +21,12 @@ import {
   Tag as TagIcon,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CategoryPill } from "@/components/category-pill";
 import { AppShell } from "@/components/layout";
 import { TagBadge } from "@/components/tag-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -194,7 +203,7 @@ export default function AppsPage() {
   function handleCategoryChange(bundleId: string, categoryId: string) {
     setPendingCategories((prev) => {
       const next = new Map(prev);
-      if (categoryMappings.get(bundleId) === categoryId) {
+      if ((categoryMappings.get(bundleId) ?? "") === categoryId) {
         next.delete(bundleId);
       } else {
         next.set(bundleId, categoryId);
@@ -405,15 +414,15 @@ export default function AppsPage() {
     <AppShell breadcrumbs={[{ label: "Apps" }]}>
       <div className="space-y-6 max-w-3xl">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Apps</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-basalt-muted-foreground">
               Manage categories, tags, and notes for all your tracked apps.
             </p>
           </div>
           {totalPending > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
                 <X className="size-4" />
                 Discard
@@ -430,7 +439,7 @@ export default function AppsPage() {
 
         {/* Error banner */}
         {error && (
-          <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
             <AlertTriangle className="size-4 shrink-0" />
             {error}
           </div>
@@ -439,22 +448,23 @@ export default function AppsPage() {
         {loading ? (
           <AppsSkeleton />
         ) : apps.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <AppWindow className="size-4 text-muted-foreground" strokeWidth={1.5} />
+          <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-10 px-6 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
+              <AppWindow className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">No tracked apps yet</p>
-            <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+            <p className="mt-1 text-xs text-basalt-muted-foreground max-w-xs">
               Start using the Gecko macOS app and your tracked apps will appear here.
             </p>
           </div>
         ) : (
           <>
             {/* Filter + sort controls */}
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative min-w-40 flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-basalt-muted-foreground" />
                 <Input
+                  aria-label="Filter apps"
                   placeholder="Filter by name or bundle ID..."
                   value={filter}
                   onChange={(e) => setFilter(e.target.value)}
@@ -462,23 +472,29 @@ export default function AppsPage() {
                 />
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <ArrowUpDown className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                <ArrowUpDown className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
                 <Select
                   value={`${sortField}-${sortDir}`}
-                  onChange={(e) => {
-                    const [field, dir] = e.target.value.split("-") as [SortField, SortDir];
+                  onValueChange={(value) => {
+                    const [field, dir] = value.split("-") as [SortField, SortDir];
                     setSortField(field);
                     setSortDir(dir);
                   }}
-                  aria-label={`Sort apps by ${sortField}, ${sortDir === "asc" ? "ascending" : "descending"}`}
-                  className="h-9 w-[180px]"
                 >
-                  <option value="duration-desc">Most used</option>
-                  <option value="duration-asc">Least used</option>
-                  <option value="name-asc">Name A-Z</option>
-                  <option value="name-desc">Name Z-A</option>
-                  <option value="sessions-desc">Most sessions</option>
-                  <option value="sessions-asc">Fewest sessions</option>
+                  <SelectTrigger
+                    aria-label={`Sort apps by ${sortField}, ${sortDir === "asc" ? "ascending" : "descending"}`}
+                    className="w-44"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="duration-desc">Most used</SelectItem>
+                    <SelectItem value="duration-asc">Least used</SelectItem>
+                    <SelectItem value="name-asc">Name A-Z</SelectItem>
+                    <SelectItem value="name-desc">Name Z-A</SelectItem>
+                    <SelectItem value="sessions-desc">Most sessions</SelectItem>
+                    <SelectItem value="sessions-asc">Fewest sessions</SelectItem>
+                  </SelectContent>
                 </Select>
               </div>
             </div>
@@ -514,7 +530,7 @@ export default function AppsPage() {
                 />
               ))}
               {filteredApps.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4 text-center">
+                <p className="text-sm text-basalt-muted-foreground py-4 text-center">
                   No apps match your filter.
                 </p>
               )}
@@ -534,20 +550,20 @@ function AppsSkeleton() {
   return (
     <div className="space-y-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl bg-secondary p-4">
+        <div key={i} className="rounded-2xl bg-basalt-secondary p-4">
           {/* Header */}
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 space-y-2">
-              <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-              <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+              <div className="h-4 w-32 rounded bg-basalt-muted animate-pulse" />
+              <div className="h-3 w-48 rounded bg-basalt-muted animate-pulse" />
             </div>
-            <div className="h-3 w-24 rounded bg-muted animate-pulse shrink-0" />
+            <div className="h-3 w-24 rounded bg-basalt-muted animate-pulse shrink-0" />
           </div>
           {/* Metadata */}
           <div className="mt-3 flex items-center gap-3">
-            <div className="h-5 w-20 rounded-full bg-muted animate-pulse" />
-            <div className="h-5 w-14 rounded-full bg-muted animate-pulse" />
-            <div className="h-5 w-16 rounded-full bg-muted animate-pulse" />
+            <div className="h-5 w-20 rounded-full bg-basalt-muted animate-pulse" />
+            <div className="h-5 w-14 rounded-full bg-basalt-muted animate-pulse" />
+            <div className="h-5 w-16 rounded-full bg-basalt-muted animate-pulse" />
           </div>
         </div>
       ))}
@@ -599,46 +615,8 @@ function AppRow({
   const assignedTags = tags.filter((t) => effectiveTagIds.has(t.id));
   const selectedCategory = categories.find((c) => c.id === effectiveCategoryId);
 
-  const catPanelRef = useRef<HTMLDivElement>(null);
-  const tagPanelRef = useRef<HTMLDivElement>(null);
   const [newTagName, setNewTagName] = useState("");
   const [creatingTag, setCreatingTag] = useState(false);
-  const [focusedCatIdx, setFocusedCatIdx] = useState(-1);
-  const [focusedTagIdx, setFocusedTagIdx] = useState(-1);
-
-  // Close category panel on outside click
-  useEffect(() => {
-    if (!isCatExpanded) return;
-    function handleClick(e: MouseEvent) {
-      if (catPanelRef.current && !catPanelRef.current.contains(e.target as Node)) {
-        onToggleCatExpand();
-      }
-    }
-    const timer = setTimeout(() => {
-      document.addEventListener("mousedown", handleClick);
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [isCatExpanded, onToggleCatExpand]);
-
-  // Close tag panel on outside click
-  useEffect(() => {
-    if (!isTagExpanded) return;
-    function handleClick(e: MouseEvent) {
-      if (tagPanelRef.current && !tagPanelRef.current.contains(e.target as Node)) {
-        onToggleTagExpand();
-      }
-    }
-    const timer = setTimeout(() => {
-      document.addEventListener("mousedown", handleClick);
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener("mousedown", handleClick);
-    };
-  }, [isTagExpanded, onToggleTagExpand]);
 
   async function handleCreateTag() {
     const trimmed = newTagName.trim();
@@ -659,17 +637,17 @@ function AppRow({
   return (
     <div
       className={cn(
-        "rounded-2xl bg-secondary p-4 transition-colors",
-        hasChange && "ring-1 ring-primary/30",
+        "rounded-2xl bg-basalt-secondary p-4 transition-colors",
+        hasChange && "ring-1 ring-basalt-primary/30",
       )}
     >
       {/* Header: App name + stats */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium truncate">{app.appName}</p>
-          <p className="text-xs text-muted-foreground truncate">{app.bundleId}</p>
+          <p className="text-xs text-basalt-muted-foreground truncate">{app.bundleId}</p>
         </div>
-        <p className="shrink-0 text-xs text-muted-foreground tabular-nums">
+        <p className="shrink-0 text-xs text-basalt-muted-foreground tabular-nums">
           {formatDuration(app.totalDuration)} &middot; {app.sessionCount} session
           {app.sessionCount === 1 ? "" : "s"}
         </p>
@@ -679,236 +657,177 @@ function AppRow({
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         {/* Category */}
         {hasCategory && (
-          <span className="inline-flex items-center gap-0.5">
+          <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
             <CategoryPill
               title={selectedCategory.title}
               icon={selectedCategory.icon}
               colorKey={selectedCategory.slug}
               size="sm"
             />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onCategoryChange("")}
-              className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+              className="ml-0.5 rounded-full p-0.5 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
               title="Remove category"
             >
               <X className="size-3" strokeWidth={2} />
-            </button>
+            </Button>
           </span>
         )}
 
-        {/* Category add/change */}
-        <div className="relative" ref={catPanelRef}>
-          <button
-            type="button"
-            onClick={onToggleCatExpand}
-            aria-expanded={isCatExpanded}
-            onKeyDown={(e) => {
-              if (!isCatExpanded) return;
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setFocusedCatIdx((i) => Math.min(i + 1, categories.length - 1));
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setFocusedCatIdx((i) => Math.max(i - 1, 0));
-              } else if (e.key === "Enter" && focusedCatIdx >= 0) {
-                e.preventDefault();
-                const cat = categories[focusedCatIdx];
-                if (cat) onCategoryChange(cat.id);
-                onToggleCatExpand();
-                setFocusedCatIdx(-1);
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                onToggleCatExpand();
-                setFocusedCatIdx(-1);
-              }
-            }}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
-              isCatExpanded
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-            )}
+        <Select
+          value={effectiveCategoryId || "none"}
+          onValueChange={(value) => onCategoryChange(value === "none" ? "" : value)}
+          open={isCatExpanded}
+          onOpenChange={(open) => {
+            if (open !== isCatExpanded) onToggleCatExpand();
+          }}
+        >
+          <SelectTrigger
+            size="sm"
+            aria-label={`Category for ${app.appName}`}
+            className="max-w-full"
           >
-            <Plus className="size-3" strokeWidth={2} />
-            {selectedCategory ? "Change" : "Category"}
-          </button>
-          {isCatExpanded && (
-            <div
-              role="listbox"
-              className="absolute left-0 z-10 mt-1 min-w-[180px] rounded-lg border bg-popover p-1.5 shadow-md"
-            >
-              {categories.map((cat, idx) => (
-                <button
-                  key={cat.id}
-                  type="button"
-                  role="option"
-                  aria-selected={effectiveCategoryId === cat.id}
-                  onClick={() => {
-                    onCategoryChange(cat.id);
-                    onToggleCatExpand();
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-secondary",
-                    effectiveCategoryId === cat.id && "bg-primary/10",
-                    focusedCatIdx === idx && "bg-secondary",
-                  )}
-                >
-                  <CategoryPill title={cat.title} icon={cat.icon} colorKey={cat.slug} size="sm" />
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Uncategorized</SelectItem>
+            {categories.map((cat) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {/* Separator dot */}
-        <span className="text-muted-foreground/30 text-xs select-none">&middot;</span>
+        <span className="text-basalt-muted-foreground/30 text-xs select-none">&middot;</span>
 
         {/* Tags */}
         {assignedTags.map((tag) => (
-          <span key={tag.id} className="inline-flex items-center gap-0.5">
+          <span key={tag.id} className="inline-flex min-w-0 max-w-full items-center gap-0.5">
             <TagBadge name={tag.name} size="sm" />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={() => onToggleTag(tag.id)}
-              className="ml-0.5 rounded-full p-0.5 text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+              className="ml-0.5 rounded-full p-0.5 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
               title={`Remove tag "${tag.name}"`}
             >
               <X className="size-3" strokeWidth={2} />
-            </button>
+            </Button>
           </span>
         ))}
 
-        {/* Tag add */}
-        <div className="relative" ref={tagPanelRef}>
-          <button
-            type="button"
-            onClick={onToggleTagExpand}
-            aria-expanded={isTagExpanded}
-            onKeyDown={(e) => {
-              if (!isTagExpanded) return;
-              if (e.key === "ArrowDown") {
-                e.preventDefault();
-                setFocusedTagIdx((i) => Math.min(i + 1, tags.length - 1));
-              } else if (e.key === "ArrowUp") {
-                e.preventDefault();
-                setFocusedTagIdx((i) => Math.max(i - 1, 0));
-              } else if (e.key === "Enter" && focusedTagIdx >= 0) {
-                e.preventDefault();
-                const tag = tags[focusedTagIdx];
-                if (tag) onToggleTag(tag.id);
-              } else if (e.key === "Escape") {
-                e.preventDefault();
-                onToggleTagExpand();
-                setFocusedTagIdx(-1);
-              }
-            }}
-            className={cn(
-              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium transition-colors",
-              isTagExpanded
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/60",
-            )}
+        <Popover
+          open={isTagExpanded}
+          onOpenChange={(open) => {
+            if (open !== isTagExpanded) onToggleTagExpand();
+          }}
+        >
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="xs" aria-label={`Edit tags for ${app.appName}`}>
+              <Plus />
+              Tag
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            className="w-72 max-w-[calc(100vw-2rem)]"
+            aria-label={`Tags for ${app.appName}`}
           >
-            <Plus className="size-3" strokeWidth={2} />
-            Tag
-          </button>
-          {isTagExpanded && (
-            <div className="absolute left-0 z-10 mt-1 min-w-[220px] rounded-lg border bg-popover p-2 shadow-md">
-              {tags.length > 0 && (
-                <div role="listbox" className="flex flex-wrap gap-1.5 mb-2">
-                  {tags.map((tag, idx) => {
-                    const isSelected = effectiveTagIds.has(tag.id);
-                    return (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        role="option"
-                        aria-selected={isSelected}
-                        onClick={() => onToggleTag(tag.id)}
-                        className={cn(
-                          "rounded-full transition-[box-shadow,opacity]",
-                          isSelected ? "ring-2 ring-primary/40" : "opacity-50 hover:opacity-80",
-                          focusedTagIdx === idx && "ring-2 ring-foreground/40",
-                        )}
-                      >
-                        <TagBadge name={tag.name} size="sm" />
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="flex items-center gap-1.5 border-t pt-2">
-                <TagIcon className="size-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
-                <input
-                  type="text"
-                  value={newTagName}
-                  onChange={(e) => setNewTagName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleCreateTag();
-                    }
-                  }}
-                  placeholder="New tag..."
-                  className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
-                />
-                <button
-                  type="button"
-                  onClick={handleCreateTag}
-                  disabled={!newTagName.trim() || creatingTag}
-                  className="text-xs font-medium text-primary disabled:opacity-40 hover:underline"
-                >
-                  Add
-                </button>
-              </div>
+            {tags.length > 0 && (
+              <ToggleGroup
+                type="multiple"
+                aria-label="Assigned tags"
+                value={[...effectiveTagIds]}
+                onValueChange={(values) => {
+                  for (const tag of tags) {
+                    if (values.includes(tag.id) !== effectiveTagIds.has(tag.id))
+                      onToggleTag(tag.id);
+                  }
+                }}
+                className="mb-2 flex-wrap justify-start"
+              >
+                {tags.map((tag) => (
+                  <ToggleGroupItem key={tag.id} value={tag.id} className="max-w-full">
+                    <span className="truncate">{tag.name}</span>
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            )}
+            <div className="flex items-center gap-2">
+              <TagIcon className="size-4 shrink-0" />
+              <Input
+                aria-label="New tag name"
+                value={newTagName}
+                onChange={(event) => setNewTagName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleCreateTag();
+                  }
+                }}
+                placeholder="New tag..."
+                className="min-w-0 flex-1"
+              />
+              <Button onClick={handleCreateTag} disabled={!newTagName.trim() || creatingTag}>
+                Add
+              </Button>
             </div>
-          )}
-        </div>
+          </PopoverContent>
+        </Popover>
 
         {/* Separator dot */}
-        <span className="text-muted-foreground/30 text-xs select-none">&middot;</span>
+        <span className="text-basalt-muted-foreground/30 text-xs select-none">&middot;</span>
 
         {/* Note */}
         {isNoteExpanded ? (
           <div className="flex items-start gap-2 w-full">
-            <textarea
-              className="flex-1 rounded-lg border border-border bg-secondary px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring resize-none"
+            <InputArea
+              aria-label={`Note for ${app.appName}`}
+              className="min-w-0 flex-1 resize-none"
               rows={2}
               placeholder="Add a note (e.g. 'Work email client', 'Personal project')..."
               value={effectiveNote}
               onChange={(e) => onNoteChange(e.target.value)}
             />
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="icon-xs"
               onClick={onToggleNoteExpand}
-              className="mt-1.5 rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+              className="mt-1.5 rounded-md p-1 text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
               title="Close"
             >
               <X className="size-4" strokeWidth={1.5} />
-            </button>
+            </Button>
           </div>
         ) : hasNote ? (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={onToggleNoteExpand}
-            className="inline-flex items-center gap-1.5 group text-left"
+            className="min-w-0 max-w-full gap-1.5 group text-left"
           >
-            <span className="text-xs text-muted-foreground line-clamp-1">{effectiveNote}</span>
+            <span className="text-xs text-basalt-muted-foreground line-clamp-1">
+              {effectiveNote}
+            </span>
             <Pencil
-              className="size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+              className="size-3 shrink-0 text-basalt-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
               strokeWidth={1.5}
             />
-          </button>
+          </Button>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="xs"
             onClick={onToggleNoteExpand}
-            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
+            className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-background/60 transition-colors"
           >
             <Plus className="size-3" strokeWidth={2} />
             Note
-          </button>
+          </Button>
         )}
       </div>
     </div>

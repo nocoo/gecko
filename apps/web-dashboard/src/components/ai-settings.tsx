@@ -1,6 +1,20 @@
 "use client";
 
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@nocoo/basalt/components/dropdown-menu";
+import { InputArea } from "@nocoo/basalt/components/input-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@nocoo/basalt/components/select";
+import {
   type AuthType,
   BUILTIN_PROVIDERS,
   type BuiltinProvider,
@@ -25,7 +39,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import {
   DEFAULT_PROMPT_SECTION_1,
   DEFAULT_PROMPT_SECTION_2,
@@ -67,11 +80,20 @@ export function AiSettingsSection() {
   const [apiKeyChanged, setApiKeyChanged] = useState(false);
   const [customModelInput, setCustomModelInput] = useState("");
   const [isCustomModel, setIsCustomModel] = useState(false);
+  const modelFocusPending = useRef(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [testStatus, setTestStatus] = useState<TestStatus>("idle");
   const [testError, setTestError] = useState("");
   const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    void isCustomModel;
+    if (modelFocusPending.current) {
+      modelFocusPending.current = false;
+      document.getElementById("ai-model")?.focus();
+    }
+  }, [isCustomModel]);
 
   // Load settings on mount
   useEffect(() => {
@@ -215,6 +237,7 @@ export function AiSettingsSection() {
   const handleModelSelect = useCallback(
     (value: string) => {
       if (value === CUSTOM_MODEL_VALUE) {
+        modelFocusPending.current = true;
         setIsCustomModel(true);
         setSettings((s) => ({ ...s, model: customModelInput }));
       } else {
@@ -228,23 +251,23 @@ export function AiSettingsSection() {
 
   if (!loaded) {
     return (
-      <div className="rounded-2xl bg-secondary p-5">
+      <div className="rounded-2xl bg-basalt-secondary p-5">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Loader2 className="h-5 w-5 animate-spin text-basalt-muted-foreground" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-secondary p-5">
+    <div className="rounded-2xl bg-basalt-secondary p-5">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background">
-          <Bot className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-basalt-background">
+          <Bot className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-sm font-medium text-foreground">AI Configuration</h2>
-          <p className="text-xs text-muted-foreground">
+          <h2 className="text-sm font-medium text-basalt-foreground">AI Configuration</h2>
+          <p className="text-xs text-basalt-muted-foreground">
             Configure LLM provider for AI-powered features.
           </p>
         </div>
@@ -253,47 +276,60 @@ export function AiSettingsSection() {
       <div className="grid gap-4 sm:grid-cols-2">
         {/* Provider */}
         <div>
-          <Label className="text-sm">Provider</Label>
+          <Label htmlFor="ai-provider" className="text-sm">
+            Provider
+          </Label>
           <Select
-            value={settings.provider}
-            onChange={(e) => handleProviderChange(e.target.value)}
-            className="mt-1 h-9"
+            value={settings.provider || "none"}
+            onValueChange={(value) => handleProviderChange(value === "none" ? "" : value)}
           >
-            <option value="">Select a provider...</option>
-            {ALL_PROVIDER_IDS.map((id) => {
-              const label =
-                id === "custom"
-                  ? CUSTOM_PROVIDER_INFO.label
-                  : BUILTIN_PROVIDERS[id as BuiltinProvider].label;
-              return (
-                <option key={id} value={id}>
-                  {label}
-                </option>
-              );
-            })}
+            <SelectTrigger id="ai-provider" className="mt-1 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Select a provider...</SelectItem>
+              {ALL_PROVIDER_IDS.map((id) => {
+                const label =
+                  id === "custom"
+                    ? CUSTOM_PROVIDER_INFO.label
+                    : BUILTIN_PROVIDERS[id as BuiltinProvider].label;
+                return (
+                  <SelectItem key={id} value={id}>
+                    {label}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
           </Select>
         </div>
 
         {/* Model — dropdown with presets + custom option (built-in providers) */}
         {!isCustomProvider && (
           <div>
-            <Label className="text-sm">Model</Label>
+            <Label htmlFor="ai-model" className="text-sm">
+              Model
+            </Label>
             {presetModels.length > 0 && !isCustomModel ? (
               <Select
                 value={presetModels.includes(settings.model) ? settings.model : CUSTOM_MODEL_VALUE}
-                onChange={(e) => handleModelSelect(e.target.value)}
-                className="mt-1 h-9"
+                onValueChange={handleModelSelect}
               >
-                {presetModels.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-                <option value={CUSTOM_MODEL_VALUE}>Custom model...</option>
+                <SelectTrigger id="ai-model" className="mt-1 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {presetModels.map((m) => (
+                    <SelectItem key={m} value={m}>
+                      {m}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={CUSTOM_MODEL_VALUE}>Custom model...</SelectItem>
+                </SelectContent>
               </Select>
             ) : presetModels.length > 0 && isCustomModel ? (
               <div className="mt-1 flex gap-1">
                 <Input
+                  id="ai-model"
                   value={customModelInput}
                   onChange={(e) => {
                     setCustomModelInput(e.target.value);
@@ -306,7 +342,9 @@ export function AiSettingsSection() {
                   variant="ghost"
                   size="sm"
                   className="h-9 px-2"
+                  aria-label="Use preset model"
                   onClick={() => {
+                    modelFocusPending.current = true;
                     setIsCustomModel(false);
                     setCustomModelInput("");
                     setSettings((s) => ({
@@ -320,6 +358,7 @@ export function AiSettingsSection() {
               </div>
             ) : (
               <Input
+                id="ai-model"
                 value={settings.model}
                 onChange={(e) => setSettings((s) => ({ ...s, model: e.target.value }))}
                 placeholder={providerInfo?.defaultModel ?? "Select provider first"}
@@ -332,8 +371,11 @@ export function AiSettingsSection() {
         {/* Model — free text for custom provider */}
         {isCustomProvider && (
           <div>
-            <Label className="text-sm">Model</Label>
+            <Label htmlFor="ai-model" className="text-sm">
+              Model
+            </Label>
             <Input
+              id="ai-model"
               value={settings.model}
               onChange={(e) => setSettings((s) => ({ ...s, model: e.target.value }))}
               placeholder="Enter model name"
@@ -345,8 +387,11 @@ export function AiSettingsSection() {
         {/* Custom provider: Base URL */}
         {isCustomProvider && (
           <div>
-            <Label className="text-sm">Base URL</Label>
+            <Label htmlFor="ai-base-url" className="text-sm">
+              Base URL
+            </Label>
             <Input
+              id="ai-base-url"
               value={settings.baseURL}
               onChange={(e) => setSettings((s) => ({ ...s, baseURL: e.target.value }))}
               placeholder="https://api.example.com/v1"
@@ -358,19 +403,25 @@ export function AiSettingsSection() {
         {/* Custom provider: SDK Type */}
         {isCustomProvider && (
           <div>
-            <Label className="text-sm">SDK Protocol</Label>
+            <Label htmlFor="ai-sdk" className="text-sm">
+              SDK Protocol
+            </Label>
             <Select
               value={settings.sdkType}
-              onChange={(e) =>
+              onValueChange={(value) =>
                 setSettings((s) => ({
                   ...s,
-                  sdkType: e.target.value as SdkType | "",
+                  sdkType: value as SdkType | "",
                 }))
               }
-              className="mt-1 h-9"
             >
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
+              <SelectTrigger id="ai-sdk" className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="openai">OpenAI</SelectItem>
+                <SelectItem value="anthropic">Anthropic</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         )}
@@ -379,27 +430,36 @@ export function AiSettingsSection() {
             that require Authorization: Bearer instead of x-api-key. */}
         {isCustomProvider && (
           <div>
-            <Label className="text-sm">Auth Header</Label>
+            <Label htmlFor="ai-auth" className="text-sm">
+              Auth Header
+            </Label>
             <Select
               value={settings.authType || "apiKey"}
-              onChange={(e) =>
+              onValueChange={(value) =>
                 setSettings((s) => ({
                   ...s,
-                  authType: e.target.value as AuthType | "",
+                  authType: value as AuthType | "",
                 }))
               }
-              className="mt-1 h-9"
             >
-              <option value="apiKey">Default (x-api-key / Bearer)</option>
-              <option value="bearer">Force Bearer</option>
+              <SelectTrigger id="ai-auth" className="mt-1 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="apiKey">Default (x-api-key / Bearer)</SelectItem>
+                <SelectItem value="bearer">Force Bearer</SelectItem>
+              </SelectContent>
             </Select>
           </div>
         )}
 
         {/* API Key */}
         <div className="sm:col-span-2">
-          <Label className="text-sm">API Key</Label>
+          <Label htmlFor="ai-key" className="text-sm">
+            API Key
+          </Label>
           <Input
+            id="ai-key"
             type="password"
             value={apiKeyInput}
             onChange={(e) => {
@@ -413,7 +473,7 @@ export function AiSettingsSection() {
       </div>
 
       {/* Actions */}
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button
           onClick={handleSave}
           disabled={saving || !settings.provider}
@@ -450,7 +510,7 @@ export function AiSettingsSection() {
         </Button>
 
         {testStatus === "success" && (
-          <Badge variant="outline" className="text-xs text-success border-success">
+          <Badge variant="outline" className="text-xs text-basalt-success border-basalt-success">
             <Check className="mr-1 h-3 w-3" />
             Connected
           </Badge>
@@ -541,6 +601,7 @@ export function PromptTemplateSection() {
   const [saved, setSaved] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(false);
+  const insertingVariable = useRef(false);
 
   const textareaRefs = useRef<Record<SectionKey, HTMLTextAreaElement | null>>({
     section1: null,
@@ -618,6 +679,7 @@ export function PromptTemplateSection() {
   }, []);
 
   const handleInsertVariable = useCallback((variableKey: string) => {
+    insertingVariable.current = true;
     const textarea = textareaRefs.current.section2;
     if (textarea) {
       insertAtCursor(textarea, `{{${variableKey}}}`);
@@ -627,24 +689,24 @@ export function PromptTemplateSection() {
 
   if (!loaded) {
     return (
-      <div className="rounded-2xl bg-secondary p-5">
+      <div className="rounded-2xl bg-basalt-secondary p-5">
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <Loader2 className="h-5 w-5 animate-spin text-basalt-muted-foreground" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-2xl bg-secondary p-5">
+    <div className="rounded-2xl bg-basalt-secondary p-5">
       {/* Header */}
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background">
-          <FileText className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-basalt-background">
+          <FileText className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-sm font-medium text-foreground">Prompt Template</h2>
-          <p className="text-xs text-muted-foreground">Customize the AI analysis prompt.</p>
+          <h2 className="text-sm font-medium text-basalt-foreground">Prompt Template</h2>
+          <p className="text-xs text-basalt-muted-foreground">Customize the AI analysis prompt.</p>
         </div>
       </div>
 
@@ -653,19 +715,21 @@ export function PromptTemplateSection() {
         {SECTION_META.map((meta) => (
           <div key={meta.key}>
             {/* Section header */}
-            <div className="mb-1.5 flex items-center justify-between">
+            <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
               <div>
-                <Label className="text-sm">{meta.label}</Label>
-                <p className="text-xs text-muted-foreground">{meta.description}</p>
+                <Label htmlFor={`prompt-${meta.key}`} className="text-sm">
+                  {meta.label}
+                </Label>
+                <p className="text-xs text-basalt-muted-foreground">{meta.description}</p>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex shrink-0 items-center gap-1">
                 {/* Per-section reset — only show when content differs from default */}
                 {sections[meta.key] !== meta.default && (
                   <Button
                     variant="ghost"
                     size="xs"
                     onClick={() => handleResetSection(meta.key)}
-                    className="gap-1 text-xs text-muted-foreground"
+                    className="gap-1 text-xs text-basalt-muted-foreground"
                   >
                     <RotateCcw className="h-3 w-3" />
                     Reset
@@ -673,48 +737,39 @@ export function PromptTemplateSection() {
                 )}
                 {/* Variable insertion dropdown — only for section2 */}
                 {meta.hasVariables && (
-                  <div className="relative">
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      onClick={() => setOpenDropdown(!openDropdown)}
-                      className="gap-1"
+                  <DropdownMenu open={openDropdown} onOpenChange={setOpenDropdown}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="xs" className="whitespace-nowrap">
+                        <Plus className="h-3 w-3" />
+                        Insert Variable
+                        <ChevronDown className="h-3 w-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="max-h-[min(20rem,var(--radix-dropdown-menu-content-available-height))] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto"
+                      onCloseAutoFocus={(event) => {
+                        if (insertingVariable.current) {
+                          event.preventDefault();
+                          insertingVariable.current = false;
+                        }
+                      }}
                     >
-                      <Plus className="h-3 w-3" />
-                      Insert Variable
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                    {openDropdown && (
-                      <>
-                        {/* Backdrop */}
-                        <div
-                          className="fixed inset-0 z-40"
-                          onClick={() => setOpenDropdown(false)}
-                        />
-                        {/* Dropdown menu */}
-                        <div className="absolute right-0 top-full z-50 mt-1 max-h-80 w-80 overflow-auto rounded-lg border bg-background p-1 shadow-lg">
-                          {PROMPT_TEMPLATE_VARIABLES.map((v) => (
-                            <button
-                              key={v.key}
-                              type="button"
-                              onClick={() => handleInsertVariable(v.key)}
-                              className="flex w-full flex-col gap-0.5 rounded-md px-2 py-1.5 text-left text-xs hover:bg-accent"
-                            >
-                              <div className="flex items-center gap-2">
-                                <code className="shrink-0 rounded bg-secondary px-1 py-0.5 font-mono text-micro">
-                                  {`{{${v.key}}}`}
-                                </code>
-                                <span className="text-foreground">{v.description}</span>
-                              </div>
-                              <span className="whitespace-pre-wrap pl-1 text-micro text-muted-foreground">
-                                e.g. {v.example}
-                              </span>
-                            </button>
-                          ))}
-                        </div>
-                      </>
-                    )}
-                  </div>
+                      {PROMPT_TEMPLATE_VARIABLES.map((v) => (
+                        <DropdownMenuItem
+                          key={v.key}
+                          onSelect={() => handleInsertVariable(v.key)}
+                          className="flex-col items-start"
+                        >
+                          <code className="font-mono text-xs">{`{{${v.key}}}`}</code>
+                          <span>{v.description}</span>
+                          <span className="whitespace-pre-wrap text-xs text-basalt-muted-foreground">
+                            e.g. {v.example}
+                          </span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
               </div>
             </div>
@@ -728,21 +783,22 @@ export function PromptTemplateSection() {
             )}
 
             {/* Textarea — shows actual text (default or custom) */}
-            <textarea
+            <InputArea
+              id={`prompt-${meta.key}`}
               ref={(el) => {
                 textareaRefs.current[meta.key] = el;
               }}
               value={sections[meta.key]}
               onChange={(e) => handleChange(meta.key, e.target.value)}
               rows={meta.key === "section2" ? 12 : meta.key === "section4" ? 8 : 4}
-              className="w-full resize-y rounded-lg border bg-background px-3 py-2 font-mono text-xs leading-relaxed text-foreground focus:border-ring focus:outline-none focus:ring-1 focus:ring-ring"
+              className="resize-y font-mono text-xs leading-relaxed"
             />
           </div>
         ))}
       </div>
 
       {/* Save button */}
-      <div className="mt-4 flex items-center gap-2">
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         <Button onClick={handleSave} disabled={saving || !dirty} className="gap-2" size="sm">
           {saving ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

@@ -210,3 +210,21 @@ Once hydration worked, local stats returned 500 because migrations used
 `.cloudflare/local` while Vite defaulted to `.cloudflare/state`. Reuse the local
 migration path in Vite, retaining the isolated test-state override. A successful
 `/api/live` database probe alone does not prove that the application schema exists.
+
+## 2026-10-20 - Remove copied UI contracts, verify interaction details
+
+The version-only upgrade retained Gecko's copied surface tokens and hand-painted
+sidebar selection. Basalt's new intrinsic button sizing also exposed flex rows
+that shrink short actions until their labels wrap. Remove the duplicated color
+system, use the supported green accent and native navigation/control states, and
+verify actual geometry across 320px, 390px and desktop in both themes.
+
+A CSS rewrite initially searched for the first `/*`, accidentally matching an
+`@source` glob and truncating its quoted path. The dev server immediately reported
+an unclosed string. Restore the complete scanner directives and use explicit
+section boundaries instead of comment delimiters when rewriting CSS with globs.
+
+Dialog input `autoFocus` runs before Radix's opening focus event, so capturing the
+opener there originally captured an input about to disappear. Let Radix perform
+initial focus; verify Escape restores the actual opener. API origin text must
+also initialize after hydration rather than branch on `window` during render.

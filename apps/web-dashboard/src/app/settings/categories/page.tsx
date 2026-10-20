@@ -1,5 +1,6 @@
 "use client";
 
+import { IconPicker } from "@nocoo/basalt/components/icon-picker";
 import {
   AlertTriangle,
   AppWindow,
@@ -47,7 +48,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -91,6 +91,11 @@ const ICON_COMPONENTS: Record<string, FC<LucideProps>> = {
   zap: Zap,
 };
 
+const iconOptions = AVAILABLE_ICONS.map((value) => {
+  const Icon = ICON_COMPONENTS[value] ?? Folder;
+  return { value, label: value, icon: <Icon strokeWidth={1.5} /> };
+});
+
 // ---------------------------------------------------------------------------
 // Categories Settings Page
 // ---------------------------------------------------------------------------
@@ -124,7 +129,7 @@ export default function CategoriesPage() {
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">Categories</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
             Organize your apps into categories. Default categories cannot be edited or removed.
           </p>
         </div>
@@ -277,14 +282,14 @@ function CategoriesSection({
   return (
     <section className="space-y-6">
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
       {loading ? (
-        <div className="rounded-2xl bg-secondary p-8 text-center text-sm text-muted-foreground">
+        <div className="rounded-2xl bg-basalt-secondary p-8 text-center text-sm text-basalt-muted-foreground">
           Loading categories...
         </div>
       ) : (
@@ -292,8 +297,10 @@ function CategoriesSection({
           {/* Default categories */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Lock className="size-4 text-muted-foreground" strokeWidth={1.5} />
-              <h2 className="text-sm font-medium text-muted-foreground">Default Categories</h2>
+              <Lock className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+              <h2 className="text-sm font-medium text-basalt-muted-foreground">
+                Default Categories
+              </h2>
             </div>
 
             <div className="space-y-2">
@@ -301,7 +308,7 @@ function CategoriesSection({
                 <CategoryRow key={cat.id} category={cat} />
               ))}
               {defaultCategories.length === 0 && (
-                <p className="text-sm text-muted-foreground">No default categories found.</p>
+                <p className="text-sm text-basalt-muted-foreground">No default categories found.</p>
               )}
             </div>
           </div>
@@ -310,10 +317,12 @@ function CategoriesSection({
 
           {/* Custom categories */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Layers className="size-4 text-muted-foreground" strokeWidth={1.5} />
-                <h2 className="text-sm font-medium text-muted-foreground">Custom Categories</h2>
+                <Layers className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+                <h2 className="text-sm font-medium text-basalt-muted-foreground">
+                  Custom Categories
+                </h2>
               </div>
               <Button size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="size-4" />
@@ -323,12 +332,12 @@ function CategoriesSection({
 
             <div className="space-y-2">
               {customCategories.length === 0 ? (
-                <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-10 px-6 text-center">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-                    <Layers className="size-4 text-muted-foreground" strokeWidth={1.5} />
+                <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-10 px-6 text-center">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
+                    <Layers className="size-4 text-basalt-muted-foreground" strokeWidth={1.5} />
                   </div>
                   <p className="text-sm font-medium">No custom categories</p>
-                  <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+                  <p className="mt-1 text-xs text-basalt-muted-foreground max-w-xs">
                     Create a category to group apps beyond the built-in defaults.
                   </p>
                 </div>
@@ -365,12 +374,16 @@ function CategoriesSection({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleCreate();
                 }}
-                autoFocus
               />
             </div>
             <div className="space-y-2">
               <Label>Icon</Label>
-              <IconPicker value={createIcon} onChange={setCreateIcon} />
+              <IconPicker
+                label="Category icon"
+                options={iconOptions}
+                value={createIcon}
+                onValueChange={setCreateIcon}
+              />
             </div>
             {createTitle.trim() && (
               <div className="space-y-2">
@@ -416,12 +429,16 @@ function CategoriesSection({
                 onKeyDown={(e) => {
                   if (e.key === "Enter") handleEdit();
                 }}
-                autoFocus
               />
             </div>
             <div className="space-y-2">
               <Label>Icon</Label>
-              <IconPicker value={editIcon} onChange={setEditIcon} />
+              <IconPicker
+                label="Category icon"
+                options={iconOptions}
+                value={editIcon}
+                onValueChange={setEditIcon}
+              />
             </div>
             {editTitle.trim() && (
               <div className="space-y-2">
@@ -486,62 +503,35 @@ function CategoryRow({
   onDelete?: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-secondary p-4">
+    <div className="flex items-center justify-between rounded-2xl bg-basalt-secondary p-4">
       <div className="flex items-center gap-3 min-w-0">
         <CategoryPill title={category.title} icon={category.icon} colorKey={category.slug} />
-        {category.isDefault && <span className="text-xs text-muted-foreground">Built-in</span>}
+        {category.isDefault && (
+          <span className="text-xs text-basalt-muted-foreground">Built-in</span>
+        )}
       </div>
       {!category.isDefault && (
         <div className="flex items-center gap-1 shrink-0">
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label={`Edit ${category.title}`}
             onClick={onEdit}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-basalt-muted-foreground hover:text-basalt-foreground"
           >
             <Pencil className="size-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label={`Delete ${category.title}`}
             onClick={onDelete}
-            className="text-muted-foreground hover:text-destructive"
+            className="text-basalt-muted-foreground hover:text-basalt-destructive"
           >
             <Trash2 className="size-3.5" />
           </Button>
         </div>
       )}
-    </div>
-  );
-}
-
-// =============================================================================
-// Icon Picker
-// =============================================================================
-
-function IconPicker({ value, onChange }: { value: string; onChange: (icon: string) => void }) {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {AVAILABLE_ICONS.map((iconName) => {
-        const IconComp = ICON_COMPONENTS[iconName] ?? Folder;
-        const selected = value === iconName;
-        return (
-          <button
-            key={iconName}
-            type="button"
-            onClick={() => onChange(iconName)}
-            className={cn(
-              "flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
-              selected
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground",
-            )}
-            title={iconName}
-          >
-            <IconComp className="size-4" strokeWidth={1.5} />
-          </button>
-        );
-      })}
     </div>
   );
 }

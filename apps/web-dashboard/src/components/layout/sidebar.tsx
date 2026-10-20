@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@nocoo/basalt/components/avatar";
 import { Badge } from "@nocoo/basalt/components/badge";
+import { EditableNavItem } from "@nocoo/basalt/components/editable-nav-item";
 import {
   Sidebar as BasaltSidebar,
   SidebarFooter,
@@ -33,8 +34,9 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import { accessLogout, useMe } from "@/hooks/use-me";
-import { cn, getAvatarColor } from "@/lib/utils";
+import { getAvatarColor } from "@/lib/utils";
 import { APP_VERSION } from "@/lib/version";
 import { useSidebar } from "./sidebar-context";
 
@@ -108,198 +110,150 @@ function isActive(pathname: string, href: string, exact?: boolean): boolean {
 // Main sidebar
 // =============================================================================
 
-export function Sidebar() {
+export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
-  const { collapsed, toggle } = useSidebar();
+  const { collapsed: desktopCollapsed, toggle } = useSidebar();
+  const collapsed = !mobile && desktopCollapsed;
   const { user } = useMe();
-
   const userName = user?.name ?? "User";
   const userEmail = user?.email ?? "";
-  const userAvatar = user?.avatar;
-  const userInitial = userName[0] ?? "?";
+  const avatar = (
+    <Avatar className="size-8 shrink-0">
+      {user?.avatar && <AvatarImage src={user.avatar} alt={userName} />}
+      <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
+        {userName[0] ?? "?"}
+      </AvatarFallback>
+    </Avatar>
+  );
 
   return (
     <TooltipProvider delayDuration={0}>
-      <BasaltSidebar collapsed={collapsed} className="transition-all duration-300 ease-in-out">
-        {collapsed ? (
-          /* ================================================================
-           * Collapsed (icon-only) view
-           * ================================================================ */
-          <div className="flex h-screen w-full flex-col items-center">
-            {/* Logo */}
-            <div className="flex h-14 w-full items-center justify-start pl-6 pr-3">
-              <Image
-                src="/logo-24.png"
-                alt="Gecko"
-                width={24}
-                height={24}
-                unoptimized
-                className="shrink-0"
-              />
-            </div>
-
-            {/* Expand toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  onClick={toggle}
-                  aria-label="Expand sidebar"
-                  className="flex h-10 w-10 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors mb-2 cursor-pointer"
-                >
-                  <PanelLeft className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={8}>
-                Expand sidebar
-              </TooltipContent>
-            </Tooltip>
-
-            {/* Navigation — collapsed: flat icon list, no separators */}
-            <nav className="flex-1 flex flex-col items-center gap-1 overflow-y-auto pt-1">
-              {allNavItems.map((item) => {
-                const active = isActive(pathname, item.href, item.exact);
-                return (
-                  <Tooltip key={item.href}>
-                    <TooltipTrigger asChild>
-                      <Link
-                        href={item.href}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "relative flex h-10 w-10 items-center justify-center rounded-lg transition-colors",
-                          active
-                            ? "bg-basalt-accent text-basalt-foreground"
-                            : "text-basalt-muted-foreground hover:bg-basalt-accent hover:text-basalt-foreground",
-                        )}
-                      >
-                        <item.icon className="h-4 w-4" strokeWidth={1.5} />
-                      </Link>
-                    </TooltipTrigger>
-                    <TooltipContent side="right" sideOffset={8}>
-                      {item.label}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </nav>
-
-            {/* User avatar + sign out */}
-            <div className="py-3 flex justify-center w-full">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button type="button" onClick={accessLogout} className="cursor-pointer">
-                    <Avatar className="h-9 w-9">
-                      {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
-                      <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
-                        {userInitial}
-                      </AvatarFallback>
-                    </Avatar>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" sideOffset={8}>
-                  {userName} — Sign out
-                </TooltipContent>
-              </Tooltip>
-            </div>
+      <BasaltSidebar collapsed={collapsed} className="h-full">
+        <SidebarHeader className="gap-0 px-0">
+          <div className="flex w-basalt-rail shrink-0 justify-center">
+            <Image src="/logo-24.png" alt="Gecko" width={24} height={24} unoptimized />
           </div>
-        ) : (
-          /* ================================================================
-           * Expanded view
-           * ================================================================ */
-          <div className="flex h-screen w-full flex-col">
-            {/* Header: logo + collapse toggle */}
-            <SidebarHeader>
-              <div className="flex w-full items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Image
-                    src="/logo-24.png"
-                    alt="Gecko"
-                    width={24}
-                    height={24}
-                    unoptimized
-                    className="shrink-0"
-                  />
-                  <span className="text-lg font-bold tracking-tighter text-basalt-foreground">
-                    Gecko
-                  </span>
-                  <Badge variant="secondary" className="px-1.5 py-0.5 text-[10px] leading-none">
-                    v{APP_VERSION}
-                  </Badge>
-                </div>
-                <button
-                  type="button"
+          {!collapsed && (
+            <div className="flex min-w-0 flex-1 items-center gap-2 pr-basalt-nav-inset">
+              <span className="font-semibold text-basalt-foreground">Gecko</span>
+              <Badge variant="secondary" className="px-1.5 text-[11px]">
+                v{APP_VERSION}
+              </Badge>
+              {!mobile && (
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={toggle}
                   aria-label="Collapse sidebar"
-                  className="flex h-7 w-7 items-center justify-center rounded-md text-basalt-muted-foreground hover:text-basalt-foreground transition-colors cursor-pointer"
+                  className="ml-auto"
                 >
-                  <PanelLeft className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
-                </button>
-              </div>
-            </SidebarHeader>
-
-            {/* Navigation — expanded: collapsible groups with labels */}
-            <SidebarNav>
-              {navGroups.map((group) => (
-                <SidebarGroup
-                  key={group.label}
-                  label={group.label}
-                  defaultOpen={group.defaultOpen ?? true}
-                >
-                  {group.items.map((item) => {
-                    const active = isActive(pathname, item.href, item.exact);
-                    return (
+                  <PanelLeft strokeWidth={1.5} />
+                </Button>
+              )}
+            </div>
+          )}
+        </SidebarHeader>
+        <SidebarNav aria-label="Main navigation">
+          {collapsed ? (
+            <>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggle}
+                    aria-label="Expand sidebar"
+                    className="mx-auto"
+                  >
+                    <PanelLeft strokeWidth={1.5} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Expand sidebar</TooltipContent>
+              </Tooltip>
+              {allNavItems.map((item) => (
+                <Tooltip key={item.href}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="icon"
+                      className="basalt-nav-item"
+                      data-basalt-hover-item=""
+                      data-hover-selected={isActive(pathname, item.href, item.exact)}
+                    >
                       <Link
-                        key={item.href}
                         href={item.href}
-                        aria-current={active ? "page" : undefined}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-normal transition-colors",
-                          active
-                            ? "bg-basalt-accent text-basalt-foreground"
-                            : "text-basalt-muted-foreground hover:bg-basalt-accent hover:text-basalt-foreground",
-                        )}
+                        aria-label={item.label}
+                        aria-current={
+                          isActive(pathname, item.href, item.exact) ? "page" : undefined
+                        }
                       >
-                        <item.icon className="h-4 w-4 shrink-0" strokeWidth={1.5} />
-                        <span className="flex-1 text-left">{item.label}</span>
+                        <item.icon strokeWidth={1.5} aria-hidden="true" />
                       </Link>
-                    );
-                  })}
-                </SidebarGroup>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
               ))}
-            </SidebarNav>
-
-            {/* User info + sign out */}
-            <SidebarFooter>
-              <SidebarUser
-                name={userName}
-                email={userEmail}
-                avatar={
-                  <Avatar className="h-9 w-9 shrink-0">
-                    {userAvatar && <AvatarImage src={userAvatar} alt={userName} />}
-                    <AvatarFallback className={`text-xs text-white ${getAvatarColor(userName)}`}>
-                      {userInitial}
-                    </AvatarFallback>
-                  </Avatar>
-                }
-                action={
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={accessLogout}
-                        aria-label="Sign out"
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors shrink-0 cursor-pointer"
-                      >
-                        <LogOut className="h-4 w-4" aria-hidden="true" strokeWidth={1.5} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">Sign out</TooltipContent>
-                  </Tooltip>
-                }
-              />
-            </SidebarFooter>
-          </div>
-        )}
+            </>
+          ) : (
+            navGroups.map((group) => (
+              <SidebarGroup
+                key={group.label}
+                label={group.label}
+                defaultOpen={group.defaultOpen ?? true}
+              >
+                {group.items.map((item) => (
+                  <EditableNavItem
+                    key={item.href}
+                    href={item.href}
+                    label={item.label}
+                    selected={isActive(pathname, item.href, item.exact)}
+                    icon={<item.icon strokeWidth={1.5} />}
+                  />
+                ))}
+              </SidebarGroup>
+            ))
+          )}
+        </SidebarNav>
+        <SidebarFooter>
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={accessLogout}
+                  aria-label={`${userName} - Sign out`}
+                >
+                  {avatar}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">{userName} - Sign out</TooltipContent>
+            </Tooltip>
+          ) : (
+            <SidebarUser
+              name={userName}
+              email={userEmail}
+              avatar={avatar}
+              action={
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={accessLogout}
+                      aria-label="Sign out"
+                    >
+                      <LogOut strokeWidth={1.5} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">Sign out</TooltipContent>
+                </Tooltip>
+              }
+            />
+          )}
+        </SidebarFooter>
       </BasaltSidebar>
     </TooltipProvider>
   );

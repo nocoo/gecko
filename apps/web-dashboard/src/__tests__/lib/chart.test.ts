@@ -6,56 +6,32 @@ import {
   getChartColor,
   RESPONSIVE_CONTAINER_PROPS,
 } from "../../lib/chart-config";
-import {
-  CHART_COLORS,
-  CHART_TOKENS,
-  chart,
-  chartAxis,
-  chartMuted,
-  chartPrimary,
-  withAlpha,
-} from "../../lib/palette";
+import { CHART_COLORS, chartAxis, chartMuted, chartPrimary, withAlpha } from "../../lib/palette";
 
 // ---------------------------------------------------------------------------
 // palette.ts
 // ---------------------------------------------------------------------------
 
 describe("palette", () => {
-  test("CHART_COLORS has 10 entries", () => {
-    expect(CHART_COLORS).toHaveLength(10);
+  test("CHART_COLORS uses the five Basalt series colors", () => {
+    expect(CHART_COLORS).toHaveLength(5);
   });
 
   test("all chart colors reference CSS variables", () => {
     for (const color of CHART_COLORS) {
-      expect(color).toMatch(/^hsl\(var\(--chart-\d+\)\)$/);
+      expect(color).toMatch(/^hsl\(var\(--basalt-chart-\d+\)\)$/);
     }
   });
 
-  test("CHART_TOKENS matches CHART_COLORS order", () => {
-    expect(CHART_TOKENS).toHaveLength(10);
-    expect(CHART_TOKENS[0]).toBe("chart-1");
-    expect(CHART_TOKENS[9]).toBe("chart-10");
-  });
-
-  test("chart named colors match CHART_COLORS values", () => {
-    const c0 = CHART_COLORS[0];
-    const c1 = CHART_COLORS[1];
-    const c9 = CHART_COLORS[9];
-    if (!c0 || !c1 || !c9) return;
-    expect(chart.green).toBe(c0);
-    expect(chart.sky).toBe(c1);
-    expect(chart.lime).toBe(c9);
-  });
-
   test("withAlpha returns correct format", () => {
-    expect(withAlpha("chart-1", 0.5)).toBe("hsl(var(--chart-1) / 0.5)");
-    expect(withAlpha("chart-3", 0.12)).toBe("hsl(var(--chart-3) / 0.12)");
+    expect(withAlpha("chart-1", 0.5)).toBe("hsl(var(--basalt-chart-1) / 0.5)");
+    expect(withAlpha("chart-3", 0.12)).toBe("hsl(var(--basalt-chart-3) / 0.12)");
   });
 
   test("semantic tokens reference CSS variables", () => {
     expect(chartAxis).toContain("chart-axis");
     expect(chartMuted).toContain("chart-muted");
-    expect(chartPrimary).toBe(chart.green);
+    expect(chartPrimary).toBe(CHART_COLORS[2]);
   });
 });
 
@@ -66,18 +42,18 @@ describe("palette", () => {
 describe("chart-config", () => {
   test("getChartColor returns correct color for index", () => {
     const c0 = CHART_COLORS[0];
-    const c9 = CHART_COLORS[9];
-    if (!c0 || !c9) return;
+    const c9 = CHART_COLORS[4];
+
     expect(getChartColor(0)).toBe(c0);
     expect(getChartColor(9)).toBe(c9);
   });
 
-  test("getChartColor wraps around past 10", () => {
+  test("getChartColor wraps around past five", () => {
     const c0 = CHART_COLORS[0];
     const c1 = CHART_COLORS[1];
     if (!c0 || !c1) return;
-    expect(getChartColor(10)).toBe(c0);
-    expect(getChartColor(11)).toBe(c1);
+    expect(getChartColor(5)).toBe(c0);
+    expect(getChartColor(6)).toBe(c1);
   });
 
   test("AXIS_CONFIG disables axis and tick lines", () => {

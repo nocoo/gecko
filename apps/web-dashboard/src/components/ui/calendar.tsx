@@ -43,37 +43,37 @@ function Calendar({
         weekdays: cn(defaultClassNames.weekdays, "flex gap-0.5"),
         weekday: cn(
           defaultClassNames.weekday,
-          "w-13 rounded-md text-[0.7rem] font-normal text-muted-foreground",
+          "w-9 sm:w-13 rounded-md text-[0.7rem] font-normal text-basalt-muted-foreground",
         ),
         week: cn(defaultClassNames.week, "mt-0.5 flex w-full gap-0.5"),
         day: cn(
           defaultClassNames.day,
-          "relative size-13 p-0 text-center text-sm",
+          "relative size-9 sm:size-13 p-0 text-center text-sm",
           "[&:has([aria-selected])]:rounded-md",
         ),
         day_button: cn(
           buttonVariants({ variant: "ghost", size: "icon-sm" }),
-          "relative size-13 p-0 font-normal aria-selected:opacity-100",
+          "relative size-9 sm:size-13 p-0 font-normal aria-selected:opacity-100",
         ),
-        range_start: cn(defaultClassNames.range_start, "rounded-l-md bg-accent"),
-        range_end: cn(defaultClassNames.range_end, "rounded-r-md bg-accent"),
+        range_start: cn(defaultClassNames.range_start, "rounded-l-md bg-basalt-accent"),
+        range_end: cn(defaultClassNames.range_end, "rounded-r-md bg-basalt-accent"),
         range_middle: cn(
           defaultClassNames.range_middle,
-          "rounded-none aria-selected:bg-accent aria-selected:text-accent-foreground",
+          "rounded-none aria-selected:bg-basalt-accent aria-selected:text-basalt-accent-foreground",
         ),
         selected: cn(
           defaultClassNames.selected,
-          "[&>button]:bg-primary [&>button]:text-primary-foreground [&>button]:hover:bg-primary [&>button]:hover:text-primary-foreground",
+          "[&>button]:bg-basalt-primary [&>button]:text-basalt-primary-foreground [&>button]:hover:bg-basalt-primary [&>button]:hover:text-basalt-primary-foreground",
         ),
         today: cn(
           defaultClassNames.today,
-          "[&>button]:bg-accent [&>button]:text-accent-foreground",
+          "[&>button]:bg-basalt-accent [&>button]:text-basalt-accent-foreground",
         ),
         outside: cn(
           defaultClassNames.outside,
-          "text-muted-foreground/50 aria-selected:text-muted-foreground",
+          "text-basalt-muted-foreground/50 aria-selected:text-basalt-muted-foreground",
         ),
-        disabled: cn(defaultClassNames.disabled, "text-muted-foreground/40 opacity-50"),
+        disabled: cn(defaultClassNames.disabled, "text-basalt-muted-foreground/40 opacity-50"),
         hidden: cn(defaultClassNames.hidden, "invisible"),
         ...classNames,
       }}

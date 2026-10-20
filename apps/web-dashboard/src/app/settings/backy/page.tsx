@@ -189,25 +189,25 @@ function PushConfigSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <HardDriveUpload className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <HardDriveUpload className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Push Backup</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Push your data to a Backy backup service. Configure the webhook URL and API key from your
         Backy instance.
       </p>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         {loading ? (
-          <div className="h-24 rounded-md bg-muted animate-pulse" />
+          <div className="h-24 rounded-md bg-basalt-muted animate-pulse" />
         ) : (
           <>
             <div className="space-y-2">
@@ -286,7 +286,7 @@ function PushConfigSection({
               )}
               {testResult && (
                 <p
-                  className={`flex items-center gap-1 text-xs ${testResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`flex items-center gap-1 text-xs ${testResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-basalt-destructive"}`}
                 >
                   {testResult.ok ? (
                     <Check className="size-3" />
@@ -298,7 +298,7 @@ function PushConfigSection({
               )}
               {pushResult && (
                 <p
-                  className={`flex items-center gap-1 text-xs ${pushResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"}`}
+                  className={`flex items-center gap-1 text-xs ${pushResult.ok ? "text-emerald-600 dark:text-emerald-400" : "text-basalt-destructive"}`}
                 >
                   {pushResult.ok ? (
                     <Check className="size-3" />
@@ -356,40 +356,42 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <History className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <History className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Backup History</h2>
         {!loading && totalBackups > 0 && (
-          <span className="text-xs text-muted-foreground tabular-nums">({totalBackups} total)</span>
+          <span className="text-xs text-basalt-muted-foreground tabular-nums">
+            ({totalBackups} total)
+          </span>
         )}
       </div>
 
       {projectName && (
-        <p className="text-sm text-muted-foreground">
-          Project: <span className="font-medium text-foreground">{projectName}</span>
+        <p className="text-sm text-basalt-muted-foreground">
+          Project: <span className="font-medium text-basalt-foreground">{projectName}</span>
         </p>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-secondary p-5">
+      <div className="rounded-2xl bg-basalt-secondary p-5">
         {loading ? (
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-12 rounded-lg bg-muted animate-pulse" />
+              <div key={i} className="h-12 rounded-lg bg-basalt-muted animate-pulse" />
             ))}
           </div>
         ) : backups.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <Package className="size-5 text-muted-foreground" strokeWidth={1.5} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
+              <Package className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
             </div>
             <p className="text-sm font-medium">No backups yet</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-xs text-basalt-muted-foreground">
               Push your first backup using the button above.
             </p>
           </div>
@@ -398,21 +400,21 @@ function BackupHistorySection({ refreshKey }: { refreshKey: number }) {
             {backups.map((b) => (
               <div
                 key={b.id}
-                className="flex items-center gap-3 rounded-xl bg-background px-4 py-3 ring-1 ring-border"
+                className="flex items-center gap-3 rounded-xl bg-basalt-background px-4 py-3 ring-1 ring-basalt-border"
               >
-                <Package className="size-4 text-muted-foreground shrink-0" />
+                <Package className="size-4 text-basalt-muted-foreground shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{b.tag ?? "Untitled backup"}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-basalt-muted-foreground">
                     {formatRelativeTime(b.created_at)}
                     {b.environment && (
-                      <span className="ml-2 rounded bg-muted px-1.5 py-0.5 text-micro font-medium uppercase">
+                      <span className="ml-2 rounded bg-basalt-muted px-1.5 py-0.5 text-micro font-medium uppercase">
                         {b.environment}
                       </span>
                     )}
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                <span className="text-xs text-basalt-muted-foreground tabular-nums shrink-0">
                   {formatBytes(b.file_size)}
                 </span>
               </div>
@@ -516,37 +518,38 @@ function PullWebhookSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <HardDriveDownload className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <HardDriveDownload className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Pull Webhook</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Allow Backy to trigger backups on a schedule. Generate a webhook key and configure it in
         your Backy instance.
       </p>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         {loading ? (
-          <div className="h-16 rounded-md bg-muted animate-pulse" />
+          <div className="h-16 rounded-md bg-basalt-muted animate-pulse" />
         ) : exists ? (
           <>
             {/* Webhook URL (read-only, copyable) */}
             <div className="space-y-2">
               <Label>Webhook URL</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-background px-3 py-2 text-xs font-mono break-all select-all ring-1 ring-border">
+                <code className="flex-1 rounded-lg bg-basalt-background px-3 py-2 text-xs font-mono break-all select-all ring-1 ring-basalt-border">
                   {webhookUrl}
                 </code>
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label="Copy webhook URL"
                   onClick={() => copyToClipboard(webhookUrl)}
                 >
                   <Copy className="size-3.5" />
@@ -558,7 +561,7 @@ function PullWebhookSection() {
             <div className="space-y-2">
               <Label>Webhook Key</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-background px-3 py-2 text-xs font-mono break-all ring-1 ring-border text-muted-foreground">
+                <code className="flex-1 rounded-lg bg-basalt-background px-3 py-2 text-xs font-mono break-all ring-1 ring-basalt-border text-basalt-muted-foreground">
                   {maskedKey}
                 </code>
               </div>
@@ -577,7 +580,7 @@ function PullWebhookSection() {
                 variant="outline"
                 size="sm"
                 onClick={() => setRevokeOpen(true)}
-                className="text-destructive hover:text-destructive"
+                className="text-basalt-destructive hover:text-basalt-destructive"
               >
                 <Trash2 className="size-4" />
                 Revoke
@@ -586,11 +589,14 @@ function PullWebhookSection() {
           </>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 px-6 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background ring-1 ring-border mb-3">
-              <HardDriveDownload className="size-5 text-muted-foreground" strokeWidth={1.5} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-3">
+              <HardDriveDownload
+                className="size-5 text-basalt-muted-foreground"
+                strokeWidth={1.5}
+              />
             </div>
             <p className="text-sm font-medium">No pull webhook configured</p>
-            <p className="mt-1 text-xs text-muted-foreground max-w-xs">
+            <p className="mt-1 text-xs text-basalt-muted-foreground max-w-xs">
               Generate a webhook key to let Backy trigger scheduled backups automatically.
             </p>
             <Button onClick={handleGenerate} disabled={generating} size="sm" className="mt-4">
@@ -624,14 +630,15 @@ function PullWebhookSection() {
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Webhook URL</Label>
+              <Label className="text-xs text-basalt-muted-foreground">Webhook URL</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-secondary px-3 py-2 text-xs font-mono break-all select-all">
+                <code className="flex-1 rounded-lg bg-basalt-secondary px-3 py-2 text-xs font-mono break-all select-all">
                   {webhookUrl}
                 </code>
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label="Copy webhook URL"
                   onClick={() => copyToClipboard(webhookUrl)}
                 >
                   <Copy className="size-3.5" />
@@ -639,14 +646,15 @@ function PullWebhookSection() {
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Webhook Key</Label>
+              <Label className="text-xs text-basalt-muted-foreground">Webhook Key</Label>
               <div className="flex items-center gap-2">
-                <code className="flex-1 rounded-lg bg-secondary px-3 py-2.5 text-xs font-mono break-all select-all">
+                <code className="flex-1 rounded-lg bg-basalt-secondary px-3 py-2.5 text-xs font-mono break-all select-all">
                   {revealedKey}
                 </code>
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label="Copy webhook key"
                   onClick={() => revealedKey && copyToClipboard(revealedKey)}
                 >
                   {copied ? (
@@ -711,7 +719,7 @@ export default function BackySettingsPage() {
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">Backy</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
             Configure automatic backups with Backy. Push your data to a backup service, or let Backy
             pull on a schedule.
           </p>

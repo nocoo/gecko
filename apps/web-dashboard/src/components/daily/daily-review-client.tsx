@@ -31,7 +31,7 @@ import {
 import { useRouter } from "next/navigation";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CalendarDay } from "react-day-picker";
+import { type CalendarDay, DayButton } from "react-day-picker";
 import Markdown from "react-markdown";
 import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
 import { GanttChart } from "@/components/daily/gantt-chart";
@@ -143,9 +143,9 @@ function formatYMD(d: Date): string {
 }
 
 function scoreColorClass(score: number): string {
-  if (score >= 80) return "text-success";
-  if (score >= 60) return "text-warning";
-  return "text-destructive";
+  if (score >= 80) return "text-basalt-success";
+  if (score >= 60) return "text-basalt-warning";
+  return "text-basalt-destructive";
 }
 
 /**
@@ -163,8 +163,8 @@ function ScoreRing({ score, selected }: { score: number; selected?: boolean }) {
   return (
     <svg
       className={cn(
-        "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-11",
-        selected ? "text-primary-foreground" : scoreColorClass(score),
+        "pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 size-8 sm:size-11",
+        selected ? "text-basalt-primary-foreground" : scoreColorClass(score),
       )}
       viewBox={`0 0 ${size} ${size}`}
       aria-hidden
@@ -174,7 +174,9 @@ function ScoreRing({ score, selected }: { score: number; selected?: boolean }) {
         cy={size / 2}
         r={r}
         fill="none"
-        className={selected ? "stroke-primary-foreground/30" : "stroke-muted-foreground/15"}
+        className={
+          selected ? "stroke-basalt-primary-foreground/30" : "stroke-basalt-muted-foreground/15"
+        }
         strokeWidth={stroke}
       />
       <circle
@@ -259,12 +261,17 @@ function DateNavigator({
       const isOutside = modifiers.outside;
       const isSelected = modifiers.selected;
       return (
-        <button {...buttonProps} className={cn(className, "relative")}>
+        <DayButton
+          {...buttonProps}
+          day={day}
+          modifiers={modifiers}
+          className={cn(className, "relative")}
+        >
           {!isOutside && badge?.hasAi && badge.score != null && (
             <ScoreRing score={badge.score} selected={isSelected} />
           )}
           {children}
-        </button>
+        </DayButton>
       );
     },
     [badges],
@@ -283,8 +290,8 @@ function DateNavigator({
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="ghost" size="sm" className="font-medium">
-            <Calendar className="size-4 text-muted-foreground" />
+          <Button variant="ghost" size="sm" className="font-medium" aria-label="Choose review date">
+            <Calendar className="size-4 text-basalt-muted-foreground" />
             <span>{formatDateDisplay(date)}</span>
           </Button>
         </PopoverTrigger>
@@ -361,12 +368,12 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
   if (items.length === 0) return null;
 
   return (
-    <div className="rounded-card bg-secondary p-4 md:p-5">
+    <div className="rounded-basalt-card bg-basalt-secondary p-4 md:p-5">
       <div className="flex items-center gap-2 mb-3">
-        <Cpu className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-        <h3 className="text-sm font-normal text-muted-foreground">Model Details</h3>
+        <Cpu className="h-4 w-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+        <h3 className="text-sm font-normal text-basalt-muted-foreground">Model Details</h3>
         {ai.cached && (
-          <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
+          <span className="ml-auto text-xs font-medium text-basalt-muted-foreground bg-basalt-secondary px-2 py-0.5 rounded-basalt-widget">
             Cached
           </span>
         )}
@@ -375,12 +382,15 @@ function ModelDetailsCard({ ai }: { ai: AnalyzeResponse }) {
         {items.map((item) => (
           <div
             key={item.label}
-            className="flex items-center gap-2 rounded-widget bg-secondary px-3 py-2"
+            className="flex items-center gap-2 rounded-basalt-widget bg-basalt-secondary px-3 py-2"
           >
-            <item.icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" strokeWidth={1.5} />
+            <item.icon
+              className="h-3.5 w-3.5 text-basalt-muted-foreground shrink-0"
+              strokeWidth={1.5}
+            />
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-              <p className="text-sm text-foreground truncate">{item.value}</p>
+              <p className="text-xs text-basalt-muted-foreground">{item.label}</p>
+              <p className="text-sm text-basalt-foreground truncate">{item.value}</p>
             </div>
           </div>
         ))}
@@ -403,19 +413,19 @@ function PromptCard({
   onToggle: () => void;
 }) {
   return (
-    <div className="rounded-card bg-secondary overflow-hidden">
+    <div className="rounded-basalt-card bg-basalt-secondary overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center gap-2 p-4 md:p-5 text-left hover:bg-accent/50 transition-colors"
+        className="w-full flex items-center gap-2 p-4 md:p-5 text-left hover:bg-basalt-accent/50 transition-colors"
       >
-        <FileText className="h-4 w-4 text-muted-foreground shrink-0" strokeWidth={1.5} />
-        <h3 className="text-sm font-normal text-muted-foreground">Prompt</h3>
-        <span className="ml-auto text-xs font-medium text-muted-foreground bg-secondary px-2 py-0.5 rounded-widget">
+        <FileText className="h-4 w-4 text-basalt-muted-foreground shrink-0" strokeWidth={1.5} />
+        <h3 className="text-sm font-normal text-basalt-muted-foreground">Prompt</h3>
+        <span className="ml-auto text-xs font-medium text-basalt-muted-foreground bg-basalt-secondary px-2 py-0.5 rounded-basalt-widget">
           {Math.round(prompt.length / 1000)}k chars
         </span>
         <ChevronDown
-          className={`h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200 ${
+          className={`h-4 w-4 text-basalt-muted-foreground shrink-0 transition-transform duration-200 ${
             collapsed ? "-rotate-90" : ""
           }`}
           strokeWidth={1.5}
@@ -423,7 +433,7 @@ function PromptCard({
       </button>
       {!collapsed && (
         <div className="px-4 pb-4 md:px-5 md:pb-5">
-          <pre className="text-xs text-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-widget bg-secondary p-3 font-mono">
+          <pre className="text-xs text-basalt-foreground/80 leading-relaxed whitespace-pre-wrap break-words max-h-[400px] overflow-y-auto rounded-basalt-widget bg-basalt-secondary p-3 font-mono">
             {prompt}
           </pre>
         </div>
@@ -462,9 +472,9 @@ function AiAnalysisPanel({
     return (
       <div className="space-y-4">
         {promptCard}
-        <div className="rounded-card bg-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
-          <Loader2 className="size-6 animate-spin text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground">Analyzing with AI...</p>
+        <div className="rounded-basalt-card bg-basalt-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
+          <Loader2 className="size-6 animate-spin text-basalt-muted-foreground mb-2" />
+          <p className="text-sm text-basalt-muted-foreground">Analyzing with AI...</p>
         </div>
       </div>
     );
@@ -474,12 +484,12 @@ function AiAnalysisPanel({
     return (
       <div className="space-y-4">
         {promptCard}
-        <div className="rounded-card bg-secondary p-4 md:p-5">
+        <div className="rounded-basalt-card bg-basalt-secondary p-4 md:p-5">
           <div className="flex items-center gap-2 mb-2">
-            <AlertCircle className="h-4 w-4 text-destructive" strokeWidth={1.5} />
-            <h3 className="text-sm font-normal text-destructive">Analysis failed</h3>
+            <AlertCircle className="h-4 w-4 text-basalt-destructive" strokeWidth={1.5} />
+            <h3 className="text-sm font-normal text-basalt-destructive">Analysis failed</h3>
           </div>
-          <pre className="text-xs text-muted-foreground whitespace-pre-wrap break-all max-h-72 overflow-auto font-mono leading-relaxed">
+          <pre className="text-xs text-basalt-muted-foreground whitespace-pre-wrap break-all max-h-72 overflow-auto font-mono leading-relaxed">
             {error}
           </pre>
           <Button variant="outline" size="sm" onClick={() => onGenerate()} className="mt-3">
@@ -492,9 +502,9 @@ function AiAnalysisPanel({
 
   if (!ai) {
     return (
-      <div className="rounded-card bg-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
-        <Sparkles className="size-8 text-muted-foreground mb-3" strokeWidth={1.5} />
-        <p className="text-sm text-muted-foreground mb-3">
+      <div className="rounded-basalt-card bg-basalt-secondary p-4 md:p-5 flex flex-col items-center justify-center min-h-[200px]">
+        <Sparkles className="size-8 text-basalt-muted-foreground mb-3" strokeWidth={1.5} />
+        <p className="text-sm text-basalt-muted-foreground mb-3">
           Generate an AI-powered analysis of your day.
         </p>
         <Button onClick={() => onGenerate()} size="sm">
@@ -511,10 +521,10 @@ function AiAnalysisPanel({
       {promptCard}
 
       {/* Main AI content card */}
-      <div className="rounded-card bg-secondary p-4 md:p-5">
+      <div className="rounded-basalt-card bg-basalt-secondary p-4 md:p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Sparkles className="h-4 w-4 text-muted-foreground" strokeWidth={1.5} />
-          <h3 className="text-sm font-normal text-muted-foreground">AI Analysis</h3>
+          <Sparkles className="h-4 w-4 text-basalt-muted-foreground" strokeWidth={1.5} />
+          <h3 className="text-sm font-normal text-basalt-muted-foreground">AI Analysis</h3>
           <Button
             variant="ghost"
             size="icon-sm"
@@ -530,11 +540,11 @@ function AiAnalysisPanel({
         {/* Highlights */}
         {ai.result.highlights.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">Highlights</h4>
+            <h4 className="text-xs text-basalt-muted-foreground mb-2">Highlights</h4>
             <ul className="space-y-1.5">
               {ai.result.highlights.map((h, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                  <span className="text-success mt-0.5 shrink-0">+</span>
+                <li key={i} className="flex items-start gap-2 text-sm text-basalt-foreground">
+                  <span className="text-basalt-success mt-0.5 shrink-0">+</span>
                   <span>{h}</span>
                 </li>
               ))}
@@ -545,11 +555,11 @@ function AiAnalysisPanel({
         {/* Improvements */}
         {ai.result.improvements.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">Improvements</h4>
+            <h4 className="text-xs text-basalt-muted-foreground mb-2">Improvements</h4>
             <ul className="space-y-1.5">
               {ai.result.improvements.map((imp, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                  <span className="text-warning mt-0.5 shrink-0">-</span>
+                <li key={i} className="flex items-start gap-2 text-sm text-basalt-foreground">
+                  <span className="text-basalt-warning mt-0.5 shrink-0">-</span>
                   <span>{imp}</span>
                 </li>
               ))}
@@ -560,23 +570,25 @@ function AiAnalysisPanel({
         {/* Time Segments */}
         {ai.result.timeSegments && ai.result.timeSegments.length > 0 && (
           <div className="mb-4">
-            <h4 className="text-xs text-muted-foreground mb-2">Time Segments</h4>
+            <h4 className="text-xs text-basalt-muted-foreground mb-2">Time Segments</h4>
             <div className="space-y-2">
               {ai.result.timeSegments.map((seg, i) => (
-                <div key={i} className="rounded-widget bg-secondary px-3 py-2.5">
+                <div key={i} className="rounded-basalt-widget bg-basalt-secondary px-3 py-2.5">
                   <div className="flex items-center gap-2 mb-1">
                     <Clock
-                      className="h-3.5 w-3.5 text-muted-foreground shrink-0"
+                      className="h-3.5 w-3.5 text-basalt-muted-foreground shrink-0"
                       strokeWidth={1.5}
                     />
-                    <span className="text-xs font-medium text-muted-foreground font-display tracking-tight">
+                    <span className="text-xs font-medium text-basalt-muted-foreground font-display tracking-tight">
                       {seg.timeRange}
                     </span>
-                    <span className="text-xs font-medium text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="text-xs font-medium text-basalt-primary bg-basalt-primary/10 px-1.5 py-0.5 rounded">
                       {seg.label}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground leading-relaxed">{seg.description}</p>
+                  <p className="text-sm text-basalt-foreground leading-relaxed">
+                    {seg.description}
+                  </p>
                 </div>
               ))}
             </div>
@@ -585,9 +597,9 @@ function AiAnalysisPanel({
 
         {/* Summary (Markdown rendered) */}
         {ai.result.summary && (
-          <div className="pt-3 border-t border-border/50">
-            <h4 className="text-xs text-muted-foreground mb-2">Summary</h4>
-            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
+          <div className="pt-3 border-t border-basalt-border/50">
+            <h4 className="text-xs text-basalt-muted-foreground mb-2">Summary</h4>
+            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-basalt-foreground [&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-sm [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-medium [&_p]:mb-2 [&_p]:last:mb-0 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:mb-1 [&_strong]:font-semibold [&_em]:italic [&_code]:text-xs [&_code]:bg-basalt-secondary [&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded">
               <Markdown>{ai.result.summary}</Markdown>
             </div>
           </div>
@@ -753,7 +765,7 @@ export function DailyReviewClient({ date }: { date: string }) {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-semibold">Daily Review</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-basalt-muted-foreground">
               {hasData
                 ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
                 : "View your productivity analysis for this day."}
@@ -764,7 +776,7 @@ export function DailyReviewClient({ date }: { date: string }) {
 
         {/* Error */}
         {error && (
-          <div className="rounded-widget bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-basalt-widget bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
             {error}
           </div>
         )}
@@ -784,10 +796,10 @@ export function DailyReviewClient({ date }: { date: string }) {
 
         {/* Empty state */}
         {!loading && data && !hasData && (
-          <div className="flex flex-col items-center justify-center rounded-card bg-secondary py-16 px-6 text-center">
-            <Calendar className="size-8 text-muted-foreground mb-4" strokeWidth={1.5} />
+          <div className="flex flex-col items-center justify-center rounded-basalt-card bg-basalt-secondary py-16 px-6 text-center">
+            <Calendar className="size-8 text-basalt-muted-foreground mb-4" strokeWidth={1.5} />
             <h2 className="text-lg font-semibold">No Data</h2>
-            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            <p className="mt-2 max-w-md text-sm text-basalt-muted-foreground">
               No sessions recorded on {formatDateDisplay(date)}. Try selecting a different date.
             </p>
           </div>
@@ -832,9 +844,9 @@ export function DailyReviewClient({ date }: { date: string }) {
 function LoadingSkeleton({ height = "h-[200px]" }: { height?: string }) {
   return (
     <div
-      className={`rounded-card bg-secondary p-4 md:p-5 ${height} flex items-center justify-center`}
+      className={`rounded-basalt-card bg-basalt-secondary p-4 md:p-5 ${height} flex items-center justify-center`}
     >
-      <Loader2 className="size-6 animate-spin text-muted-foreground" />
+      <Loader2 className="size-6 animate-spin text-basalt-muted-foreground" />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { ToggleGroup, ToggleGroupItem } from "@nocoo/basalt/components/toggle-group";
+
 import {
   AppWindow,
   BarChart3,
@@ -27,7 +29,7 @@ import {
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
-import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact } from "@/lib/chart-config";
+import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact, getChartColor } from "@/lib/chart-config";
 import { CHART_COLORS, chartPrimary, withAlpha } from "@/lib/palette";
 import { cn } from "@/lib/utils";
 
@@ -114,7 +116,7 @@ export default function DashboardPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Hey, {userName}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-basalt-muted-foreground">
               Here&apos;s your screen time overview.
             </p>
           </div>
@@ -123,6 +125,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="icon-sm"
+              aria-label="Refresh dashboard"
               onClick={() => fetchData(period)}
               disabled={loading}
             >
@@ -132,7 +135,7 @@ export default function DashboardPage() {
         </div>
 
         {error && (
-          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
             {error}
           </div>
         )}
@@ -210,22 +213,21 @@ const PERIODS: { value: Period; label: string }[] = [
 
 function PeriodSelector({ value, onChange }: { value: Period; onChange: (p: Period) => void }) {
   return (
-    <div className="flex rounded-lg bg-secondary p-1">
-      {PERIODS.map((p) => (
-        <button
-          type="button"
-          key={p.value}
-          onClick={() => onChange(p.value)}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-            value === p.value
-              ? "bg-secondary text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {p.label}
-        </button>
+    <ToggleGroup
+      type="single"
+      value={value}
+      onValueChange={(next) => {
+        if (next) onChange(next as Period);
+      }}
+      aria-label="Time period"
+      className="min-w-0 shrink flex-wrap"
+    >
+      {PERIODS.map((period) => (
+        <ToggleGroupItem key={period.value} value={period.value}>
+          {period.label}
+        </ToggleGroupItem>
       ))}
-    </div>
+    </ToggleGroup>
   );
 }
 
@@ -249,17 +251,17 @@ function StatCard({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-2xl bg-secondary p-4", className)}>
-      <div className="flex items-center gap-2 text-muted-foreground mb-2">
+    <div className={cn("rounded-2xl bg-basalt-secondary p-4", className)}>
+      <div className="flex items-center gap-2 text-basalt-muted-foreground mb-2">
         {icon}
         <span className="text-sm">{title}</span>
       </div>
       {loading ? (
-        <div className="h-8 w-20 animate-pulse rounded-md bg-muted" />
+        <div className="h-8 w-20 animate-pulse rounded-md bg-basalt-muted" />
       ) : (
         <p className="text-2xl font-semibold">{value}</p>
       )}
-      <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
+      <p className="mt-1 text-xs text-basalt-muted-foreground">{subtitle}</p>
     </div>
   );
 }
@@ -290,9 +292,9 @@ function DailyChart({
   });
 
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
+    <div className={`rounded-2xl bg-basalt-secondary p-4 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <TrendingUp className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <TrendingUp className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Daily Screen Time</h2>
       </div>
       <div className="h-[280px]">
@@ -330,9 +332,9 @@ function DailyTooltip({
   const data = entry.payload;
 
   return (
-    <div className="rounded-[var(--radius-widget)] bg-secondary px-3 py-2 text-sm">
+    <div className="rounded-[var(--basalt-radius-widget)] bg-basalt-secondary px-3 py-2 text-sm">
       <p className="font-medium">{data.label}</p>
-      <p className="text-muted-foreground">
+      <p className="text-basalt-muted-foreground">
         {formatDuration(data.duration)} &middot; {data.sessions} sessions
       </p>
     </div>
@@ -352,23 +354,23 @@ function AppDonut({ apps, className = "" }: { apps: TopApp[]; className?: string
   const chartData = top.map((app, i) => ({
     name: app.appName,
     value: app.totalDuration,
-    color: CHART_COLORS[i],
+    color: getChartColor(i),
   }));
 
   if (restTotal > 0) {
     chartData.push({
       name: "Other",
       value: restTotal,
-      color: CHART_COLORS[5],
+      color: getChartColor(5),
     });
   }
 
   const totalDuration = apps.reduce((sum, a) => sum + a.totalDuration, 0);
 
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
+    <div className={`rounded-2xl bg-basalt-secondary p-4 ${className}`}>
       <div className="flex items-center gap-2 mb-4">
-        <PieChartIcon className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <PieChartIcon className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">App Usage</h2>
       </div>
       <div className="h-[200px]">
@@ -403,7 +405,9 @@ function AppDonut({ apps, className = "" }: { apps: TopApp[]; className?: string
               className="inline-block size-2.5 rounded-full shrink-0"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-muted-foreground truncate max-w-[100px]">{entry.name}</span>
+            <span className="text-basalt-muted-foreground truncate max-w-[100px]">
+              {entry.name}
+            </span>
           </div>
         ))}
       </div>
@@ -427,9 +431,9 @@ function DonutTooltip({
   const pct = total > 0 ? ((data.value / total) * 100).toFixed(1) : "0";
 
   return (
-    <div className="rounded-[var(--radius-widget)] bg-secondary px-3 py-2 text-sm">
+    <div className="rounded-[var(--basalt-radius-widget)] bg-basalt-secondary px-3 py-2 text-sm">
       <p className="font-medium">{data.name}</p>
-      <p className="text-muted-foreground">
+      <p className="text-basalt-muted-foreground">
         {formatDuration(data.value)} ({pct}%)
       </p>
     </div>
@@ -442,10 +446,10 @@ function DonutTooltip({
 
 function ChartSkeleton({ className = "" }: { className?: string }) {
   return (
-    <div className={`rounded-2xl bg-secondary p-4 ${className}`}>
-      <div className="h-5 w-40 animate-pulse rounded-md bg-muted mb-4" />
+    <div className={`rounded-2xl bg-basalt-secondary p-4 ${className}`}>
+      <div className="h-5 w-40 animate-pulse rounded-md bg-basalt-muted mb-4" />
       <div className="h-[280px] flex items-center justify-center">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <Loader2 className="size-6 animate-spin text-basalt-muted-foreground" />
       </div>
     </div>
   );
@@ -459,7 +463,7 @@ function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: 
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <BarChart3 className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <BarChart3 className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Top Apps</h2>
       </div>
 
@@ -468,9 +472,12 @@ function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: 
           const pct = totalDuration > 0 ? (app.totalDuration / totalDuration) * 100 : 0;
 
           return (
-            <div key={app.appName} className="flex items-center gap-3 rounded-2xl bg-secondary p-3">
+            <div
+              key={app.appName}
+              className="flex items-center gap-3 rounded-2xl bg-basalt-secondary p-3"
+            >
               {/* Rank */}
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-background text-xs font-medium ring-1 ring-border">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-basalt-background text-xs font-medium ring-1 ring-basalt-border">
                 {i + 1}
               </span>
 
@@ -478,12 +485,12 @@ function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium truncate">{app.appName}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">
+                  <span className="text-xs text-basalt-muted-foreground shrink-0">
                     {formatDuration(app.totalDuration)}
                   </span>
                 </div>
                 {/* Progress bar */}
-                <div className="mt-1.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                <div className="mt-1.5 h-1.5 w-full rounded-full bg-basalt-muted overflow-hidden">
                   <div
                     className="h-full rounded-full transition-[width]"
                     style={{
@@ -492,7 +499,7 @@ function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: 
                     }}
                   />
                 </div>
-                <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                <div className="mt-1 flex items-center justify-between text-xs text-basalt-muted-foreground">
                   <span>{app.sessionCount} sessions</span>
                   <span>{pct.toFixed(1)}%</span>
                 </div>
@@ -511,12 +518,12 @@ function TopAppsTable({ apps, totalDuration }: { apps: TopApp[]; totalDuration: 
 
 function EmptyState({ period }: { period: Period }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-16 px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background ring-1 ring-border mb-4">
-        <Monitor className="size-7 text-muted-foreground" strokeWidth={1.5} />
+    <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-16 px-6 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-4">
+        <Monitor className="size-7 text-basalt-muted-foreground" strokeWidth={1.5} />
       </div>
       <h2 className="text-lg font-semibold">No Data Yet</h2>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+      <p className="mt-2 max-w-md text-sm text-basalt-muted-foreground">
         {period === "today"
           ? "No sessions recorded today. Make sure the Gecko mac app is running."
           : "No sessions found for this period. Try selecting a different time range."}

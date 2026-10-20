@@ -13,7 +13,7 @@ describe("getScoreColor", () => {
   test("returns green for score > 70", () => {
     const color = getScoreColor(85);
     expect(color.text).toContain("success");
-    expect(color.stroke).toBe("hsl(var(--success))");
+    expect(color.stroke).toBe("hsl(var(--basalt-success))");
   });
 
   test("returns green for score = 71", () => {
@@ -24,7 +24,7 @@ describe("getScoreColor", () => {
   test("returns amber for score = 70", () => {
     const color = getScoreColor(70);
     expect(color.text).toContain("warning");
-    expect(color.stroke).toBe("hsl(var(--warning))");
+    expect(color.stroke).toBe("hsl(var(--basalt-warning))");
   });
 
   test("returns amber for score = 40", () => {
@@ -35,7 +35,7 @@ describe("getScoreColor", () => {
   test("returns red for score = 39", () => {
     const color = getScoreColor(39);
     expect(color.text).toContain("destructive");
-    expect(color.stroke).toBe("hsl(var(--destructive))");
+    expect(color.stroke).toBe("hsl(var(--basalt-destructive))");
   });
 
   test("returns red for score = 0", () => {

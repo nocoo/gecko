@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "@nocoo/basalt/components/button";
 import { useTheme } from "@nocoo/basalt/providers/theme";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { HeaderTooltip } from "./header-links";
 
 export type { BasaltTheme as Theme } from "@nocoo/basalt/providers/theme";
@@ -19,7 +19,7 @@ export function ThemeToggle({ "aria-label": ariaLabel = "Toggle theme" }: ThemeT
     >
       <Button
         variant="ghost"
-        size="icon"
+        size="icon-sm"
         onClick={() => setTheme(nextTheme)}
         aria-label={ariaLabel}
       >

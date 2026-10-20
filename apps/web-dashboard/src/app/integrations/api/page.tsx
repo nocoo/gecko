@@ -62,7 +62,8 @@ function useCopyToClipboard() {
 function EndpointSection() {
   const { copiedId, copy } = useCopyToClipboard();
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+  const [baseUrl, setBaseUrl] = useState("");
+  useEffect(() => setBaseUrl(window.location.origin), []);
 
   const endpoints = [
     {
@@ -119,13 +120,13 @@ function EndpointSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <Globe className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <Globe className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Endpoints</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Gecko exposes two APIs. Both require a valid API key via the{" "}
-        <code className="text-xs bg-secondary px-1 py-0.5 rounded">
+        <code className="text-xs bg-basalt-secondary px-1 py-0.5 rounded">
           Authorization: Bearer gk_xxx
         </code>{" "}
         header.
@@ -133,12 +134,12 @@ function EndpointSection() {
 
       <div className="space-y-4">
         {endpoints.map((ep) => (
-          <div key={ep.id} className="rounded-2xl bg-secondary p-5 space-y-3">
+          <div key={ep.id} className="rounded-2xl bg-basalt-secondary p-5 space-y-3">
             <div className="space-y-2">
               <Label>{ep.label}</Label>
-              <p className="text-xs text-muted-foreground">{ep.description}</p>
+              <p className="text-xs text-basalt-muted-foreground">{ep.description}</p>
               <div className="flex items-center gap-2">
-                <div className="flex-1 flex items-center rounded-lg bg-background ring-1 ring-border overflow-hidden">
+                <div className="flex-1 flex items-center rounded-lg bg-basalt-background ring-1 ring-basalt-border overflow-hidden">
                   <span
                     className={`shrink-0 px-2.5 py-2 text-xs font-mono font-semibold ${methodColors[ep.method]}`}
                   >
@@ -152,6 +153,7 @@ function EndpointSection() {
                 <Button
                   variant="outline"
                   size="icon-sm"
+                  aria-label={`Copy ${ep.label} endpoint`}
                   onClick={() => copy(`${baseUrl}${ep.path}`, ep.id)}
                 >
                   {copiedId === ep.id ? (
@@ -165,10 +167,10 @@ function EndpointSection() {
 
             {/* Collapsible response example */}
             <details className="group">
-              <summary className="cursor-pointer text-xs font-medium text-muted-foreground hover:text-foreground transition-colors select-none">
+              <summary className="cursor-pointer text-xs font-medium text-basalt-muted-foreground hover:text-basalt-foreground transition-colors select-none">
                 Example response
               </summary>
-              <pre className="mt-2 max-h-60 overflow-auto rounded-lg bg-background p-3 text-xs font-mono ring-1 ring-border whitespace-pre-wrap">
+              <pre className="mt-2 max-h-60 overflow-auto rounded-lg bg-basalt-background p-3 text-xs font-mono ring-1 ring-basalt-border whitespace-pre-wrap">
                 {ep.response}
               </pre>
             </details>
@@ -297,34 +299,36 @@ function ApiKeysSection({
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <Key className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <Key className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">API Keys</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Create and manage API keys for authenticating requests. Keys are shown only once when
         created — store them securely.
       </p>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
       {/* Create new key */}
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
-        <Label>Create New Key</Label>
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
+        <Label htmlFor="new-key-name">Create New Key</Label>
         <div className="flex items-center gap-2">
           <Input
+            id="new-key-name"
+            className="min-w-0 flex-1"
             placeholder="Key name (e.g. Shortcuts, n8n)"
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
             disabled={creating}
           />
-          <Button onClick={handleCreate} disabled={creating || !newKeyName.trim()} size="sm">
+          <Button onClick={handleCreate} disabled={creating || !newKeyName.trim()}>
             {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             Create
           </Button>
@@ -335,12 +339,12 @@ function ApiKeysSection({
       {loading ? (
         <div className="space-y-2">
           {[1, 2].map((i) => (
-            <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />
+            <div key={i} className="h-16 rounded-xl bg-basalt-muted animate-pulse" />
           ))}
         </div>
       ) : keys.length === 0 ? (
-        <div className="rounded-[var(--radius-card)] bg-secondary py-8 text-center">
-          <p className="text-sm text-muted-foreground">
+        <div className="rounded-[var(--basalt-radius-card)] bg-basalt-secondary py-8 text-center">
+          <p className="text-sm text-basalt-muted-foreground">
             No API keys yet. Create one to get started.
           </p>
         </div>
@@ -349,9 +353,9 @@ function ApiKeysSection({
           {keys.map((k) => (
             <div
               key={k.id}
-              className="flex items-center gap-3 rounded-xl bg-background px-4 py-3 ring-1 ring-border"
+              className="flex items-center gap-3 rounded-xl bg-basalt-background px-4 py-3 ring-1 ring-basalt-border"
             >
-              <Key className="size-4 text-muted-foreground shrink-0" />
+              <Key className="size-4 text-basalt-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 {editingId === k.id ? (
                   <div className="flex items-center gap-2">
@@ -367,8 +371,9 @@ function ApiKeysSection({
                       disabled={renaming}
                     />
                     <Button
+                      aria-label="Save key name"
                       variant="outline"
-                      size="xs"
+                      size="icon-sm"
                       onClick={() => handleRename(k.id)}
                       disabled={renaming || !editName.trim()}
                     >
@@ -382,7 +387,7 @@ function ApiKeysSection({
                 ) : (
                   <>
                     <p className="text-sm font-medium truncate">{k.name}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-basalt-muted-foreground">
                       Created {formatRelativeTime(k.createdAt)}
                       {k.lastUsed && (
                         <span className="ml-2">· Last used {formatRelativeTime(k.lastUsed)}</span>
@@ -406,7 +411,7 @@ function ApiKeysSection({
                     size="icon-xs"
                     onClick={() => setDeleteTarget(k)}
                     title="Delete"
-                    className="text-destructive hover:text-destructive"
+                    className="text-basalt-destructive hover:text-basalt-destructive"
                   >
                     <Trash2 className="size-3" />
                   </Button>
@@ -419,7 +424,12 @@ function ApiKeysSection({
 
       {/* Revealed key dialog (shown once after creation) */}
       <Dialog open={!!revealedKey} onOpenChange={(open) => !open && setRevealedKey(null)}>
-        <DialogContent>
+        <DialogContent
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            document.getElementById("new-key-name")?.focus();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>API Key Created</DialogTitle>
             <DialogDescription>
@@ -428,12 +438,13 @@ function ApiKeysSection({
           </DialogHeader>
 
           <div className="flex items-center gap-2 py-2">
-            <code className="flex-1 rounded-lg bg-secondary px-3 py-2 text-xs font-mono break-all select-all">
+            <code className="flex-1 rounded-lg bg-basalt-secondary px-3 py-2 text-xs font-mono break-all select-all">
               {revealedKey}
             </code>
             <Button
               variant="outline"
               size="icon-sm"
+              aria-label="Copy API key"
               onClick={() => revealedKey && copy(revealedKey, "revealed-key")}
             >
               {copiedId === "revealed-key" ? (
@@ -528,24 +539,25 @@ function TestSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <Play className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <Play className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Test API</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Send a test request to the snapshot endpoint. Paste one of your API keys below — it will be
-        sent as the <code className="text-xs bg-secondary px-1 py-0.5 rounded">Authorization</code>{" "}
+        sent as the{" "}
+        <code className="text-xs bg-basalt-secondary px-1 py-0.5 rounded">Authorization</code>{" "}
         header.
       </p>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="test-api-key">API Key</Label>
           <Input
@@ -558,8 +570,8 @@ function TestSection() {
           />
         </div>
 
-        <div className="flex items-end gap-3">
-          <div className="space-y-2 flex-1">
+        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
+          <div className="space-y-2 min-w-0 flex-1">
             <Label htmlFor="test-date">Date</Label>
             <Input
               id="test-date"
@@ -581,12 +593,12 @@ function TestSection() {
                 className={`rounded px-2 py-0.5 text-xs font-mono font-semibold ${
                   result.status >= 200 && result.status < 300
                     ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                    : "bg-destructive/10 text-destructive"
+                    : "bg-basalt-destructive/10 text-basalt-destructive"
                 }`}
               >
                 {result.status}
               </span>
-              <span className="text-xs text-muted-foreground tabular-nums">
+              <span className="text-xs text-basalt-muted-foreground tabular-nums">
                 {result.durationMs}ms
               </span>
               <Button
@@ -603,7 +615,7 @@ function TestSection() {
                 Copy
               </Button>
             </div>
-            <pre className="max-h-80 overflow-auto rounded-lg bg-background p-3 text-xs font-mono ring-1 ring-border">
+            <pre className="max-h-80 overflow-auto rounded-lg bg-basalt-background p-3 text-xs font-mono ring-1 ring-basalt-border">
               {resultJson}
             </pre>
           </div>
@@ -663,7 +675,7 @@ export default function ApiPage() {
       <div className="space-y-8 max-w-2xl">
         <div>
           <h1 className="text-2xl font-semibold">API</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
             Access your Gecko data programmatically. Manage API keys and test endpoints.
           </p>
         </div>

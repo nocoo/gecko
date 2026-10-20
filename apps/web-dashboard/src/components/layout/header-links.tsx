@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@nocoo/basalt/components/button";
 import {
   Tooltip,
   TooltipContent,
@@ -8,6 +7,7 @@ import {
   TooltipTrigger,
 } from "@nocoo/basalt/components/tooltip";
 import type { ReactElement } from "react";
+import { Button } from "@/components/ui/button";
 
 export function HeaderTooltip({ label, children }: { label: string; children: ReactElement }) {
   return (
@@ -27,7 +27,7 @@ export function HexlyLink() {
     <HeaderTooltip label="Gecko on hexly.ai">
       <Button
         variant="ghost"
-        size="icon"
+        size="icon-sm"
         className="h-8 w-8 shrink-0 text-basalt-muted-foreground hover:text-basalt-foreground"
         asChild
       >

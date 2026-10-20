@@ -24,7 +24,7 @@ export interface ButtonVariantProps {
 }
 
 const EXTENDED_SIZE_CLASSES: Record<string, string> = {
-  xs: "h-6 gap-1 rounded-md px-2 text-xs [&_svg]:size-3",
+  xs: "h-6 gap-1 rounded-md px-2 py-0 text-xs [&_svg]:size-3",
   "icon-xs": "size-6 min-h-0 min-w-0 p-0 rounded-md [&_svg]:size-3",
   "icon-sm": "size-8 min-h-0 min-w-0 p-0",
   "icon-lg": "size-10 p-0",
@@ -66,7 +66,7 @@ export function buttonVariants({
   });
 
   const extraClass = EXTENDED_SIZE_CLASSES[chosenSize];
-  return cn(base, extraClass, className);
+  return cn(base, "shrink-0", extraClass, className);
 }
 
 export interface ButtonProps
@@ -88,7 +88,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         variant={(variant ?? "default") as ButtonVariant}
         size={basaltSize}
-        className={cn(extraClass, className)}
+        className={cn("shrink-0", extraClass, className)}
         {...props}
       />
     );

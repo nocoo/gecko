@@ -1,12 +1,19 @@
 "use client";
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@nocoo/basalt/components/select";
+import { Switch } from "@nocoo/basalt/components/switch";
 import { AlertTriangle, Bell, Check, Globe, Loader2, Mail, Sparkles, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { type MeUser, useMe } from "@/hooks/use-me";
 
@@ -23,7 +30,9 @@ export default function SettingsPage() {
         {/* Page header */}
         <div>
           <h1 className="text-2xl font-semibold">Settings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage your profile and preferences.</p>
+          <p className="mt-1 text-sm text-basalt-muted-foreground">
+            Manage your profile and preferences.
+          </p>
         </div>
 
         {/* Profile section */}
@@ -51,18 +60,18 @@ function ProfileSection({ user }: { user: MeUser | null }) {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <User className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <User className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Profile</h2>
       </div>
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         <div className="flex items-center gap-4">
-          <div className="size-14 rounded-full bg-muted flex items-center justify-center ring-2 ring-border">
-            <User className="size-6 text-muted-foreground" />
+          <div className="size-14 rounded-full bg-basalt-muted flex items-center justify-center ring-2 ring-basalt-border">
+            <User className="size-6 text-basalt-muted-foreground" />
           </div>
           <div>
             <p className="font-medium">{user?.name ?? "—"}</p>
-            <p className="text-sm text-muted-foreground">Managed by Cloudflare Access</p>
+            <p className="text-sm text-basalt-muted-foreground">Managed by Cloudflare Access</p>
           </div>
         </div>
 
@@ -88,7 +97,7 @@ function InfoField({
 }) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-muted-foreground">
+      <div className="flex items-center gap-1.5 text-basalt-muted-foreground">
         {icon}
         <span className="text-xs">{label}</span>
       </div>
@@ -185,48 +194,48 @@ function TimezoneSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <Globe className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <Globe className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Timezone</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Your timezone determines how daily boundaries are calculated for stats, charts, and AI
         analysis.
       </p>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
           <AlertTriangle className="size-4 shrink-0" />
           {error}
         </div>
       )}
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-4">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-4">
         <div className="space-y-2">
           <Label htmlFor="timezone-select">Timezone</Label>
           {loading ? (
-            <div className="h-10 rounded-md bg-muted animate-pulse" />
+            <div className="h-10 rounded-md bg-basalt-muted animate-pulse" />
           ) : (
             <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <Select
-                  id="timezone-select"
-                  value={timezone}
-                  onChange={(e) => handleChange(e.target.value)}
-                  disabled={saving}
-                >
-                  {/* If the current timezone isn't in COMMON_TIMEZONES, show it as a custom option */}
-                  {!COMMON_TIMEZONES.some((t) => t.value === timezone) && timezone && (
-                    <option value={timezone}>{timezone}</option>
-                  )}
-                  {COMMON_TIMEZONES.map((tz) => (
-                    <option key={tz.value} value={tz.value}>
-                      {tz.label}
-                    </option>
-                  ))}
+              <div className="min-w-0 flex-1">
+                <Select value={timezone} onValueChange={handleChange} disabled={saving}>
+                  <SelectTrigger id="timezone-select" className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {/* If the current timezone isn't in COMMON_TIMEZONES, show it as a custom option */}
+                    {!COMMON_TIMEZONES.some((t) => t.value === timezone) && timezone && (
+                      <SelectItem value={timezone}>{timezone}</SelectItem>
+                    )}
+                    {COMMON_TIMEZONES.map((tz) => (
+                      <SelectItem key={tz.value} value={tz.value}>
+                        {tz.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
-              <Button variant="outline" size="sm" onClick={handleDetect} disabled={saving}>
+              <Button variant="outline" onClick={handleDetect} disabled={saving}>
                 Detect
               </Button>
             </div>
@@ -234,10 +243,10 @@ function TimezoneSection() {
         </div>
 
         {/* Status */}
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-basalt-muted-foreground">
           {saving && <span>Saving...</span>}
           {saved && (
-            <span className="flex items-center gap-1 text-success">
+            <span className="flex items-center gap-1 text-basalt-success">
               <Check className="size-3" /> Saved
             </span>
           )}
@@ -311,12 +320,12 @@ function NotificationsSection() {
     return (
       <section className="space-y-4">
         <div className="flex items-center gap-2">
-          <Bell className="size-5 text-muted-foreground" strokeWidth={1.5} />
+          <Bell className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
           <h2 className="text-lg font-semibold">Notifications</h2>
         </div>
-        <div className="rounded-2xl bg-secondary p-5">
+        <div className="rounded-2xl bg-basalt-secondary p-5">
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <Loader2 className="size-5 animate-spin text-basalt-muted-foreground" />
           </div>
         </div>
       </section>
@@ -326,34 +335,34 @@ function NotificationsSection() {
   return (
     <section className="space-y-4">
       <div className="flex items-center gap-2">
-        <Bell className="size-5 text-muted-foreground" strokeWidth={1.5} />
+        <Bell className="size-5 text-basalt-muted-foreground" strokeWidth={1.5} />
         <h2 className="text-lg font-semibold">Notifications</h2>
       </div>
 
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-basalt-muted-foreground">
         Configure automatic analysis and email notifications for your daily reports.
       </p>
 
-      <div className="rounded-2xl bg-secondary p-5 space-y-5">
+      <div className="rounded-2xl bg-basalt-secondary p-5 space-y-5">
         {/* Auto-summarize toggle */}
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background">
-              <Sparkles className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-basalt-background">
+              <Sparkles className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
             </div>
             <div className="min-w-0">
               <Label htmlFor="auto-summarize" className="text-sm font-medium">
                 Auto-summarize
               </Label>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-xs text-basalt-muted-foreground">
                 Automatically generate AI summaries for your daily screen time.
               </p>
             </div>
           </div>
-          <ToggleSwitch
+          <Switch
             id="auto-summarize"
             checked={settings.autoSummarize}
-            onChange={(checked) => handleSave({ autoSummarize: checked })}
+            onCheckedChange={(checked) => handleSave({ autoSummarize: checked })}
             disabled={saving}
           />
         </div>
@@ -364,22 +373,22 @@ function NotificationsSection() {
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-background">
-                <Mail className="h-5 w-5 text-muted-foreground" strokeWidth={1.5} />
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-basalt-background">
+                <Mail className="h-5 w-5 text-basalt-muted-foreground" strokeWidth={1.5} />
               </div>
               <div className="min-w-0">
                 <Label htmlFor="email-notifications" className="text-sm font-medium">
                   Email notifications
                 </Label>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-0.5 text-xs text-basalt-muted-foreground">
                   Receive daily analysis reports via email.
                 </p>
               </div>
             </div>
-            <ToggleSwitch
+            <Switch
               id="email-notifications"
               checked={settings.emailEnabled}
-              onChange={(checked) => handleSave({ emailEnabled: checked })}
+              onCheckedChange={(checked) => handleSave({ emailEnabled: checked })}
               disabled={saving}
             />
           </div>
@@ -406,7 +415,7 @@ function NotificationsSection() {
 
         {/* Status */}
         {(saving || saved) && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-basalt-muted-foreground">
             {saving && <span>Saving...</span>}
             {saved && (
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -417,37 +426,5 @@ function NotificationsSection() {
         )}
       </div>
     </section>
-  );
-}
-
-// =============================================================================
-// Toggle Switch Component
-// =============================================================================
-
-function ToggleSwitch({
-  id,
-  checked,
-  onChange,
-  disabled,
-}: {
-  id?: string;
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      id={id}
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => !disabled && onChange(!checked)}
-      disabled={disabled}
-      className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "bg-foreground" : "bg-muted"}`}
-    >
-      <span
-        className={`pointer-events-none block h-5 w-5 rounded-full bg-background shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`}
-      />
-    </button>
   );
 }

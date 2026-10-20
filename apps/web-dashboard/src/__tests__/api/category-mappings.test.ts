@@ -43,6 +43,64 @@ describe("/api/categories/mappings", () => {
   });
 
   describe("PUT /api/categories/mappings", () => {
+    test("clears only the current user's assignment and keeps the last change", async () => {
+      const { calls } = mockD1([[], []]);
+      const { PUT } = await import("../../app/api/categories/mappings/route");
+      const res = await PUT(
+        humanRequest("http://127.0.0.1:17018/api/categories/mappings", {
+          method: "PUT",
+          body: JSON.stringify({
+            mappings: [
+              { bundleId: "com.remove", categoryId: "cat-old" },
+              { bundleId: " com.remove ", categoryId: " " },
+              { bundleId: "com.keep", categoryId: "" },
+              { bundleId: "com.keep", categoryId: "cat-new" },
+            ],
+          }),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expect((await res.json()).upserted).toBe(1);
+      expect(calls[0].sql).toContain(
+        "DELETE FROM app_category_mappings WHERE user_id = ? AND bundle_id = ?",
+      );
+      expect(calls[0].params).toEqual([expect.any(String), "com.remove"]);
+      expect(calls[1].params).toEqual([calls[0].params[0], "com.keep", "cat-new"]);
+    });
+
+    test("accepts a removal-only batch", async () => {
+      const { calls } = mockD1([[]]);
+      const { PUT } = await import("../../app/api/categories/mappings/route");
+      const res = await PUT(
+        humanRequest("http://127.0.0.1:17018/api/categories/mappings", {
+          method: "PUT",
+          body: JSON.stringify({ mappings: [{ bundleId: "com.remove", categoryId: "" }] }),
+        }),
+      );
+      expect(res.status).toBe(200);
+      expect((await res.json()).upserted).toBe(0);
+      expect(calls).toHaveLength(1);
+    });
+
+    test.each([
+      null,
+      {},
+      { bundleId: 42 },
+      { bundleId: " " },
+      { bundleId: "com.app", categoryId: null },
+    ])("rejects malformed entries before writing: %j", async (entry) => {
+      const { calls } = mockD1();
+      const { PUT } = await import("../../app/api/categories/mappings/route");
+      const res = await PUT(
+        humanRequest("http://127.0.0.1:17018/api/categories/mappings", {
+          method: "PUT",
+          body: JSON.stringify({ mappings: [entry] }),
+        }),
+      );
+      expect(res.status).toBe(400);
+      expect(calls).toHaveLength(0);
+    });
+
     test("upserts mappings", async () => {
       const { calls } = mockD1([[]]);
       const { PUT } = await import("../../app/api/categories/mappings/route");

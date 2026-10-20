@@ -53,15 +53,31 @@ export async function PUT(req: Request): Promise<Response> {
 
   // Validate each entry
   for (const m of body.mappings) {
-    if (!m.bundleId?.trim() || !m.categoryId?.trim()) {
+    if (typeof m?.bundleId !== "string" || !m.bundleId.trim() || typeof m.categoryId !== "string") {
       return jsonError("Each mapping must have bundleId and categoryId", 400);
     }
   }
 
-  // D1 has a 100 bind param limit. Each upsert uses 4 params.
-  // Process in batches of 25 (25 * 4 = 100).
+  // Keep only the final assignment for each app, including explicit removals.
+  const latest = new Map(
+    (body.mappings as Required<MappingEntry>[]).map((m) => [
+      m.bundleId.trim(),
+      m.categoryId.trim(),
+    ]),
+  );
+  const mappings: Required<MappingEntry>[] = [];
+  for (const [bundleId, categoryId] of latest) {
+    if (categoryId) {
+      mappings.push({ bundleId, categoryId });
+    } else {
+      await execute("DELETE FROM app_category_mappings WHERE user_id = ? AND bundle_id = ?", [
+        user.userId,
+        bundleId,
+      ]);
+    }
+  }
+
   const BATCH_SIZE = 25;
-  const mappings = body.mappings as Required<MappingEntry>[];
   let upserted = 0;
 
   for (let i = 0; i < mappings.length; i += BATCH_SIZE) {

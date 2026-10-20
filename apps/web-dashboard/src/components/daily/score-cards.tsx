@@ -5,8 +5,8 @@
  * plus a weighted overall score.
  * Color coding: <40 red, 40-70 amber, >70 green.
  *
- * Design: basalt L2 card (rounded-card bg-secondary), inner elements
- * step back to L1 (rounded-widget bg-card).
+ * Design: basalt L2 card (rounded-basalt-card bg-basalt-secondary), inner elements
+ * step back to L1 (rounded-basalt-widget bg-basalt-card).
  */
 
 "use client";
@@ -73,25 +73,25 @@ export function getScoreColor(score: number): {
 } {
   if (score > 70) {
     return {
-      text: "text-success",
-      bg: "bg-success/10",
-      ring: "ring-success/30",
-      stroke: "hsl(var(--success))",
+      text: "text-basalt-success",
+      bg: "bg-basalt-success/10",
+      ring: "ring-basalt-success/30",
+      stroke: "hsl(var(--basalt-success))",
     };
   }
   if (score >= 40) {
     return {
-      text: "text-warning",
-      bg: "bg-warning/10",
-      ring: "ring-warning/30",
-      stroke: "hsl(var(--warning))",
+      text: "text-basalt-warning",
+      bg: "bg-basalt-warning/10",
+      ring: "ring-basalt-warning/30",
+      stroke: "hsl(var(--basalt-warning))",
     };
   }
   return {
-    text: "text-destructive",
-    bg: "bg-destructive/10",
-    ring: "ring-destructive/30",
-    stroke: "hsl(var(--destructive))",
+    text: "text-basalt-destructive",
+    bg: "bg-basalt-destructive/10",
+    ring: "ring-basalt-destructive/30",
+    stroke: "hsl(var(--basalt-destructive))",
   };
 }
 
@@ -134,7 +134,7 @@ function ScoreRing({
           fill="none"
           stroke="currentColor"
           strokeWidth={strokeWidth}
-          className="text-muted/20"
+          className="text-basalt-muted/20"
         />
         {/* Progress arc */}
         <circle
@@ -167,18 +167,20 @@ function DimensionCard({ dimension, score }: { dimension: ScoreDimension; score:
   const color = getScoreColor(score);
 
   return (
-    <div className="rounded-widget bg-secondary p-3">
+    <div className="rounded-basalt-widget bg-basalt-secondary p-3">
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-xs text-muted-foreground">{dimension.label}</span>
-        <span className="text-xs text-muted-foreground">{Math.round(dimension.weight * 100)}%</span>
+        <span className="text-xs text-basalt-muted-foreground">{dimension.label}</span>
+        <span className="text-xs text-basalt-muted-foreground">
+          {Math.round(dimension.weight * 100)}%
+        </span>
       </div>
       <div className="flex items-baseline gap-1.5">
         <span className={`text-xl font-semibold font-display tracking-tight ${color.text}`}>
           {score}
         </span>
-        <span className="text-xs text-muted-foreground">/ 100</span>
+        <span className="text-xs text-basalt-muted-foreground">/ 100</span>
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">{dimension.description}</p>
+      <p className="mt-1.5 text-xs text-basalt-muted-foreground">{dimension.description}</p>
     </div>
   );
 }
@@ -187,8 +189,8 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
   const overallColor = getScoreColor(scores.overall);
 
   return (
-    <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-      <h3 className="text-sm font-normal text-muted-foreground mb-3">Productivity Score</h3>
+    <div className={`rounded-basalt-card bg-basalt-secondary p-4 md:p-5 ${className}`}>
+      <h3 className="text-sm font-normal text-basalt-muted-foreground mb-3">Productivity Score</h3>
 
       {/* Overall score */}
       <div className="flex items-center gap-4 mb-4">
@@ -199,7 +201,7 @@ export function ScoreCards({ scores, className = "" }: ScoreCardsProps) {
           >
             {getScoreLabel(scores.overall)}
           </p>
-          <p className="text-xs text-muted-foreground">Overall weighted score</p>
+          <p className="text-xs text-basalt-muted-foreground">Overall weighted score</p>
         </div>
       </div>
 

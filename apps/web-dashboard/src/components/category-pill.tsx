@@ -93,15 +93,19 @@ export function CategoryPill({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full font-medium whitespace-nowrap",
+        "inline-flex min-w-0 max-w-full items-center gap-1 rounded-full font-medium whitespace-nowrap",
         size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
         className,
       )}
+      title={title}
       style={{ color: fg, backgroundColor: bg }}
       {...props}
     >
-      <IconComponent className={size === "sm" ? "size-3" : "size-3.5"} strokeWidth={2} />
-      {title}
+      <IconComponent
+        className={size === "sm" ? "size-3 shrink-0" : "size-3.5 shrink-0"}
+        strokeWidth={2}
+      />
+      <span className="truncate">{title}</span>
     </span>
   );
 }

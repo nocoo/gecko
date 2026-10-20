@@ -6,6 +6,7 @@ import {
   AppSkipLink,
   AppShell as BasaltAppShell,
 } from "@nocoo/basalt/components/app-shell";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@nocoo/basalt/components/sheet";
 import { ContentIsland } from "@nocoo/basalt/components/sidebar";
 import { LinkProvider } from "@nocoo/basalt/providers/link";
 import { Menu } from "lucide-react";
@@ -13,6 +14,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { Github } from "@/components/icons/github";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderTooltip, HexlyLink } from "./header-links";
@@ -55,88 +57,77 @@ function AppShellInner({ children, breadcrumbs = [] }: AppShellProps) {
     setMobileOpen(false);
   }, [pathname, setMobileOpen]);
 
-  // Prevent body scroll when mobile sidebar is open
-  useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [mobileOpen]);
-
   // Render breadcrumbs into AppHeader leading area using Breadcrumbs component directly,
   // rather than passing title to AppHeader (which renders an <h1> and conflicts with page headings).
   const allBreadcrumbs = [{ label: "Home", href: "/" }, ...breadcrumbs];
 
   return (
     <LinkProvider render={NextLinkAdapter}>
-      <BasaltAppShell>
-        <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
+      <Sheet open={isMobile && mobileOpen} onOpenChange={setMobileOpen}>
+        <BasaltAppShell>
+          <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
 
-        {/* Desktop sidebar */}
-        {!isMobile && <Sidebar />}
+          {/* Desktop sidebar */}
+          {!isMobile && <Sidebar />}
 
-        {/* Mobile overlay */}
-        {isMobile && mobileOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40 bg-zinc-950/50 backdrop-blur-xs"
-              onClick={() => setMobileOpen(false)}
-            />
-            <div className="fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)]">
-              <Sidebar />
-            </div>
-          </>
-        )}
+          {/* Mobile overlay */}
+          {isMobile && (
+            <SheetContent
+              side="left"
+              className="w-fit gap-0 p-0 sm:p-0"
+              aria-describedby={undefined}
+            >
+              <SheetTitle className="sr-only">Navigation</SheetTitle>
+              <Sidebar mobile />
+            </SheetContent>
+          )}
 
-        <AppMain>
-          {/* Header */}
-          <AppHeader
-            leading={
-              <div className="flex items-center gap-3">
-                {isMobile && (
-                  <HeaderTooltip label="Open navigation menu">
-                    <button
-                      type="button"
-                      onClick={() => setMobileOpen(true)}
-                      aria-label="Open navigation menu"
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors cursor-pointer"
-                    >
-                      <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
-                    </button>
+          <AppMain>
+            {/* Header */}
+            <AppHeader
+              leading={
+                <div className="flex items-center gap-3">
+                  {isMobile && (
+                    <SheetTrigger asChild>
+                      <Button variant="ghost" size="icon-sm" aria-label="Open navigation menu">
+                        <Menu className="h-5 w-5" aria-hidden="true" strokeWidth={1.5} />
+                      </Button>
+                    </SheetTrigger>
+                  )}
+                  <Breadcrumbs items={allBreadcrumbs} />
+                </div>
+              }
+              actions={
+                <>
+                  <HeaderTooltip label="GitHub repository">
+                    <Button asChild variant="ghost" size="icon-sm">
+                      <a
+                        href="https://github.com/nocoo/gecko"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label="GitHub repository"
+                      >
+                        <Github
+                          className="h-[18px] w-[18px]"
+                          aria-hidden="true"
+                          strokeWidth={1.5}
+                        />
+                      </a>
+                    </Button>
                   </HeaderTooltip>
-                )}
-                <Breadcrumbs items={allBreadcrumbs} />
-              </div>
-            }
-            actions={
-              <>
-                <HeaderTooltip label="GitHub repository">
-                  <a
-                    href="https://github.com/nocoo/gecko"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="GitHub repository"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-basalt-muted-foreground hover:text-basalt-foreground hover:bg-basalt-accent transition-colors"
-                  >
-                    <Github className="h-[18px] w-[18px]" aria-hidden="true" strokeWidth={1.5} />
-                  </a>
-                </HeaderTooltip>
-                <HexlyLink />
-                <ThemeToggle aria-label="Toggle theme" />
-              </>
-            }
-          />
+                  <HexlyLink />
+                  <ThemeToggle aria-label="Toggle theme" />
+                </>
+              }
+            />
 
-          {/* Floating island content area */}
-          <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
-            <ContentIsland>{children}</ContentIsland>
-          </div>
-        </AppMain>
-      </BasaltAppShell>
+            {/* Floating island content area */}
+            <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
+              <ContentIsland>{children}</ContentIsland>
+            </div>
+          </AppMain>
+        </BasaltAppShell>
+      </Sheet>
     </LinkProvider>
   );
 }

@@ -25,14 +25,15 @@ export function TagBadge({ name, colorKey, size = "md", className, ...props }: T
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full font-medium whitespace-nowrap",
+        "inline-flex min-w-0 max-w-full items-center rounded-full font-medium whitespace-nowrap",
         size === "sm" ? "px-2 py-0.5 text-xs" : "px-2.5 py-1 text-sm",
         className,
       )}
+      title={name}
       style={{ color: fg, backgroundColor: bg }}
       {...props}
     >
-      {name}
+      <span className="truncate">{name}</span>
     </span>
   );
 }

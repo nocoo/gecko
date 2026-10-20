@@ -124,45 +124,54 @@ export default function SessionsPage() {
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">Sessions</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <p className="mt-1 text-sm text-basalt-muted-foreground">
               Browse all recorded focus sessions.
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <div className="relative min-w-0 flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-basalt-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Filter by app, title, URL..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-8 w-[240px] h-9 text-sm"
+                aria-label="Filter sessions"
+                className="pl-8 pr-8 w-full sm:w-60 h-9 text-sm"
               />
               {search && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label="Clear session filter"
                   onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-basalt-muted-foreground hover:text-basalt-foreground"
                 >
                   <X className="size-3.5" />
-                </button>
+                </Button>
               )}
             </div>
-            <Button variant="ghost" size="icon-sm" onClick={refresh} disabled={loading}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Refresh sessions"
+              onClick={refresh}
+              disabled={loading}
+            >
               <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
             </Button>
           </div>
         </div>
 
         {error && (
-          <div className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
             {error}
           </div>
         )}
 
         {/* Sessions count */}
         {!loading && (
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-basalt-muted-foreground">
             {search
               ? `${filtered.length} of ${sessions.length} sessions`
               : `${sessions.length} sessions loaded`}
@@ -237,14 +246,14 @@ function SessionRow({
   const color = appColor(session.appName);
 
   return (
-    <div className="rounded-2xl bg-secondary overflow-hidden">
+    <div className="rounded-2xl bg-basalt-secondary overflow-hidden">
       {/* Summary row */}
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
         aria-label={`Toggle details for ${session.appName}`}
-        className="w-full flex items-center gap-3 p-3 text-left hover:bg-accent/50 transition-colors"
+        className="w-full flex items-center gap-3 p-3 text-left hover:bg-basalt-accent/50 transition-colors"
       >
         {/* App color dot */}
         <span className="size-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
@@ -253,27 +262,27 @@ function SessionRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{session.appName}</span>
-            {session.isFullScreen && <Maximize className="size-3 text-muted-foreground" />}
-            {session.isMinimized && <Minimize className="size-3 text-muted-foreground" />}
+            {session.isFullScreen && <Maximize className="size-3 text-basalt-muted-foreground" />}
+            {session.isMinimized && <Minimize className="size-3 text-basalt-muted-foreground" />}
           </div>
-          <p className="text-xs text-muted-foreground truncate">{session.windowTitle}</p>
+          <p className="text-xs text-basalt-muted-foreground truncate">{session.windowTitle}</p>
         </div>
 
         {/* Duration */}
         <div className="text-right shrink-0">
           <p className="text-sm font-medium">{formatDuration(session.duration)}</p>
-          <p className="text-xs text-muted-foreground">{formatTime(startDate)}</p>
+          <p className="text-xs text-basalt-muted-foreground">{formatTime(startDate)}</p>
         </div>
 
         {/* Expand arrow */}
         <ChevronDown
-          className={`size-4 text-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
+          className={`size-4 text-basalt-muted-foreground transition-transform ${expanded ? "rotate-180" : ""}`}
         />
       </button>
 
       {/* Detail panel */}
       {expanded && (
-        <div className="border-t border-border px-4 py-3 space-y-2 text-sm">
+        <div className="border-t border-basalt-border px-4 py-3 space-y-2 text-sm">
           <DetailRow label="Time">
             <Clock className="size-3.5 mr-1" />
             {formatDateTime(new Date(session.startTime * 1000))}
@@ -289,7 +298,7 @@ function SessionRow({
                 href={session.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-primary hover:underline truncate max-w-[400px]"
+                className="inline-flex items-center gap-1 text-basalt-primary hover:underline truncate max-w-[400px]"
               >
                 <Globe className="size-3.5 shrink-0" />
                 {session.url}
@@ -304,7 +313,7 @@ function SessionRow({
 
           {session.documentPath && (
             <DetailRow label="File">
-              <code className="text-xs bg-muted px-1.5 py-0.5 rounded break-all">
+              <code className="text-xs bg-basalt-muted px-1.5 py-0.5 rounded break-all">
                 {session.documentPath}
               </code>
             </DetailRow>
@@ -312,7 +321,9 @@ function SessionRow({
 
           {session.bundleId && (
             <DetailRow label="Bundle ID">
-              <code className="text-xs bg-muted px-1.5 py-0.5 rounded">{session.bundleId}</code>
+              <code className="text-xs bg-basalt-muted px-1.5 py-0.5 rounded">
+                {session.bundleId}
+              </code>
             </DetailRow>
           )}
 
@@ -330,7 +341,9 @@ function SessionRow({
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <span className="text-xs text-muted-foreground w-16 shrink-0 pt-0.5 text-right">{label}</span>
+      <span className="text-xs text-basalt-muted-foreground w-16 shrink-0 pt-0.5 text-right">
+        {label}
+      </span>
       <div className="flex items-center text-sm min-w-0">{children}</div>
     </div>
   );
@@ -342,12 +355,12 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 
 function EmptyState({ search, total }: { search: string; total: number }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl bg-secondary py-16 px-6 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-background ring-1 ring-border mb-4">
-        <List className="size-7 text-muted-foreground" strokeWidth={1.5} />
+    <div className="flex flex-col items-center justify-center rounded-2xl bg-basalt-secondary py-16 px-6 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-basalt-background ring-1 ring-basalt-border mb-4">
+        <List className="size-7 text-basalt-muted-foreground" strokeWidth={1.5} />
       </div>
       <h2 className="text-lg font-semibold">{search ? "No Matches" : "No Sessions Yet"}</h2>
-      <p className="mt-2 max-w-md text-sm text-muted-foreground">
+      <p className="mt-2 max-w-md text-sm text-basalt-muted-foreground">
         {search
           ? `No sessions match "${search}" out of ${total} total.`
           : "No sessions have been synced. Enable sync in the Gecko mac app to start tracking."}
@@ -417,24 +430,24 @@ function SessionsSkeleton() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="rounded-2xl bg-secondary p-3 flex items-center gap-3">
+        <div key={i} className="rounded-2xl bg-basalt-secondary p-3 flex items-center gap-3">
           {/* Color dot */}
-          <div className="size-3 rounded-full bg-muted animate-pulse" />
+          <div className="size-3 rounded-full bg-basalt-muted animate-pulse" />
 
           {/* Content */}
           <div className="flex-1 space-y-2">
-            <div className="h-4 w-32 rounded bg-muted animate-pulse" />
-            <div className="h-3 w-48 rounded bg-muted animate-pulse" />
+            <div className="h-4 w-32 rounded bg-basalt-muted animate-pulse" />
+            <div className="h-3 w-48 rounded bg-basalt-muted animate-pulse" />
           </div>
 
           {/* Duration */}
           <div className="text-right space-y-2">
-            <div className="h-4 w-12 rounded bg-muted animate-pulse ml-auto" />
-            <div className="h-3 w-16 rounded bg-muted animate-pulse ml-auto" />
+            <div className="h-4 w-12 rounded bg-basalt-muted animate-pulse ml-auto" />
+            <div className="h-3 w-16 rounded bg-basalt-muted animate-pulse ml-auto" />
           </div>
 
           {/* Chevron */}
-          <div className="size-4 rounded bg-muted animate-pulse" />
+          <div className="size-4 rounded bg-basalt-muted animate-pulse" />
         </div>
       ))}
     </div>

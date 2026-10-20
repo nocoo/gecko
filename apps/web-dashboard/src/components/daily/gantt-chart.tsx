@@ -6,7 +6,7 @@
  * Sorted by total duration (highest at top).
  * Uses hash-based stable coloring per app.
  *
- * Design: basalt L2 card (rounded-card bg-secondary p-4 md:p-5),
+ * Design: basalt L2 card (rounded-basalt-card bg-basalt-secondary p-4 md:p-5),
  * inner elements use L1 styling.
  */
 
@@ -145,9 +145,9 @@ export function GanttChart({ sessions, topApps, timezone, className = "" }: Gant
 
   if (rows.length === 0) {
     return (
-      <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-        <h3 className="text-sm font-normal text-muted-foreground mb-2">Timeline</h3>
-        <p className="text-sm text-muted-foreground">No sessions to display.</p>
+      <div className={`rounded-basalt-card bg-basalt-secondary p-4 md:p-5 ${className}`}>
+        <h3 className="text-sm font-normal text-basalt-muted-foreground mb-2">Timeline</h3>
+        <p className="text-sm text-basalt-muted-foreground">No sessions to display.</p>
       </div>
     );
   }
@@ -164,8 +164,8 @@ export function GanttChart({ sessions, topApps, timezone, className = "" }: Gant
   }
 
   return (
-    <div className={`rounded-card bg-secondary p-4 md:p-5 ${className}`}>
-      <h3 className="text-sm font-normal text-muted-foreground mb-3">Timeline</h3>
+    <div className={`rounded-basalt-card bg-basalt-secondary p-4 md:p-5 ${className}`}>
+      <h3 className="text-sm font-normal text-basalt-muted-foreground mb-3">Timeline</h3>
 
       <div className="overflow-x-auto">
         <div className="min-w-[500px]">
@@ -176,7 +176,7 @@ export function GanttChart({ sessions, topApps, timezone, className = "" }: Gant
               return (
                 <span
                   key={t}
-                  className="absolute text-[10px] text-muted-foreground -translate-x-1/2"
+                  className="absolute text-[11px] text-basalt-muted-foreground -translate-x-1/2"
                   style={{ left: `${pct}%` }}
                 >
                   {formatTime(t)}
@@ -215,7 +215,7 @@ export function GanttChart({ sessions, topApps, timezone, className = "" }: Gant
                 <div key={row.appName} className="flex items-center gap-0 mb-0.5">
                   {/* App label */}
                   <div
-                    className="shrink-0 text-xs text-muted-foreground truncate pr-2 text-right"
+                    className="shrink-0 text-xs text-basalt-muted-foreground truncate pr-2 text-right"
                     style={{ width: LABEL_WIDTH }}
                     title={`${row.appName} — ${formatDurationCompact(row.totalDuration)}`}
                   >
@@ -270,8 +270,10 @@ export function GanttChart({ sessions, topApps, timezone, className = "" }: Gant
                 className="inline-block size-2.5 rounded-full shrink-0"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-muted-foreground truncate max-w-[100px]">{row.appName}</span>
-              <span className="text-muted-foreground">
+              <span className="text-basalt-muted-foreground truncate max-w-[100px]">
+                {row.appName}
+              </span>
+              <span className="text-basalt-muted-foreground">
                 {formatDurationCompact(row.totalDuration)}
               </span>
             </div>

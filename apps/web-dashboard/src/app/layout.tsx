@@ -1,3 +1,4 @@
+import { AccentProvider } from "@nocoo/basalt/providers/accent";
 import { ThemeProvider } from "@nocoo/basalt/providers/theme";
 import type { Metadata } from "next";
 import googleFonts from "next/font/google";
@@ -47,7 +48,11 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} ${dmSans.variable} antialiased`}>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AccentProvider defaultAccent="green" persist={false}>
+            {children}
+          </AccentProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
