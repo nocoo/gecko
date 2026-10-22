@@ -1,6 +1,6 @@
 # 15 — GitHub CI/CD：base-ci 质量门与 Worker 发版
 
-> **状态**：CI/Release 钉 base-ci v2026.9。CD 默认 `GECKO_DEPLOY_STAGE=cron`。GitHub environment `gecko / production` 与 Dove Worker secrets 已写入。\
+> **状态**：CI/Release 钉 base-ci main 2026-10-22。CD 默认 `GECKO_DEPLOY_STAGE=cron`。GitHub environment `gecko / production` 与 Dove Worker secrets 已写入。\
 > **日期**：2026-10-17\
 > **范围**：GitHub Actions、生产 Worker 发布、`bun run release` 与手册事实。不改 Mac 协议。\
 > **主路径**：现有 `.github/workflows/ci.yml` + 新增 `release.yml` 调用 `deploy-worker.yml`；`deploy-cli: cf`；GitHub environment `gecko / production`。\
@@ -12,7 +12,7 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 
 | # | 题目 | 结论 |
 |---|---|---|
-| C1 | 共享流程 | 继续钉 `nocoo/base-ci` **v2026.9** 完整 SHA `0394178ebcff0418c442d84a84119220f31f8987`。CI 已用 `quality.yml`；CD 用 `deploy-worker.yml`。禁止浮动 tag / `v2026` 别名 |
+| C1 | 共享流程 | 继续钉 `nocoo/base-ci` **main 2026-10-22** 完整 SHA `ac635753a869cb85fad1f52aae4ccbd6119f3cae`。CI 已用 `quality.yml`；CD 用 `deploy-worker.yml`。禁止浮动 tag / `v2026` 别名 |
 | C2 | 触发 | 成功的 **main push CI**（`workflow_run`）自动发 Worker；`v*.*.*` tag 发同一 SHA；`workflow_dispatch` 传入已成功的 CI run id。PR / fork CI 不发 |
 | C3 | CLI | `deploy-cli: cf`，`cf-version: 1.0.0-beta.13`，工作目录 `apps/web-dashboard`。不写 Wrangler、不混 `wrangler.jsonc` |
 | C4 | 阶段 | CD 默认 `GECKO_DEPLOY_STAGE=cron`（绑 `gecko.hexly.ai`、Cron `0 * * * *`）。未设 stage 的 production 配置会丢掉自定义域。HTTP 阶段只用于切流验收 |
@@ -27,8 +27,8 @@ docs/14 把 GitHub 自动部署排除在切流轮次之外。切流完成后，�
 
 | 来源 | 事实 |
 |---|---|
-| `.github/workflows/ci.yml` | `quality.yml@0394178…`，Bun 1.4.2，`permissions: contents: read`，web L1/L2/L3 |
-| `.github/workflows/release.yml` | `deploy-worker.yml@0394178…`；`GECKO_DEPLOY_STAGE=cron`；environment `gecko / production` |
+| `.github/workflows/ci.yml` | `quality.yml@ac63575…`，Bun 1.4.2，`permissions: contents: read`，web L1/L2/L3 |
+| `.github/workflows/release.yml` | `deploy-worker.yml@ac63575…`；`GECKO_DEPLOY_STAGE=cron`；environment `gecko / production` |
 | `AGENTS.md` / README | CI/Release 钉同一 SHA；发版证据为该 SHA 的 Actions 与 `/api/live` |
 | 生产 Worker `gecko` | 已绑 `gecko.hexly.ai`，Cron `0 * * * *`，`/api/live` 为 `storage=d1`；Dove URL/token 为 `secret_text` |
 | `cloudflare.config.ts` | `CLOUDFLARE_DEPLOY=production` 才是生产；CD 必须设 `GECKO_DEPLOY_STAGE` |
@@ -85,7 +85,7 @@ push main / bun run release
 - `package-version-match`：tag 路径为 true
 - `allowed-source-events: push`
 - `require-fresh-main: true`（非 tag）
-- `package-manager: bun`，`runtime-version: "1.4.2"`，`node-version: "26.8.1"`
+- `package-manager: bun`，`runtime-version: "1.4.2"`，`node-version: "26.12.1"`
 - `working-directory: apps/web-dashboard`
 - `install-policy: project`
 - `deploy-cli: cf`，`cf-version: 1.0.0-beta.13`

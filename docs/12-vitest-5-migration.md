@@ -17,7 +17,7 @@ and the [5.0.0](https://github.com/vitest-dev/vitest/releases/tag/v5.0.0) and
   Vitest; root scripts explicitly run in `apps/web-dashboard`, so removal of
   ancestor config discovery does not change their behavior.
 - Web already provides Vite 8.3.0. Its Node engine now matches Vitest's published
-  `^22.12.0 || ^24.0.0 || >=26.0.0` range. Shared CI defaults to Node 26.8.1;
+  `^22.12.0 || ^24.0.0 || >=26.0.0` range. Shared CI defaults to Node 26.12.1;
   local validation used Node 26.8.2 and Bun 1.4.0.
 - The single Node/threads project uses top-level factory mocks and dynamic
   `vi.doMock`. It needs no project inheritance, shared-server, browser-mode,
