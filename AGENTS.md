@@ -82,7 +82,7 @@ The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables
 | pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Raise native coverage to 95%, resolve unsupported Swift metrics, improve toward <30s |
 | pre-push | Web L2 and G2 in parallel | Validate commits named by stdin push refs, <3min |
 
-Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI and Release pin shared workflows at `0394178ebcff0418c442d84a84119220f31f8987` (base-ci v2026.9).
+Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI and Release pin shared workflows at `ac635753a869cb85fad1f52aae4ccbd6119f3cae` (base-ci main 2026-10-22).
 
 ## Resources / Isolation
 
