@@ -48,6 +48,8 @@ bun run typecheck
 bun run lint
 bun run --cwd apps/web-dashboard build
 bun run test:l1
+bun run gate:l1-selftest
+python3 -B scripts/pre-commit.py
 bun run test:l2
 bun run test:l3
 bun run --cwd apps/web-dashboard gate:security
@@ -64,13 +66,13 @@ The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables
 
 | Dimension | Required proof | Status | Current enforcement / gap |
 |---|---|---|---|
-| L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | planned | The index-snapshot commit gate enforces four 95.5% thresholds, rejects focused/skipped/empty suites, and checks real test reports |
-| L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | Required unsigned GeckoTests use isolated DerivedData and cloned GRDB dependencies. Xccov measures all application files; interim lines 26% / functions 38% regression floors remain below the unchanged 95% target. Statements/branches are unsupported by Swift; no native CI lane |
+| L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | enforced | Measured on Linux CI/agent VM via `bun run gate:l1-selftest` (index snapshot = same path as `.husky/pre-commit` → `scripts/pre-commit.py`). Last verified four metrics: statements **99.21%**, branches **96.28%**, functions **98.17%**, lines **99.62%** (floor 95.5%). Warm web stage **~10–11s** per probe (lint + typecheck + `test:coverage`); target \<30s for ordinary web-only execution, not yet measured for full macOS hook including `xcodebuild` |
+| L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | **Required when staged paths touch `apps/mac-client/`** (missing `swiftlint`/`xcodebuild`/`xcrun` → exit **1**); otherwise macOS dev machines still run native checks when the toolchain is installed. **Unverified end-to-end on Linux CI.** Interim regression floors **lines 26% / functions 38%** unchanged |
 | L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/D1 suites; exhaustive endpoint/method and server-identity checks are not enforced |
 | L3 web | Critical dashboard journeys in Chromium | enforced | CI and root `test:l3` / `test:e2e:bdd` use Playwright |
 | L3 native | Tracking, sleep/lock, permissions and sync as user journeys | planned | Native unit tests exist; complete desktop system acceptance is not enforced |
-| L1 static web | Strict types and check-only lint, zero errors/warnings | planned | Commit runs check-only types/lint; vinext regenerates route types from the snapshot |
-| L1 static native | Warnings-as-errors compilation and strict SwiftLint | planned | Local hook requires native tools and uses compiler warnings as errors plus strict SwiftLint; CI covers only web |
+| L1 static web | Strict types and check-only lint, zero errors/warnings | enforced | Probed: lint error/warning, type error, focused/skipped tests, staged-bad/unstaged-good index mismatch — all reject (`gate:l1-selftest`). Commands: `bun run lint` (Biome `--error-on-warnings`), `bun run typecheck` |
+| L1 static native | Warnings-as-errors compilation and strict SwiftLint | unverified | Required on commit when macOS toolchain present; not executed in Linux CI. Missing native tools **fail closed** (no silent pass) |
 | G2 web | Dependency and secret scans; missing tools fail | enforced | Push scans the web lock/history and image-size regression; shared CI security also scans root dependencies |
 | G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |
 | D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | L2/L3 allocate per-run persist and reject remote fallback; daily 7018 must stay idle |
@@ -79,7 +81,7 @@ The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables
 
 | Hook | Current behavior | Required follow-up |
 |---|---|---|
-| pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Raise native coverage to 95%, resolve unsupported Swift metrics, improve toward <30s |
+| pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Repeatable probe: `bun run gate:l1-selftest` (CI job `l1-gate`). Fixes: Linux-safe `SourcePackages` copy (no `cp -cR`), quiet probe mode. Negative cases: UT fail, coverage floor, lint/type, `.only`/skip, index-only defect, timeout, malformed JSON report, missing tools |
 | pre-push | Web L2 and G2 in parallel | Validate commits named by stdin push refs, <3min |
 
 Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI and Release pin shared workflows at `ac635753a869cb85fad1f52aae4ccbd6119f3cae` (base-ci main 2026-10-22).
