@@ -2,6 +2,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@nocoo/basalt/components/avatar";
 import { Badge } from "@nocoo/basalt/components/badge";
+import { Button } from "@nocoo/basalt/components/button";
 import { EditableNavItem } from "@nocoo/basalt/components/editable-nav-item";
 import {
   Sidebar as BasaltSidebar,
@@ -34,7 +35,6 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { accessLogout, useMe } from "@/hooks/use-me";
 import { APP_VERSION } from "@/lib/version";
 import { useSidebar } from "./sidebar-context";
@@ -131,45 +131,60 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
         aria-label={mobile ? "Navigation" : undefined}
       >
         <SidebarHeader>
-          <div className="flex w-[calc(var(--basalt-size-rail)-2*var(--basalt-space-nav-inset))] shrink-0 justify-center">
-            <Image src="/logo-24.png" alt="Gecko" width={24} height={24} unoptimized />
-          </div>
-          {!collapsed && (
-            <div className="flex min-w-0 flex-1 items-center gap-basalt-row-gap">
-              <span className="font-semibold text-basalt-foreground">Gecko</span>
-              <Badge variant="secondary">v{APP_VERSION}</Badge>
+          {collapsed ? (
+            <Image
+              src="/logo-24.png"
+              alt="Gecko"
+              width={24}
+              height={24}
+              unoptimized
+              className="shrink-0"
+            />
+          ) : (
+            <div className="flex w-full items-center justify-between">
+              <div className="flex min-w-0 items-center gap-basalt-space-lg">
+                <Image
+                  src="/logo-24.png"
+                  alt="Gecko"
+                  width={24}
+                  height={24}
+                  unoptimized
+                  className="shrink-0"
+                />
+                <span className="truncate text-lg font-semibold text-basalt-foreground md:text-xl">
+                  Gecko
+                </span>
+                <Badge variant="secondary">v{APP_VERSION}</Badge>
+              </div>
               {!mobile && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggle}
-                  aria-label="Collapse sidebar"
-                  className="ml-auto"
-                >
-                  <PanelLeft strokeWidth={1.5} />
+                <Button variant="ghost" size="icon" onClick={toggle} aria-label="Collapse sidebar">
+                  <PanelLeft strokeWidth={1.5} aria-hidden="true" />
                 </Button>
               )}
             </div>
           )}
         </SidebarHeader>
+        {collapsed && !mobile && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggle}
+                aria-label="Expand sidebar"
+                className="mb-basalt-space-sm self-center"
+              >
+                <PanelLeft strokeWidth={1.5} aria-hidden="true" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" sideOffset={8}>
+              Expand sidebar
+            </TooltipContent>
+          </Tooltip>
+        )}
         <SidebarNav aria-label="Main navigation">
-          {collapsed ? (
-            <>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={toggle}
-                    aria-label="Expand sidebar"
-                    className="mx-auto"
-                  >
-                    <PanelLeft strokeWidth={1.5} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Expand sidebar</TooltipContent>
-              </Tooltip>
-              {allNavItems.map((item) => (
+          {collapsed
+            ? allNavItems.map((item) => (
                 <Tooltip key={item.href}>
                   <TooltipTrigger asChild>
                     <Button
@@ -193,27 +208,24 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                   </TooltipTrigger>
                   <TooltipContent side="right">{item.label}</TooltipContent>
                 </Tooltip>
+              ))
+            : navGroups.map((group) => (
+                <SidebarGroup
+                  key={group.label}
+                  label={group.label}
+                  defaultOpen={group.defaultOpen ?? true}
+                >
+                  {group.items.map((item) => (
+                    <EditableNavItem
+                      key={item.href}
+                      href={item.href}
+                      label={item.label}
+                      selected={isActive(pathname, item.href, item.exact)}
+                      icon={<item.icon strokeWidth={1.5} />}
+                    />
+                  ))}
+                </SidebarGroup>
               ))}
-            </>
-          ) : (
-            navGroups.map((group) => (
-              <SidebarGroup
-                key={group.label}
-                label={group.label}
-                defaultOpen={group.defaultOpen ?? true}
-              >
-                {group.items.map((item) => (
-                  <EditableNavItem
-                    key={item.href}
-                    href={item.href}
-                    label={item.label}
-                    selected={isActive(pathname, item.href, item.exact)}
-                    icon={<item.icon strokeWidth={1.5} />}
-                  />
-                ))}
-              </SidebarGroup>
-            ))
-          )}
         </SidebarNav>
         <SidebarFooter>
           {collapsed ? (
