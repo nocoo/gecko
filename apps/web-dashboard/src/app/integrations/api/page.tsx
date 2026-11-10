@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   AlertTriangle,
   Check,
@@ -648,12 +649,10 @@ export default function ApiPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold">API</h1>
-        <p className="mt-1 text-sm text-basalt-muted-foreground">
-          Access your Gecko data programmatically. Manage API keys and test endpoints.
-        </p>
-      </div>
+      <PageHeader
+        title="API"
+        description="Access your Gecko data programmatically. Manage API keys and test endpoints."
+      />
 
       <EndpointSection />
 
