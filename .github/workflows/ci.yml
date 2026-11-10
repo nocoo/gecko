@@ -37,10 +37,6 @@ jobs:
       lint-command: "bun run --cwd apps/web-dashboard lint"
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
       gitleaks-config: ".gitleaks.toml"
-      osv-config: "apps/web-dashboard/osv-scanner.toml"
-      lockfiles: |
-        bun.lock
-        apps/web-dashboard/bun.lock
       build: true
       build-command: "bun run --cwd apps/web-dashboard build"
       workflow-lint: true
