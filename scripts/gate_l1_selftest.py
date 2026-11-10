@@ -168,21 +168,42 @@ def read_coverage_from_vitest() -> dict[str, float]:
 
 
 def missing_tool_probe() -> dict[str, object]:
-    with probe_repo() as repo:
-        reset_index(repo)
-        stage(repo, "apps/mac-client/Gecko/Sources/Views/L1Probe.swift", "// l1 gate probe\n")
-        proc = subprocess.run(
-            [sys.executable, "-B", str(GATE_PATH)],
-            cwd=repo,
-            text=True,
-            capture_output=True,
-            check=False,
-        )
-        return {
-            "exit_code": proc.returncode,
-            "stderr": proc.stderr.strip().splitlines()[-1] if proc.stderr else "",
-            "outcome": "reject" if proc.returncode != 0 else "accept",
-        }
+    with tempfile.TemporaryDirectory(prefix="gecko-l1-path-") as directory:
+        tool_path = Path(directory)
+        web_tools: dict[str, Path] = {}
+        for name in gate.WEB_TOOLS:
+            executable = shutil.which(name)
+            if executable is None:
+                raise AssertionError(f"Missing probe prerequisite: {name}")
+            web_tools[name] = Path(executable).resolve()
+            (tool_path / name).symlink_to(web_tools[name])
+        for name, executable in web_tools.items():
+            assert Path(shutil.which(name, path=str(tool_path))).resolve() == executable
+        assert all(shutil.which(name, path=str(tool_path)) is None for name in gate.NATIVE_TOOLS)
+
+        with probe_repo() as repo:
+            reset_index(repo)
+            stage(repo, "apps/mac-client/Gecko/Sources/Views/L1Probe.swift", "// l1 gate probe\n")
+            environment = dict(os.environ)
+            environment["PATH"] = str(tool_path)
+            environment["GECKO_L1_QUIET"] = "1"
+            proc = subprocess.run(
+                [sys.executable, "-B", str(GATE_PATH)],
+                cwd=repo,
+                env=environment,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+            expected = "pre-commit failed: Missing required tool: swiftlint"
+            stderr = proc.stderr.strip()
+            specific_failure = proc.returncode == 1 and stderr == expected and not proc.stdout.strip()
+            return {
+                "exit_code": proc.returncode,
+                "stderr": stderr,
+                "expected_stderr": expected,
+                "outcome": "reject" if specific_failure else "accept",
+            }
 
 
 def gate_unit_tests() -> ProbeResult:
