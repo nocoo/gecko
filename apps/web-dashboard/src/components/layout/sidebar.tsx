@@ -237,10 +237,12 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                   onClick={accessLogout}
                   aria-label={`${userName} - Sign out`}
                 >
-                  <LogOut strokeWidth={1.5} />
+                  <LogOut strokeWidth={1.5} aria-hidden="true" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">{userName} - Sign out</TooltipContent>
+              <TooltipContent side="right" sideOffset={8}>
+                {userName} - Sign out
+              </TooltipContent>
             </Tooltip>
           ) : (
             <SidebarUser
@@ -256,10 +258,12 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                       onClick={accessLogout}
                       aria-label="Sign out"
                     >
-                      <LogOut strokeWidth={1.5} />
+                      <LogOut strokeWidth={1.5} aria-hidden="true" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top">Sign out</TooltipContent>
+                  <TooltipContent side="bottom" sideOffset={6}>
+                    Sign out
+                  </TooltipContent>
                 </Tooltip>
               }
             />
