@@ -176,9 +176,9 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                     <Button
                       asChild
                       variant="ghost"
-                      size="icon"
-                      className="basalt-nav-item"
+                      className="basalt-nav-item relative w-basalt-control justify-center hover:bg-transparent hover:border-transparent"
                       data-basalt-hover-item=""
+                      data-sidebar-row=""
                       data-hover-selected={isActive(pathname, item.href, item.exact)}
                     >
                       <Link
@@ -192,7 +192,9 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
                       </Link>
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
+                  <TooltipContent side="right" sideOffset={8}>
+                    {item.label}
+                  </TooltipContent>
                 </Tooltip>
               ))
             : navGroups.map((group) => (
