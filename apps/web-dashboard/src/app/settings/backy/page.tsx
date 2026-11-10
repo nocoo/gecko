@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   AlertTriangle,
   Check,
@@ -702,13 +703,10 @@ export default function BackySettingsPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold">Backy</h1>
-        <p className="mt-1 text-sm text-basalt-muted-foreground">
-          Configure automatic backups with Backy. Push your data to a backup service, or let Backy
-          pull on a schedule.
-        </p>
-      </div>
+      <PageHeader
+        title="Backy"
+        description="Configure automatic backups with Backy. Push your data to a backup service, or let Backy pull on a schedule."
+      />
 
       <PushConfigSection onConfigured={handleConfigured} onPushSuccess={handlePushSuccess} />
 
