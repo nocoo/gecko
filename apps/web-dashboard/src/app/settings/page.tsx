@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   Select,
   SelectContent,
@@ -25,13 +26,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <p className="mt-1 text-sm text-basalt-muted-foreground">
-          Manage your profile and preferences.
-        </p>
-      </div>
+      <PageHeader title="Settings" description="Manage your profile and preferences." />
 
       {/* Profile section */}
       <ProfileSection user={user} />
