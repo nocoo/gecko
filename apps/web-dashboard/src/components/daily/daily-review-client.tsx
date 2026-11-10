@@ -13,6 +13,7 @@
 
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   AlertCircle,
   Calendar,
@@ -746,18 +747,15 @@ export function DailyReviewClient({ date }: { date: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Header: Date navigation */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl md:text-2xl font-semibold">Daily Review</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            {hasData
-              ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
-              : "View your productivity analysis for this day."}
-          </p>
-        </div>
-        <DateNavigator date={date} timezone={timezone} onChange={handleDateChange} />
-      </div>
+      <PageHeader
+        title="Daily Review"
+        description={
+          hasData
+            ? `${formatDuration(data.stats.totalDuration)} across ${data.stats.totalApps} apps`
+            : "View your productivity analysis for this day."
+        }
+        actions={<DateNavigator date={date} timezone={timezone} onChange={handleDateChange} />}
+      />
 
       {/* Error */}
       {error && (
