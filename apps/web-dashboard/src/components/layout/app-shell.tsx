@@ -62,62 +62,64 @@ function AppShellInner({ children }: AppShellProps) {
   const breadcrumbs = isMobile ? allBreadcrumbs.slice(-1) : allBreadcrumbs;
 
   return (
-    <LinkProvider render={NextLinkAdapter}>
-      <BasaltAppShell>
-        <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
+    <TooltipProvider delayDuration={0}>
+      <LinkProvider render={NextLinkAdapter}>
+        <BasaltAppShell>
+          <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
 
-        {/* Desktop sidebar */}
-        {!isMobile && <Sidebar />}
+          {/* Desktop sidebar */}
+          {!isMobile && <Sidebar />}
 
-        {/* Mobile overlay */}
-        {isMobile && (
-          <BasaltSidebarProvider
-            overlay
-            collapsed={!mobileOpen}
-            onCollapsedChange={(collapsed) => setMobileOpen(!collapsed)}
-          >
-            <Sidebar mobile />
-          </BasaltSidebarProvider>
-        )}
+          {/* Mobile overlay */}
+          {isMobile && (
+            <BasaltSidebarProvider
+              overlay
+              collapsed={!mobileOpen}
+              onCollapsedChange={(collapsed) => setMobileOpen(!collapsed)}
+            >
+              <Sidebar mobile />
+            </BasaltSidebarProvider>
+          )}
 
-        <AppMain>
-          {/* Header */}
-          <AppHeader
-            leading={
-              isMobile ? (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label="Open navigation menu"
-                  aria-haspopup="dialog"
-                  aria-expanded={mobileOpen}
-                  aria-controls={mobileOpen ? "mobile-navigation" : undefined}
-                  onClick={(event) => {
-                    event.currentTarget.focus();
-                    setMobileOpen(true);
-                  }}
-                >
-                  <Menu aria-hidden="true" strokeWidth={1.5} />
-                </Button>
-              ) : undefined
-            }
-            breadcrumbs={breadcrumbs}
-            actions={
-              <TooltipProvider delayDuration={0}>
-                <GitHubLink />
-                <HexlyLink />
-                <ThemeToggle aria-label="Toggle theme" />
-              </TooltipProvider>
-            }
-          />
+          <AppMain>
+            {/* Header */}
+            <AppHeader
+              leading={
+                isMobile ? (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    aria-label="Open navigation menu"
+                    aria-haspopup="dialog"
+                    aria-expanded={mobileOpen}
+                    aria-controls={mobileOpen ? "mobile-navigation" : undefined}
+                    onClick={(event) => {
+                      event.currentTarget.focus();
+                      setMobileOpen(true);
+                    }}
+                  >
+                    <Menu aria-hidden="true" strokeWidth={1.5} />
+                  </Button>
+                ) : undefined
+              }
+              breadcrumbs={breadcrumbs}
+              actions={
+                <>
+                  <GitHubLink />
+                  <HexlyLink />
+                  <ThemeToggle aria-label="Toggle theme" />
+                </>
+              }
+            />
 
-          {/* Floating island content area */}
-          <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
-            <ContentIsland>{children}</ContentIsland>
-          </div>
-        </AppMain>
-      </BasaltAppShell>
-    </LinkProvider>
+            {/* Floating island content area */}
+            <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
+              <ContentIsland>{children}</ContentIsland>
+            </div>
+          </AppMain>
+        </BasaltAppShell>
+      </LinkProvider>
+    </TooltipProvider>
   );
 }
 

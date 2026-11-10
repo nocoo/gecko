@@ -131,7 +131,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
         aria-label={mobile ? "Navigation" : undefined}
       >
         <SidebarHeader>
-          {collapsed ? (
+          <div className="flex w-[calc(var(--basalt-size-rail)-2*var(--basalt-space-nav-inset))] shrink-0 justify-center">
             <Image
               src="/logo-24.png"
               alt="Gecko"
@@ -140,28 +140,20 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
               unoptimized
               className="shrink-0"
             />
-          ) : (
-            <div className="flex w-full items-center justify-between">
-              <div className="flex min-w-0 items-center gap-basalt-space-lg">
-                <Image
-                  src="/logo-24.png"
-                  alt="Gecko"
-                  width={24}
-                  height={24}
-                  unoptimized
-                  className="shrink-0"
-                />
-                <span className="truncate text-lg font-semibold text-basalt-foreground md:text-xl">
-                  Gecko
-                </span>
-                <Badge variant="secondary">v{APP_VERSION}</Badge>
-              </div>
+          </div>
+          {!collapsed && (
+            <>
+              <span className="truncate text-lg font-semibold text-basalt-foreground md:text-xl">
+                Gecko
+              </span>
+              <Badge variant="secondary">v{APP_VERSION}</Badge>
+              <span className="min-w-0 flex-1" aria-hidden="true" />
               {!mobile && (
                 <Button variant="ghost" size="icon" onClick={toggle} aria-label="Collapse sidebar">
                   <PanelLeft strokeWidth={1.5} aria-hidden="true" />
                 </Button>
               )}
-            </div>
+            </>
           )}
         </SidebarHeader>
         {collapsed && !mobile && (

@@ -85,10 +85,12 @@ for (const width of [320, 390, 1440]) {
                 const leading = header
                   .querySelector("[data-basalt-header-leading]")
                   ?.getBoundingClientRect();
+                const breadcrumbs = header.querySelector("nav")?.getBoundingClientRect();
+                const left = leading ?? breadcrumbs;
                 const actions = header
                   .querySelector("[data-basalt-header-actions]")
                   ?.getBoundingClientRect();
-                return !!leading && !!actions && leading.right <= actions.left;
+                return !!left && !!actions && left.right <= actions.left;
               }),
             )
             .toBe(true);
