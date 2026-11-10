@@ -1,5 +1,9 @@
 # Retrospective
 
+## 2026-11-11 — temporary Bun mirror rewrote lockfile URLs
+
+A temporary Tencent registry override during a Basalt upgrade rewrote every tarball URL in the generated lockfiles. The URLs were normalized back to Bun's registry-neutral form, and the diff was checked to retain only the intended dependency changes. After any mirror-backed Bun update, inspect both lockfiles for explicit mirror URLs and verify a frozen install before committing.
+
 ## 2026-10-19 — script-API Worker edits abort CI `cf deploy --strict`
 
 Release CD for v2.0.1 failed with only vinext warnings and `cf deploy failed with exit code 1`. Dove URL/token had been converted from `plain_text` to `secret_text` with a Workers settings PATCH, so the live version's `last_deployed_from` became `api`. `cf deploy` always sets `strict: true`. In GitHub Actions (non-TTY / `CI=true`) the API-override confirm returns false and aborts. vinext pipes cf stdout, so the abort line often never reaches the job log.

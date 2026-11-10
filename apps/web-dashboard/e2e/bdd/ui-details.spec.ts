@@ -152,6 +152,7 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   const sidebar = page.locator("[data-basalt-sidebar]");
   const logo = sidebar.getByAltText("Gecko", { exact: true });
   const x = (await logo.boundingBox())!.x;
+  expect(x - (await sidebar.boundingBox())!.x).toBe(22);
   await expect(sidebar.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS(
     "font-size",
     "14px",
@@ -174,6 +175,12 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   await page.getByRole("button", { name: "Collapse sidebar" }).click();
   await expect(sidebar).toHaveCSS("width", "68px");
   expect((await logo.boundingBox())!.x).toBe(x);
+  const toggle = (await sidebar.getByRole("button", { name: "Expand sidebar" }).boundingBox())!;
+  const dashboard = (await sidebar
+    .getByRole("link", { name: "Dashboard", exact: true })
+    .boundingBox())!;
+  expect(toggle.x + toggle.width / 2).toBe(x + 12);
+  expect(dashboard.y).toBeGreaterThanOrEqual(toggle.y + toggle.height);
   await expect(sidebar.getByRole("link", { name: "API", exact: true })).toHaveAttribute(
     "aria-current",
     "page",
