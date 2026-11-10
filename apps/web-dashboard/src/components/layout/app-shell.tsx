@@ -6,20 +6,20 @@ import {
   AppSkipLink,
   AppShell as BasaltAppShell,
 } from "@nocoo/basalt/components/app-shell";
+import { Button } from "@nocoo/basalt/components/button";
 import {
   SidebarProvider as BasaltSidebarProvider,
   ContentIsland,
 } from "@nocoo/basalt/components/sidebar";
+import { TooltipProvider } from "@nocoo/basalt/components/tooltip";
 import { LinkProvider } from "@nocoo/basalt/providers/link";
 import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { Github } from "@/components/icons/github";
-import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getPageBreadcrumbs } from "@/lib/page-navigation";
-import { HeaderTooltip, HexlyLink } from "./header-links";
+import { GitHubLink, HexlyLink } from "./header-links";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
 import { ThemeToggle } from "./theme-toggle";
@@ -103,22 +103,11 @@ function AppShellInner({ children }: AppShellProps) {
             }
             breadcrumbs={breadcrumbs}
             actions={
-              <>
-                <HeaderTooltip label="GitHub repository">
-                  <Button asChild variant="ghost" size="icon">
-                    <a
-                      href="https://github.com/nocoo/gecko"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label="GitHub repository"
-                    >
-                      <Github aria-hidden="true" strokeWidth={1.5} />
-                    </a>
-                  </Button>
-                </HeaderTooltip>
+              <TooltipProvider delayDuration={0}>
+                <GitHubLink />
                 <HexlyLink />
                 <ThemeToggle aria-label="Toggle theme" />
-              </>
+              </TooltipProvider>
             }
           />
 
