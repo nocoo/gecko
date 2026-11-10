@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import { ToggleGroup, ToggleGroupItem } from "@nocoo/basalt/components/toggle-group";
 
 import {
@@ -110,27 +111,24 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      {/* Welcome header + period selector */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Hey, {userName}</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Here&apos;s your screen time overview.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <PeriodSelector value={period} onChange={setPeriod} />
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Refresh dashboard"
-            onClick={() => fetchData(period)}
-            disabled={loading}
-          >
-            <RefreshCw className={loading ? "animate-spin" : undefined} />
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={`Hey, ${userName}`}
+        description="Here's your screen time overview."
+        actions={
+          <>
+            <PeriodSelector value={period} onChange={setPeriod} />
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Refresh dashboard"
+              onClick={() => fetchData(period)}
+              disabled={loading}
+            >
+              <RefreshCw className={loading ? "animate-spin" : undefined} />
+            </Button>
+          </>
+        }
+      />
 
       {error && (
         <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
