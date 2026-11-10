@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import { AlertTriangle, Pencil, Plus, Tags as TagsIcon, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { TagBadge } from "@/components/tag-badge";
@@ -55,12 +56,10 @@ export default function TagsPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold">Tags</h1>
-        <p className="mt-1 text-sm text-basalt-muted-foreground">
-          Create tags to label your apps. Each app can have multiple tags.
-        </p>
-      </div>
+      <PageHeader
+        title="Tags"
+        description="Create tags to label your apps. Each app can have multiple tags."
+      />
 
       <TagsSection
         tags={tags}

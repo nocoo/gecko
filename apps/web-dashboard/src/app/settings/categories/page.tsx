@@ -1,6 +1,7 @@
 "use client";
 
 import { IconPicker } from "@nocoo/basalt/components/icon-picker";
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   AlertTriangle,
   AppWindow,
@@ -125,12 +126,10 @@ export default function CategoriesPage() {
 
   return (
     <div className="space-y-8 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-semibold">Categories</h1>
-        <p className="mt-1 text-sm text-basalt-muted-foreground">
-          Organize your apps into categories. Default categories cannot be edited or removed.
-        </p>
-      </div>
+      <PageHeader
+        title="Categories"
+        description="Organize your apps into categories. Default categories cannot be edited or removed."
+      />
 
       <CategoriesSection
         categories={categories}
