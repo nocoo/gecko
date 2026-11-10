@@ -1,5 +1,9 @@
 # Retrospective
 
+## 2026-11-11 — stale nested dependencies hid an override
+
+Bun's incremental install updated the lockfile and top-level Zod but left old nested Zod copies in `node_modules`, so local Node resolution still used the vulnerable version. A separate frozen install confirmed the lockfile resolved the fixed version; the old dependency tree was preserved and replaced with the clean install before rerunning checks. Verify actual nested resolution after overrides and test against a clean frozen install rather than trusting the top-level version alone.
+
 ## 2026-11-11 — temporary Bun mirror rewrote lockfile URLs
 
 A temporary Tencent registry override during a Basalt upgrade rewrote every tarball URL in the generated lockfiles. The URLs were normalized back to Bun's registry-neutral form, and the diff was checked to retain only the intended dependency changes. After any mirror-backed Bun update, inspect both lockfiles for explicit mirror URLs and verify a frozen install before committing.
