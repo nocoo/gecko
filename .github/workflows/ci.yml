@@ -1,3 +1,5 @@
+# CI slot standard v1 (nocoo/base-ci docs/slots.md): impl S1, S2, S3, G1, G2, B1, L1, L2, L3, Z1 via quality.yml;
+# na L1.5, P1 in slot-status。job l1-gate 在槽位外（复现 pre-commit L1 探针）。nocoo/base-ci v2026.12：顶层 slot 作业、L3 多浏览器/证据制品。
 name: CI
 
 on:
@@ -24,18 +26,45 @@ jobs:
       - run: bun run gate:l1-selftest
 
   quality:
-    uses: nocoo/base-ci/.github/workflows/quality.yml@633a5545fcfec91b688840650d4edf3e9cc1abbd # v2026.10
+    uses: nocoo/base-ci/.github/workflows/quality.yml@1ea10ecab22b72512399485391603fe03a161016 # v2026.12
     with:
       runtime-version: "1.4.2"
+      node-version: "26.12.1"
       install-policy: "project"
       coverage-path: "apps/web-dashboard/coverage"
       extra-install-dirs: "apps/web-dashboard"
       test-command: "bun run --cwd apps/web-dashboard test:coverage"
       lint-command: "bun run --cwd apps/web-dashboard lint"
       typecheck-command: "bun run --cwd apps/web-dashboard typecheck"
+      gitleaks-config: ".gitleaks.toml"
+      build: true
+      build-command: "bun run --cwd apps/web-dashboard build"
+      workflow-lint: true
+      workflow-lint-required-workflow: nocoo/base-ci/.github/workflows/deploy-worker.yml
+      workflow-lint-yamllint: true
       l2: true
       l2-command: "bun run test:l2"
       l3: true
+      l3-browsers: "chromium"
+      l3-prepare-command: "bun run --cwd apps/web-dashboard build"
       l3-command: "bun run test:e2e:bdd"
-      l3-browser: "chromium"
       l3-browser-directory: "apps/web-dashboard"
+      l3-artifact-name: browser-evidence
+      l3-artifact-path: |
+        apps/web-dashboard/playwright-report/
+        apps/web-dashboard/test-results/
+      l3-artifact-retention-days: 7
+      env-json: '{"WRANGLER_SEND_METRICS": "false", "CI": "true"}'
+      slot-status: >-
+        {"S1": {"status": "impl"},
+        "S2": {"status": "impl"},
+        "S3": {"status": "impl"},
+        "G1": {"status": "impl"},
+        "G2": {"status": "impl"},
+        "B1": {"status": "impl"},
+        "L1": {"status": "impl"},
+        "L1.5": {"status": "na", "reason": "无独立 @cloudflare/vitest-pool-workers 套件；Worker/D1 绑定在 L2/L3 的 miniflare HTTP/Playwright 流程中验证"},
+        "L2": {"status": "impl"},
+        "L3": {"status": "impl"},
+        "P1": {"status": "na", "reason": "根目录与 apps/web-dashboard 的 package.json 均为 private，不发布 npm 包"},
+        "Z1": {"status": "impl"}}
