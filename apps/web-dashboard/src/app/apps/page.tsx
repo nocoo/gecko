@@ -2,6 +2,7 @@
 
 import { InputArea } from "@nocoo/basalt/components/input-area";
 import { InputGroup } from "@nocoo/basalt/components/input-group";
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import { Popover, PopoverContent, PopoverTrigger } from "@nocoo/basalt/components/popover";
 import {
   Select,
@@ -412,27 +413,26 @@ export default function AppsPage() {
 
   return (
     <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Apps</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Manage categories, tags, and notes for all your tracked apps.
-          </p>
-        </div>
-        {totalPending > 0 && (
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
-              <X />
-              Discard
-            </Button>
-            <Button size="sm" onClick={handleSave} disabled={saving}>
-              <Save />
-              {saving ? "Saving..." : `Save ${totalPending} change${totalPending === 1 ? "" : "s"}`}
-            </Button>
-          </div>
-        )}
-      </div>
+      <PageHeader
+        title="Apps"
+        description="Manage categories, tags, and notes for all your tracked apps."
+        actions={
+          totalPending > 0 ? (
+            <>
+              <Button variant="outline" size="sm" onClick={handleDiscard} disabled={saving}>
+                <X />
+                Discard
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={saving}>
+                <Save />
+                {saving
+                  ? "Saving..."
+                  : `Save ${totalPending} change${totalPending === 1 ? "" : "s"}`}
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Error banner */}
       {error && (
