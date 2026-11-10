@@ -19,7 +19,6 @@ import { Github } from "@/components/icons/github";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getPageBreadcrumbs } from "@/lib/page-navigation";
-import { Breadcrumbs } from "./breadcrumbs";
 import { HeaderTooltip, HexlyLink } from "./header-links";
 import { Sidebar } from "./sidebar";
 import { SidebarProvider, useSidebar } from "./sidebar-context";
@@ -59,9 +58,8 @@ function AppShellInner({ children }: AppShellProps) {
     setMobileOpen(false);
   }, [pathname, setMobileOpen]);
 
-  // Render breadcrumbs into AppHeader leading area using Breadcrumbs component directly,
-  // rather than passing title to AppHeader (which renders an <h1> and conflicts with page headings).
   const allBreadcrumbs = [{ label: "Home", href: "/" }, ...getPageBreadcrumbs(pathname)];
+  const breadcrumbs = isMobile ? allBreadcrumbs.slice(-1) : allBreadcrumbs;
 
   return (
     <LinkProvider render={NextLinkAdapter}>
@@ -86,26 +84,24 @@ function AppShellInner({ children }: AppShellProps) {
           {/* Header */}
           <AppHeader
             leading={
-              <div className="flex items-center gap-3">
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open navigation menu"
-                    aria-haspopup="dialog"
-                    aria-expanded={mobileOpen}
-                    aria-controls={mobileOpen ? "mobile-navigation" : undefined}
-                    onClick={(event) => {
-                      event.currentTarget.focus();
-                      setMobileOpen(true);
-                    }}
-                  >
-                    <Menu aria-hidden="true" strokeWidth={1.5} />
-                  </Button>
-                )}
-                <Breadcrumbs items={isMobile ? allBreadcrumbs.slice(-1) : allBreadcrumbs} />
-              </div>
+              isMobile ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Open navigation menu"
+                  aria-haspopup="dialog"
+                  aria-expanded={mobileOpen}
+                  aria-controls={mobileOpen ? "mobile-navigation" : undefined}
+                  onClick={(event) => {
+                    event.currentTarget.focus();
+                    setMobileOpen(true);
+                  }}
+                >
+                  <Menu aria-hidden="true" strokeWidth={1.5} />
+                </Button>
+              ) : undefined
             }
+            breadcrumbs={breadcrumbs}
             actions={
               <>
                 <HeaderTooltip label="GitHub repository">
