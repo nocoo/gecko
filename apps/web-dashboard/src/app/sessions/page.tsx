@@ -1,6 +1,7 @@
 "use client";
 
 import { InputGroup } from "@nocoo/basalt/components/input-group";
+import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   ChevronDown,
   Clock,
@@ -118,15 +119,21 @@ export default function SessionsPage() {
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Sessions</h1>
-          <p className="mt-1 text-sm text-basalt-muted-foreground">
-            Browse all recorded focus sessions.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        title="Sessions"
+        description="Browse all recorded focus sessions."
+        actions={
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="Refresh sessions"
+            onClick={refresh}
+            disabled={loading}
+          >
+            <RefreshCw className={loading ? "animate-spin" : undefined} />
+          </Button>
+        }
+        filters={
           <div className="min-w-0 flex-1 sm:w-60">
             <InputGroup>
               <InputGroup.Addon>
@@ -146,17 +153,8 @@ export default function SessionsPage() {
               )}
             </InputGroup>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Refresh sessions"
-            onClick={refresh}
-            disabled={loading}
-          >
-            <RefreshCw className={loading ? "animate-spin" : undefined} />
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="rounded-lg bg-basalt-destructive/10 px-3 py-2 text-sm text-basalt-destructive">
