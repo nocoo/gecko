@@ -159,13 +159,7 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
         {collapsed && !mobile && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggle}
-                aria-label="Expand sidebar"
-                className="mb-basalt-space-sm self-center"
-              >
+              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Expand sidebar">
                 <PanelLeft strokeWidth={1.5} aria-hidden="true" />
               </Button>
             </TooltipTrigger>
