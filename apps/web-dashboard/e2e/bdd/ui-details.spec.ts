@@ -194,7 +194,7 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   await expect(opener).toBeFocused();
   await expect(opener).toHaveAttribute("aria-expanded", "false");
   await opener.click();
-  await page.locator('[data-state="open"].backdrop-blur-md').click({
+  await page.locator(".basalt-sheet-overlay[data-state='open']").click({
     position: { x: 380, y: 420 },
   });
   await expect(drawer).toHaveCount(0);

@@ -105,3 +105,23 @@ test("sidebar navigation preserves one shell across every dashboard page", async
   }
   expect(documentRequests).toBe(0);
 });
+
+test("sidebar sign-out uses Cloudflare Access logout URL", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await visit(page, "/");
+  const signOut = page.getByRole("link", { name: "Sign out", exact: true });
+  await expect(signOut).toBeVisible();
+  await expect(signOut).toHaveAttribute("href", "/cdn-cgi/access/logout");
+});
+
+test("mobile drawer closes from dismiss toggle and restores menu focus", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 900 });
+  await visit(page, "/integrations/api");
+  const opener = page.getByRole("button", { name: "Open navigation menu" });
+  await opener.click();
+  const drawer = page.getByRole("dialog", { name: "Navigation" });
+  await expect(drawer).toBeVisible();
+  await drawer.getByRole("button", { name: "Close navigation" }).click();
+  await expect(drawer).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});
