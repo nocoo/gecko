@@ -1,16 +1,19 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@nocoo/basalt/components/avatar";
-import { Badge } from "@nocoo/basalt/components/badge";
-import { Button } from "@nocoo/basalt/components/button";
-import { EditableNavItem } from "@nocoo/basalt/components/editable-nav-item";
 import {
   Sidebar as BasaltSidebar,
+  SidebarBrand,
   SidebarFooter,
   SidebarGroup,
   SidebarHeader,
+  SidebarIconItem,
+  SidebarItem,
   SidebarNav,
+  SidebarProvider,
+  SidebarToggle,
   SidebarUser,
+  useSidebar,
 } from "@nocoo/basalt/components/sidebar";
 import {
   Tooltip,
@@ -26,22 +29,19 @@ import {
   Layers,
   LayoutDashboard,
   List,
-  LogOut,
-  PanelLeft,
   Plug,
   SlidersHorizontal,
   Tags,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { accessLogout, useMe } from "@/hooks/use-me";
+import { type ReactNode, useCallback, useState } from "react";
+import { useMe } from "@/hooks/use-me";
 import { APP_VERSION } from "@/lib/version";
-import { useSidebar } from "./sidebar-context";
 
-// =============================================================================
-// Navigation structure — flat groups with labels (basalt pattern)
-// =============================================================================
+const ACCESS_LOGOUT_URL = "/cdn-cgi/access/logout";
+const SIDEBAR_COLLAPSED_KEY = "gecko:sidebar-collapsed";
+type SidebarCollapsedPreference = "false" | "true";
 
 type IconComponent = React.ComponentType<React.SVGProps<SVGSVGElement> & { strokeWidth?: number }>;
 
@@ -49,7 +49,6 @@ interface NavItem {
   href: string;
   label: string;
   icon: IconComponent;
-  /** When true, only exact pathname match counts as active (no prefix matching). */
   exact?: boolean;
 }
 
@@ -96,26 +95,74 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-/** All items flattened — used for collapsed icon-only view. */
 const allNavItems = navGroups.flatMap((g) => g.items);
 
-/** Check if a nav item is currently active. */
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
   if (href === "/" || exact) return pathname === href;
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-// =============================================================================
-// Main sidebar
-// =============================================================================
+function usePersistedSidebarCollapsed(
+  key: string,
+  defaultValue: SidebarCollapsedPreference,
+): [SidebarCollapsedPreference, (value: SidebarCollapsedPreference) => void] {
+  const [stored, setStored] = useState<SidebarCollapsedPreference>(() => {
+    if (typeof window === "undefined") return defaultValue;
+    const value = localStorage.getItem(key);
+    return value === "true" || value === "false" ? value : defaultValue;
+  });
 
-export function Sidebar({ mobile = false }: { mobile?: boolean }) {
+  const setValue = useCallback(
+    (next: SidebarCollapsedPreference) => {
+      setStored(next);
+      localStorage.setItem(key, next);
+    },
+    [key],
+  );
+
+  return [stored, setValue];
+}
+
+export function PersistedSidebarProvider({ children }: { children: ReactNode }) {
+  const [stored, setStored] = usePersistedSidebarCollapsed(SIDEBAR_COLLAPSED_KEY, "false");
+  const collapsed = stored === "true";
+  const onCollapsedChange = useCallback(
+    (next: boolean) => {
+      setStored(next ? "true" : "false");
+    },
+    [setStored],
+  );
+
+  return (
+    <SidebarProvider collapsed={collapsed} onCollapsedChange={onCollapsedChange} defaultWidth={260}>
+      {children}
+    </SidebarProvider>
+  );
+}
+
+interface SidebarProps {
+  ariaLabel: string;
+  variant?: "desktop" | "mobile";
+  onNavigate?: () => void;
+  onDismiss?: () => void;
+}
+
+function GeckoSidebarBody({
+  variant,
+  onNavigate,
+  onDismiss,
+}: {
+  variant?: SidebarProps["variant"];
+  onNavigate?: () => void;
+  onDismiss?: () => void;
+}) {
   const pathname = usePathname();
-  const { collapsed: desktopCollapsed, toggle } = useSidebar();
-  const collapsed = !mobile && desktopCollapsed;
+  const { collapsed, peek, peeking } = useSidebar();
+  const railCollapsed = collapsed && !(peek && peeking);
   const { user } = useMe();
   const userName = user?.name ?? "User";
   const userEmail = user?.email ?? "";
+
   const avatar = (
     <Avatar>
       {user?.avatar && <AvatarImage src={user.avatar} alt={userName} />}
@@ -124,144 +171,99 @@ export function Sidebar({ mobile = false }: { mobile?: boolean }) {
   );
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <BasaltSidebar
-        collapsed={collapsed}
-        id={mobile ? "mobile-navigation" : undefined}
-        aria-label={mobile ? "Navigation" : undefined}
-      >
-        <SidebarHeader>
-          <div className="flex w-[calc(var(--basalt-size-rail)-2*var(--basalt-space-nav-inset))] shrink-0 justify-center">
-            <Image
-              src="/logo-24.png"
-              alt="Gecko"
-              width={24}
-              height={24}
-              unoptimized
-              className="shrink-0"
-            />
-          </div>
-          {!collapsed && (
-            <>
-              <span className="truncate text-lg font-semibold text-basalt-foreground md:text-xl">
-                Gecko
-              </span>
-              <Badge variant="secondary">v{APP_VERSION}</Badge>
-              <span className="min-w-0 flex-1" aria-hidden="true" />
-              {!mobile && (
-                <Button variant="ghost" size="icon" onClick={toggle} aria-label="Collapse sidebar">
-                  <PanelLeft strokeWidth={1.5} aria-hidden="true" />
-                </Button>
-              )}
-            </>
-          )}
-        </SidebarHeader>
-        {collapsed && !mobile && (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" onClick={toggle} aria-label="Expand sidebar">
-                <PanelLeft strokeWidth={1.5} aria-hidden="true" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" sideOffset={8}>
-              Expand sidebar
-            </TooltipContent>
-          </Tooltip>
-        )}
-        <SidebarNav aria-label="Main navigation">
-          {collapsed
-            ? allNavItems.map((item) => (
-                <Tooltip key={item.href}>
+    <>
+      <SidebarHeader>
+        <SidebarBrand
+          logo={<Image src="/logo-24.png" alt="Gecko" width={24} height={24} unoptimized />}
+          name="Gecko"
+          version={`v${APP_VERSION}`}
+          action={
+            variant === "mobile" ? (
+              <SidebarToggle
+                mode="dismiss"
+                dismissLabel="Close navigation"
+                {...(onDismiss ? { onDismiss } : {})}
+              />
+            ) : (
+              <SidebarToggle expandLabel="Expand sidebar" collapseLabel="Collapse sidebar" />
+            )
+          }
+        />
+      </SidebarHeader>
+      <SidebarNav aria-label="Main navigation">
+        {railCollapsed
+          ? allNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = isActive(pathname, item.href, item.exact);
+              return (
+                <Tooltip key={item.href} delayDuration={0}>
                   <TooltipTrigger asChild>
-                    <Button
-                      asChild
-                      variant="ghost"
-                      className="basalt-nav-item relative w-basalt-control justify-center hover:bg-transparent hover:border-transparent"
-                      data-basalt-hover-item=""
-                      data-sidebar-row=""
-                      data-hover-selected={isActive(pathname, item.href, item.exact)}
+                    <SidebarIconItem
+                      href={item.href}
+                      active={active}
+                      aria-label={item.label}
+                      onClick={onNavigate}
                     >
-                      <Link
-                        href={item.href}
-                        aria-label={item.label}
-                        aria-current={
-                          isActive(pathname, item.href, item.exact) ? "page" : undefined
-                        }
-                      >
-                        <item.icon strokeWidth={1.5} aria-hidden="true" />
-                      </Link>
-                    </Button>
+                      <Icon strokeWidth={1.5} aria-hidden="true" />
+                    </SidebarIconItem>
                   </TooltipTrigger>
                   <TooltipContent side="right" sideOffset={8}>
                     {item.label}
                   </TooltipContent>
                 </Tooltip>
-              ))
-            : navGroups.map((group) => (
-                <SidebarGroup
-                  key={group.label}
-                  label={group.label}
-                  defaultOpen={group.defaultOpen ?? true}
-                >
-                  {group.items.map((item) => (
-                    <EditableNavItem
+              );
+            })
+          : navGroups.map((group) => (
+              <SidebarGroup
+                key={group.label}
+                label={group.label}
+                defaultOpen={group.defaultOpen ?? true}
+              >
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const active = isActive(pathname, item.href, item.exact);
+                  return (
+                    <SidebarItem
                       key={item.href}
                       href={item.href}
-                      label={item.label}
-                      selected={isActive(pathname, item.href, item.exact)}
-                      icon={<item.icon strokeWidth={1.5} />}
-                    />
-                  ))}
-                </SidebarGroup>
-              ))}
-        </SidebarNav>
-        <SidebarFooter>
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={accessLogout}
-                  aria-label={`${userName} - Sign out`}
-                >
-                  <LogOut strokeWidth={1.5} aria-hidden="true" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={8}>
-                {userName} - Sign out
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <SidebarUser
-              name={userName}
-              email={userEmail}
-              avatar={avatar}
-              action={
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={accessLogout}
-                      aria-label="Sign out"
+                      active={active}
+                      onClick={onNavigate}
                     >
-                      <LogOut strokeWidth={1.5} aria-hidden="true" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={6}>
-                    Sign out
-                  </TooltipContent>
-                </Tooltip>
-              }
-            />
-          )}
-        </SidebarFooter>
+                      <Icon className="h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                      <span className="flex-1 truncate text-left">{item.label}</span>
+                    </SidebarItem>
+                  );
+                })}
+              </SidebarGroup>
+            ))}
+      </SidebarNav>
+      <SidebarFooter>
+        <SidebarUser
+          name={userName}
+          email={userEmail || undefined}
+          avatar={avatar}
+          tooltip={userName}
+          signOutHref={ACCESS_LOGOUT_URL}
+          signOutLabel="Sign out"
+        />
+      </SidebarFooter>
+    </>
+  );
+}
+
+export function Sidebar({ ariaLabel, variant = "desktop", onNavigate, onDismiss }: SidebarProps) {
+  return (
+    <TooltipProvider delayDuration={0}>
+      <BasaltSidebar aria-label={ariaLabel} resizable={false}>
+        <GeckoSidebarBody
+          variant={variant}
+          {...(onNavigate ? { onNavigate } : {})}
+          {...(onDismiss ? { onDismiss } : {})}
+        />
       </BasaltSidebar>
     </TooltipProvider>
   );
 }
 
 export type { NavGroup, NavItem };
-// Export for testing
 export { allNavItems, isActive, navGroups };
