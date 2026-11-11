@@ -1,27 +1,28 @@
 "use client";
 
-import { AppHeader } from "@nocoo/basalt/components/app-header";
+import { AppHeader, AppHeaderMenuButton, ProjectLinks } from "@nocoo/basalt/components/app-header";
 import {
   AppMain,
   AppSkipLink,
   AppShell as BasaltAppShell,
 } from "@nocoo/basalt/components/app-shell";
-import { Button } from "@nocoo/basalt/components/button";
 import {
-  SidebarProvider as BasaltSidebarProvider,
-  ContentIsland,
-} from "@nocoo/basalt/components/sidebar";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@nocoo/basalt/components/sheet";
+import { ContentIsland, SidebarProvider } from "@nocoo/basalt/components/sidebar";
 import { TooltipProvider } from "@nocoo/basalt/components/tooltip";
 import { LinkProvider } from "@nocoo/basalt/providers/link";
-import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { getPageBreadcrumbs } from "@/lib/page-navigation";
-import { GitHubLink, HexlyLink } from "./header-links";
-import { Sidebar } from "./sidebar";
-import { SidebarProvider, useSidebar } from "./sidebar-context";
+import { MobileNavProvider, useMobileNav } from "./mobile-nav-context";
+import { PersistedSidebarProvider, Sidebar } from "./sidebar";
 import { ThemeToggle } from "./theme-toggle";
 
 interface AppShellProps {
@@ -47,8 +48,9 @@ function NextLinkAdapter({
 
 function AppShellInner({ children }: AppShellProps) {
   const isMobile = useIsMobile();
-  const { mobileOpen, setMobileOpen } = useSidebar();
+  const { mobileOpen, setMobileOpen } = useMobileNav();
   const pathname = usePathname();
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   // Close mobile sidebar on route change. Reference pathname in the body so
   // Biome useExhaustiveDependencies keeps it as a real dependency (setMobileOpen
@@ -67,53 +69,67 @@ function AppShellInner({ children }: AppShellProps) {
         <BasaltAppShell>
           <AppSkipLink href="#main-content">Skip to content</AppSkipLink>
 
-          {/* Desktop sidebar */}
-          {!isMobile && <Sidebar />}
+          {!isMobile && (
+            <PersistedSidebarProvider>
+              <Sidebar ariaLabel="Main navigation" />
+            </PersistedSidebarProvider>
+          )}
 
-          {/* Mobile overlay */}
           {isMobile && (
-            <BasaltSidebarProvider
-              overlay
-              collapsed={!mobileOpen}
-              onCollapsedChange={(collapsed) => setMobileOpen(!collapsed)}
-            >
-              <Sidebar mobile />
-            </BasaltSidebarProvider>
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetContent
+                id="mobile-navigation-sheet"
+                side="left"
+                className="w-[260px] max-w-[260px] border-0 bg-basalt-background p-0 sm:max-w-[260px]"
+                onCloseAutoFocus={(event) => {
+                  event.preventDefault();
+                  menuButton.current?.focus();
+                }}
+              >
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation</SheetTitle>
+                  <SheetDescription>Browse Gecko dashboard pages</SheetDescription>
+                </SheetHeader>
+                <SidebarProvider collapsed={false} defaultWidth={260}>
+                  <Sidebar
+                    ariaLabel="Navigation"
+                    variant="mobile"
+                    onNavigate={() => setMobileOpen(false)}
+                    onDismiss={() => setMobileOpen(false)}
+                  />
+                </SidebarProvider>
+              </SheetContent>
+            </Sheet>
           )}
 
           <AppMain>
-            {/* Header */}
             <AppHeader
               leading={
                 isMobile ? (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    aria-label="Open navigation menu"
-                    aria-haspopup="dialog"
+                  <AppHeaderMenuButton
+                    ref={menuButton}
+                    label="Open navigation menu"
                     aria-expanded={mobileOpen}
-                    aria-controls={mobileOpen ? "mobile-navigation" : undefined}
-                    onClick={(event) => {
-                      event.currentTarget.focus();
+                    aria-haspopup="dialog"
+                    aria-controls={mobileOpen ? "mobile-navigation-sheet" : undefined}
+                    onClick={() => {
+                      menuButton.current?.focus();
                       setMobileOpen(true);
                     }}
-                  >
-                    <Menu aria-hidden="true" strokeWidth={1.5} />
-                  </Button>
+                  />
                 ) : undefined
               }
               breadcrumbs={breadcrumbs}
+              breadcrumbsLabel="Breadcrumb"
               actions={
                 <>
-                  <GitHubLink />
-                  <HexlyLink />
+                  <ProjectLinks github="nocoo/gecko" hexly="gecko" name="Gecko" />
                   <ThemeToggle aria-label="Toggle theme" />
                 </>
               }
             />
 
-            {/* Floating island content area */}
-            <div className="flex-1 px-2 pb-2 md:px-3 md:pb-3 overflow-hidden flex flex-col">
+            <div className="flex min-h-0 flex-1 flex-col px-2 pb-2 md:px-3 md:pb-3 overflow-hidden">
               <ContentIsland>{children}</ContentIsland>
             </div>
           </AppMain>
@@ -125,8 +141,8 @@ function AppShellInner({ children }: AppShellProps) {
 
 export function AppShell({ children }: AppShellProps) {
   return (
-    <SidebarProvider>
+    <MobileNavProvider>
       <AppShellInner>{children}</AppShellInner>
-    </SidebarProvider>
+    </MobileNavProvider>
   );
 }
