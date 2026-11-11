@@ -37,7 +37,7 @@ def load_gate():
 gate = load_gate()
 
 PROBE_TMP = ROOT / "build" / "l1-gate-probes"
-PROBE_FIXTURE = PROBE_TMP / "fixture.git"
+PROBE_FIXTURES = PROBE_TMP / "fixtures"
 
 
 @dataclass
@@ -71,27 +71,52 @@ def run_git(args: list[str], cwd: Path, *, check: bool = False, **kwargs) -> sub
 
 def ensure_fixture() -> Path:
     PROBE_TMP.mkdir(parents=True, exist_ok=True)
-    if PROBE_FIXTURE.is_dir():
-        return PROBE_FIXTURE
-    clone = PROBE_TMP / "seed"
-    if clone.exists():
-        shutil.rmtree(clone)
-    run_git(["clone", "--no-hardlinks", str(ROOT), str(clone)], ROOT, check=True)
-    run_git(["checkout", "-B", "l1-probe-baseline"], clone, check=True)
-    bundle = PROBE_TMP / "fixture.bundle"
-    if bundle.exists():
-        bundle.unlink()
-    run_git(["bundle", "create", str(bundle), "HEAD"], clone, check=True)
-    shutil.rmtree(clone)
-    run_git(["clone", "--no-hardlinks", str(bundle), str(PROBE_FIXTURE)], PROBE_TMP, check=True)
-    return PROBE_FIXTURE
+    PROBE_FIXTURES.mkdir(parents=True, exist_ok=True)
+    head = run_git(
+        ["rev-parse", "--verify", "HEAD^{commit}"], ROOT, check=True, capture_output=True
+    ).stdout.strip()
+    fixture = PROBE_FIXTURES / f"{head}.git"
+
+    def verify() -> Path:
+        if fixture.is_symlink():
+            raise RuntimeError(f"Invalid pinned fixture: {fixture}")
+        actual = run_git(
+            ["rev-parse", "--verify", "HEAD^{commit}"], fixture,
+            check=True, capture_output=True,
+        ).stdout.strip()
+        if actual != head:
+            raise RuntimeError(f"Pinned fixture mismatch: expected {head}, got {actual}")
+        return fixture
+
+    if fixture.exists():
+        return verify()
+
+    with tempfile.TemporaryDirectory(prefix=f".fixture-{head[:12]}-", dir=PROBE_FIXTURES) as temporary:
+        candidate = Path(temporary) / "fixture.git"
+        run_git(["clone", "--bare", "--no-hardlinks", str(ROOT), str(candidate)], ROOT, check=True)
+        candidate_head = run_git(
+            ["rev-parse", "--verify", "HEAD^{commit}"], candidate,
+            check=True, capture_output=True,
+        ).stdout.strip()
+        if candidate_head != head:
+            raise RuntimeError(
+                f"Fixture source changed while cloning: expected {head}, got {candidate_head}"
+            )
+        try:
+            candidate.rename(fixture)
+        except FileExistsError:
+            pass
+        except OSError:
+            if not fixture.exists() and not fixture.is_symlink():
+                raise
+    return verify()
 
 
 @contextmanager
-def probe_repo():
+def probe_repo(fixture: Path):
     repo = Path(tempfile.mkdtemp(prefix="gecko-l1-probe-", dir=PROBE_TMP))
     try:
-        run_git(["clone", "--no-hardlinks", str(PROBE_FIXTURE), str(repo)], PROBE_TMP, check=True)
+        run_git(["clone", "--no-hardlinks", str(fixture), str(repo)], PROBE_TMP, check=True)
         for relative in gate.DEPENDENCIES:
             target = repo / relative
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -167,7 +192,7 @@ def read_coverage_from_vitest() -> dict[str, float]:
     return metrics
 
 
-def missing_tool_probe() -> dict[str, object]:
+def missing_tool_probe(fixture: Path) -> dict[str, object]:
     with tempfile.TemporaryDirectory(prefix="gecko-l1-path-") as directory:
         tool_path = Path(directory)
         web_tools: dict[str, Path] = {}
@@ -181,7 +206,7 @@ def missing_tool_probe() -> dict[str, object]:
             assert Path(shutil.which(name, path=str(tool_path))).resolve() == executable
         assert all(shutil.which(name, path=str(tool_path)) is None for name in gate.NATIVE_TOOLS)
 
-        with probe_repo() as repo:
+        with probe_repo(fixture) as repo:
             reset_index(repo)
             stage(repo, "apps/mac-client/Gecko/Sources/Views/L1Probe.swift", "// l1 gate probe\n")
             environment = dict(os.environ)
@@ -224,11 +249,11 @@ def gate_unit_tests() -> ProbeResult:
 
 def main() -> int:
     summary = Summary(platform=sys.platform)
-    ensure_fixture()
+    fixture = ensure_fixture()
 
     summary.add(gate_unit_tests())
 
-    tool = missing_tool_probe()
+    tool = missing_tool_probe(fixture)
     summary.missing_tool_check = tool
     summary.add(ProbeResult(
         "missing_native_tools",
@@ -237,7 +262,7 @@ def main() -> int:
         str(tool.get("stderr", "")),
     ))
 
-    with probe_repo() as repo:
+    with probe_repo(fixture) as repo:
         summary.web_timing_seconds = run_web_timing(repo)
 
         probes: list[tuple[str, Callable[[], None]]] = [
@@ -389,10 +414,4 @@ def staged_bad_unstaged_good(repo: Path):
 
 if __name__ == "__main__":
     # gate_l1_selftest runs unittest-style gate helpers via the same module.
-    try:
-        sys.exit(main())
-    finally:
-        if PROBE_TMP.exists():
-            for entry in PROBE_TMP.iterdir():
-                if entry.name.startswith("gecko-l1-probe-"):
-                    shutil.rmtree(entry, ignore_errors=True)
+    sys.exit(main())
