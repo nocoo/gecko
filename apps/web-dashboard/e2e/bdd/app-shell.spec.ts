@@ -119,9 +119,12 @@ test("mobile drawer closes from dismiss toggle and restores menu focus", async (
   await visit(page, "/integrations/api");
   const opener = page.getByRole("button", { name: "Open navigation menu" });
   await opener.click();
-  const drawer = page.getByRole("dialog", { name: "Navigation" });
+  const drawer = page.locator('[data-slot="sidebar-drawer"]');
   await expect(drawer).toBeVisible();
-  await drawer.getByRole("button", { name: "Close navigation" }).click();
+  await expect(drawer).toHaveCSS("padding-left", "0px");
+  await expect(drawer).toHaveCSS("border-left-width", "0px");
+  const close = page.getByRole("dialog", { name: "Navigation" });
+  await close.getByRole("button", { name: "Close navigation" }).click();
   await expect(drawer).toHaveCount(0);
   await expect(opener).toBeFocused();
 });
