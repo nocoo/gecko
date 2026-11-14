@@ -6,14 +6,7 @@ import {
   AppSkipLink,
   AppShell as BasaltAppShell,
 } from "@nocoo/basalt/components/app-shell";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@nocoo/basalt/components/sheet";
-import { ContentIsland, SidebarProvider } from "@nocoo/basalt/components/sidebar";
+import { ContentIsland, SidebarDrawer } from "@nocoo/basalt/components/sidebar";
 import { TooltipProvider } from "@nocoo/basalt/components/tooltip";
 import { LinkProvider } from "@nocoo/basalt/providers/link";
 import Link from "next/link";
@@ -76,30 +69,21 @@ function AppShellInner({ children }: AppShellProps) {
           )}
 
           {isMobile && (
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetContent
-                id="mobile-navigation-sheet"
-                side="left"
-                className="w-[260px] max-w-[260px] border-0 bg-basalt-background p-0 sm:max-w-[260px]"
-                onCloseAutoFocus={(event) => {
-                  event.preventDefault();
-                  menuButton.current?.focus();
-                }}
-              >
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Navigation</SheetTitle>
-                  <SheetDescription>Browse Gecko dashboard pages</SheetDescription>
-                </SheetHeader>
-                <SidebarProvider collapsed={false} defaultWidth={260}>
-                  <Sidebar
-                    ariaLabel="Navigation"
-                    variant="mobile"
-                    onNavigate={() => setMobileOpen(false)}
-                    onDismiss={() => setMobileOpen(false)}
-                  />
-                </SidebarProvider>
-              </SheetContent>
-            </Sheet>
+            <SidebarDrawer
+              id="mobile-navigation-drawer"
+              open={mobileOpen}
+              onOpenChange={setMobileOpen}
+              returnFocusRef={menuButton}
+              title="Navigation"
+              description="Browse Gecko dashboard pages"
+            >
+              <Sidebar
+                ariaLabel="Navigation"
+                variant="mobile"
+                onNavigate={() => setMobileOpen(false)}
+                onDismiss={() => setMobileOpen(false)}
+              />
+            </SidebarDrawer>
           )}
 
           <AppMain>
@@ -111,7 +95,7 @@ function AppShellInner({ children }: AppShellProps) {
                     label="Open navigation menu"
                     aria-expanded={mobileOpen}
                     aria-haspopup="dialog"
-                    aria-controls={mobileOpen ? "mobile-navigation-sheet" : undefined}
+                    aria-controls={mobileOpen ? "mobile-navigation-drawer" : undefined}
                     onClick={() => {
                       menuButton.current?.focus();
                       setMobileOpen(true);
