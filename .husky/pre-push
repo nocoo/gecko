@@ -1,4 +1,4 @@
-# pre-push (6DQ): L2 ‖ G2
+# pre-push: L2 ‖ G2
 #   L2 — API E2E: real HTTP on :17018, isolated Miniflare D1 persist. Not browser BDD.
 #   G2 — security: osv-scanner + gitleaks
 # L3 Playwright BDD is CI / on-demand (`bun run test:l3`), not pre-push.

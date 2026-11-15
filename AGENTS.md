@@ -62,7 +62,7 @@ The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables
 
 ## Verification
 
-6DQ retains its name. Former G1 is merged into L1; L2/L3, G2 and D1 retain their scope. Status: `enforced`, `planned`, `manual`, `N/A`.
+Quality slots are enforced via `.github/workflows/quality-slots.yml` (`quality / Z1: Gate`, System1 v1.3.0 / `nocoo/base-ci v2026.15`). Former G1 is merged into L1; L2/L3, G2 and D1 retain their scope. Status: `enforced`, `planned`, `manual`, `N/A`.
 
 | Dimension | Required proof | Status | Current enforcement / gap |
 |---|---|---|---|
