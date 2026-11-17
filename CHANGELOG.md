@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.6] - 2026-11-17
+
+### Fixed
+- pin l1 probes to the tested revision
+- simulate missing native tools in l1 probe
+- upgrade react to 19.3.1
+- upgrade zod to 4.6.7
+- upgrade undici to 7.30.2
+- upgrade fast-uri to 3.1.9
+- upgrade vite and postcss
+- upgrade next to 16.4.6
+- **web**: use basalt PageHeader on Daily Review
+- **web**: use basalt PageHeader on Dashboard home
+- **web**: use basalt PageHeader on Sessions page
+- **web**: use basalt PageHeader on Apps page
+- **web**: use basalt PageHeader on API integrations page
+- **web**: use basalt PageHeader on Backy settings page
+- **web**: use basalt PageHeader on Categories settings page
+- **web**: use basalt PageHeader on Tags settings page
+- **web**: use basalt PageHeader on Settings page
+- **web**: use basalt PageHeader on AI Settings page
+- **web**: keep stable logo rail and AppHeader breadcrumb layout
+- **pre-commit**: scope native checks and harden web probes
+
+### Changed
+- migrate basalt ui to 3.5
+- **web-dashboard**: adopt basalt SidebarDrawer for mobile nav
+- **web**: align collapsed sidebar links with basalt icon row defaults
+- **web**: drop sidebar expand control layout overrides
+- **web**: align sidebar footer tooltips with basalt defaults
+- **web**: use basalt header actions with shared TooltipProvider
+- **web**: route breadcrumbs through AppHeader breadcrumbs prop
+- **web**: use basalt SidebarHeader layout for sidebar brand
+
+### CI
+- keep G2 lockfile scope aligned with pre-v2026.12 quality job
+- migrate to base-ci v2026.12 with strict slot-status
+- pin base-ci to v2026.10
+- run L1 gate selftest on pull requests
+- re-pin base-ci and node 26.12.1
+
+### Documentation
+- record stale dependency resolution
+- **agents**: record L1 gate measured evidence
+- sync base-ci pin and node 26.12.1
+
+### Maintenance
+- waive picomatch advisory until 2026-12-18
+- upgrade basalt to 3.2.6
+- **ci**: migrate to System1 v1.3.0 native mode (base-ci v2026.15)
+- **deps**: upgrade @nocoo/basalt to 3.3.6 (#700)
+- **deps**: update apps/web-dashboard lockfile
+- **deps**: bump @nocoo/basalt to 3.3.5
+- **deps**: upgrade basalt 3.3.4 and adopt SidebarDrawer (#698)
+- update web-dashboard osv-scanner ignores for pre-existing CVEs
+- **deps**: bump @nocoo/basalt to 3.3.4
+- **deps**: bump @nocoo/basalt to 3.2.1
+
+### Other
+- align sidebar and app shell with basalt 3.3
+- bump @nocoo/basalt to 3.3.1
+- bump @nocoo/basalt 3.2.0 → 3.2.1
+
+### Tests
+- cover basalt mobile drawer and Access sign-out in shell e2e
+- **l1**: add repeatable pre-commit gate selftest
+
 ## [2.0.5] - 2026-10-22
 
 ### Changed
