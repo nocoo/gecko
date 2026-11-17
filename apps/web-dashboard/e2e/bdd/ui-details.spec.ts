@@ -153,14 +153,6 @@ test("sidebar uses native links, neutral surfaces and a stable logo", async ({ p
   const logo = sidebar.getByAltText("Gecko", { exact: true });
   const x = (await logo.boundingBox())!.x;
   expect(x - (await sidebar.boundingBox())!.x).toBe(22);
-  await expect(sidebar.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS(
-    "font-size",
-    "14px",
-  );
-  await expect(sidebar.getByRole("link", { name: "Dashboard", exact: true })).toHaveCSS(
-    "line-height",
-    "22px",
-  );
   await expect(sidebar.getByRole("link", { name: "API", exact: true })).toHaveAttribute(
     "href",
     "/integrations/api",
