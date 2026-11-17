@@ -4,7 +4,7 @@
 
 import { chartAxis, CHART_COLORS as PALETTE_COLORS } from "./palette";
 
-export { getChartColor } from "@nocoo/basalt/charts/config";
+export { getChartColor } from "@nocoo/basalt/components/chart";
 export { PALETTE_COLORS };
 
 /** Common axis configuration — uses CSS variable tokens */

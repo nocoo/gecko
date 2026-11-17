@@ -1,12 +1,16 @@
 "use client";
 
+import { Badge } from "@nocoo/basalt/components/badge";
+import { Button } from "@nocoo/basalt/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@nocoo/basalt/components/dropdown-menu";
+import { Input } from "@nocoo/basalt/components/input";
 import { InputArea } from "@nocoo/basalt/components/input-area";
+import { Label } from "@nocoo/basalt/components/label";
 import {
   Select,
   SelectContent,
@@ -14,13 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@nocoo/basalt/components/select";
-import {
-  type AuthType,
-  BUILTIN_PROVIDERS,
-  type BuiltinProvider,
-  CUSTOM_PROVIDER_INFO,
-  type SdkType,
-} from "@nocoo/next-ai";
 import {
   AlertTriangle,
   Bot,
@@ -33,12 +30,15 @@ import {
   RotateCcw,
   Save,
   X,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
+import {
+  type AuthType,
+  BUILTIN_PROVIDERS,
+  type BuiltinProvider,
+  CUSTOM_PROVIDER_INFO,
+  type SdkType,
+} from "@nocoo/next-ai";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   DEFAULT_PROMPT_SECTION_1,
   DEFAULT_PROMPT_SECTION_2,

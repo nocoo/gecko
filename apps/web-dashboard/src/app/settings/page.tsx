@@ -1,5 +1,8 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
+import { Input } from "@nocoo/basalt/components/input";
+import { Label } from "@nocoo/basalt/components/label";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
   Select,
@@ -8,13 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@nocoo/basalt/components/select";
+import { Separator } from "@nocoo/basalt/components/separator";
 import { Switch } from "@nocoo/basalt/components/switch";
-import { AlertTriangle, Bell, Check, Globe, Loader2, Mail, Sparkles, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Check,
+  Globe,
+  Loader2,
+  Mail,
+  Sparkles,
+  User,
+} from "@nocoo/basalt/icons";
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+
 import { type MeUser, useMe } from "@/hooks/use-me";
 
 // ---------------------------------------------------------------------------

@@ -24,7 +24,7 @@ import {
   Video,
   Wrench,
   Zap,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import type { ComponentProps, FC } from "react";
 import { useIsDark } from "@/hooks/use-dark";
 import { getHashColor } from "@/lib/hash-color";

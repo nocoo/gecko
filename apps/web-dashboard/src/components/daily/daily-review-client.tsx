@@ -13,7 +13,9 @@
 
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
+import { Popover, PopoverContent, PopoverTrigger } from "@nocoo/basalt/components/popover";
 import {
   AlertCircle,
   Calendar,
@@ -28,18 +30,16 @@ import {
   RefreshCw,
   Sparkles,
   Zap,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import { useRouter } from "next/navigation";
 import type * as React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { type CalendarDay, DayButton } from "react-day-picker";
 import Markdown from "react-markdown";
 import type { AiAnalysisResult } from "@/app/api/daily/[date]/analyze/route";
+import { Calendar as CalendarPicker } from "@/components/calendar";
 import { GanttChart } from "@/components/daily/gantt-chart";
 import { ScoreCards } from "@/components/daily/score-cards";
-import { Button } from "@/components/ui/button";
-import { Calendar as CalendarPicker } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatDateDisplay } from "@/lib/page-navigation";
 import { cn } from "@/lib/utils";
 import type { DailyStats } from "@/services/daily-stats";
@@ -195,6 +195,8 @@ function DateNavigator({
 }) {
   const [open, setOpen] = useState(false);
   const [badges, setBadges] = useState<Map<string, DayBadge>>(new Map());
+  const badgesRef = useRef(badges);
+  badgesRef.current = badges;
   const fetchedMonthsRef = useRef<Set<string>>(new Set());
   const today = todayStr(timezone);
   const canGoForward = addDays(date, 1) <= today;
@@ -246,7 +248,7 @@ function DateNavigator({
       modifiers: Record<string, boolean>;
     }) => {
       const ymd = day.isoDate;
-      const badge = badges.get(ymd);
+      const badge = badgesRef.current.get(ymd);
       const isOutside = modifiers.outside;
       const isSelected = modifiers.selected;
       return (
@@ -263,7 +265,7 @@ function DateNavigator({
         </DayButton>
       );
     },
-    [badges],
+    [],
   );
 
   return (

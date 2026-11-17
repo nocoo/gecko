@@ -1,10 +1,11 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
+import { Input } from "@nocoo/basalt/components/input";
+import { Label } from "@nocoo/basalt/components/label";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
-import { AlertTriangle, Pencil, Plus, Tags as TagsIcon, Trash2 } from "lucide-react";
+import { AlertTriangle, Pencil, Plus, Tags as TagsIcon, Trash2 } from "@nocoo/basalt/icons";
 import { useCallback, useEffect, useState } from "react";
-import { TagBadge } from "@/components/tag-badge";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,9 +13,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/app-dialog";
+import { TagBadge } from "@/components/tag-badge";
 
 // ---------------------------------------------------------------------------
 // Types

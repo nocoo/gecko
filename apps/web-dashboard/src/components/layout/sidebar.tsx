@@ -32,7 +32,7 @@ import {
   Plug,
   SlidersHorizontal,
   Tags,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { type ReactNode, useCallback, useState } from "react";

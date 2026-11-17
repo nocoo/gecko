@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
 import { InputGroup } from "@nocoo/basalt/components/input-group";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
 import {
@@ -14,9 +15,8 @@ import {
   RefreshCw,
   Search,
   X,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
 import { CHART_COLORS } from "@/lib/palette";
 
 // ---------------------------------------------------------------------------

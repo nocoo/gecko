@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
+import { Input } from "@nocoo/basalt/components/input";
 import { InputArea } from "@nocoo/basalt/components/input-area";
 import { InputGroup } from "@nocoo/basalt/components/input-group";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
@@ -22,12 +24,10 @@ import {
   Search,
   Tag as TagIcon,
   X,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import { useCallback, useEffect, useState } from "react";
 import { CategoryPill } from "@/components/category-pill";
 import { TagBadge } from "@/components/tag-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------

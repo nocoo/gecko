@@ -1,6 +1,10 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
+import { Input } from "@nocoo/basalt/components/input";
+import { Label } from "@nocoo/basalt/components/label";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
+import { Separator } from "@nocoo/basalt/components/separator";
 import {
   AlertTriangle,
   Check,
@@ -13,9 +17,8 @@ import {
   Plug,
   RefreshCw,
   Trash2,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -23,10 +26,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/app-dialog";
 
 // =============================================================================
 // Types

@@ -248,7 +248,9 @@ test("AI variable menu fits mobile and preserves editing focus", async ({ page }
   await visit(page, "/settings/ai");
   await expect(page.getByRole("combobox", { name: "Provider" })).toBeVisible();
   const opener = page.getByRole("button", { name: "Insert Variable" });
-  await expect(opener).toHaveCSS("height", "28px");
+  expect(
+    await opener.evaluate((element) => Math.round(element.getBoundingClientRect().height)),
+  ).toBe(28);
   await opener.click();
   const menu = page.getByRole("menu");
   await expect(menu).toBeVisible();

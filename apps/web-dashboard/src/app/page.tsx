@@ -1,8 +1,8 @@
 "use client";
 
+import { Button } from "@nocoo/basalt/components/button";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
 import { ToggleGroup, ToggleGroupItem } from "@nocoo/basalt/components/toggle-group";
-
 import {
   AppWindow,
   BarChart3,
@@ -13,7 +13,7 @@ import {
   RefreshCw,
   Timer,
   TrendingUp,
-} from "lucide-react";
+} from "@nocoo/basalt/icons";
 import { useCallback, useEffect, useState } from "react";
 import {
   Bar,
@@ -27,7 +27,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { Button } from "@/components/ui/button";
 import { useMe } from "@/hooks/use-me";
 import { AXIS_CONFIG, BAR_RADIUS, formatDurationCompact, getChartColor } from "@/lib/chart-config";
 import { CHART_COLORS, chartPrimary, withAlpha } from "@/lib/palette";

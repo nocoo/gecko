@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { buttonVariants } from "@nocoo/basalt/components/button";
+import { ChevronLeft, ChevronRight } from "@nocoo/basalt/icons";
 import { DayPicker, type DayPickerProps, getDefaultClassNames } from "react-day-picker";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 function Calendar({

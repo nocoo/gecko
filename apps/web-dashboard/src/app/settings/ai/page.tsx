@@ -1,8 +1,8 @@
 "use client";
 
 import { PageHeader } from "@nocoo/basalt/components/page-header";
+import { Separator } from "@nocoo/basalt/components/separator";
 import { AiSettingsSection, PromptTemplateSection } from "@/components/ai-settings";
-import { Separator } from "@/components/ui/separator";
 
 export default function AiSettingsPage() {
   return (
