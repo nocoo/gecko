@@ -92,3 +92,10 @@ reason = "vite pre-existing"
 [[IgnoredVulns]]
 id = "GHSA-mrhx-c7xc-m3w5"
 reason = "zod pre-existing"
+
+# Dev-only: picomatch 4.0.7 via vite / tinyglobby / fdir (build and test tooling, not the Worker runtime).
+# No patched picomatch is published (4.0.7 is latest). Re-evaluate by 2026-12-18.
+[[IgnoredVulns]]
+id = "GHSA-fc5q-39xc-vjpf"
+ignoreUntil = 2026-12-18
+reason = "picomatch 4.0.7 dev-only via vite/tinyglobby; no upstream fix yet"
