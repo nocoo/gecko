@@ -1,5 +1,11 @@
 # Retrospective
 
+## 2026-11-18 — release script committed and tagged before a protected push failed
+
+`bun run release` was started after the basalt 3.5 rebase without first checking the `main` branch ruleset. The script bumped versions, generated the changelog, committed `chore: release v2.0.6`, and created a local tag before `git push`. GitHub's active "main quality gate" ruleset requires `quality / Z1: Gate` to be successful on the pushed commit, so the new commit was declined. Nothing reached `origin`, and the GitHub Release and DMG steps did not run. The local tag was deleted; the local release commit was kept.
+
+Prevention: before running `bun run release`, check `gh api repos/<owner>/<repo>/rules/branches/main` and, if a required status check is present, publish through a PR whose CI produces that check. Run the release after the merge, or tag and release only the merged commit.
+
 ## 2026-11-11 — stale nested dependencies hid an override
 
 Bun's incremental install updated the lockfile and top-level Zod but left old nested Zod copies in `node_modules`, so local Node resolution still used the vulnerable version. A separate frozen install confirmed the lockfile resolved the fixed version; the old dependency tree was preserved and replaced with the clean install before rerunning checks. Verify actual nested resolution after overrides and test against a clean frozen install rather than trusting the top-level version alone.
