@@ -19,5 +19,6 @@
 | 13 | [原生工作区](13-native-workspace.md) | Mac 界面 |
 | 14 | [vinext 直接部署 Cloudflare，Google 迁 Access](14-vite-cloudflare-migration.md) | HTTP 切流完成；Cron `0 * * * *` |
 | 15 | [GitHub CI/CD](15-github-cicd.md) | base-ci 质量门与 Worker 发版 |
+| 16 | [质量门与发版运维](16-quality-gates-and-release.md) | 本地 pre-commit/pre-push 门禁、selftest 与 DMG/Worker 发版步骤 |
 
 英文产品说明：[README.en.md](README.en.md)。事故记录在仓库根目录 [Retrospective.md](../Retrospective.md)。

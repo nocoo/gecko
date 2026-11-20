@@ -1,106 +1,64 @@
 # Gecko
 
-Screen-time tracking with a native macOS agent, synchronized web dashboard and analysis tools.
-Profile: native-hybrid, with Swift and TypeScript lanes.
-Direction: [README.md](README.md). Frameworks must not rewrite this file.
-
-## Sources of Truth
-
-This file is the contract; hooks, CI and configuration enforce it. Raise weaker enforcement instead of lowering this contract.
-
-| Fact | Where |
-|---|---|
-| Human docs | [README.md](README.md), [English guide](docs/README.en.md) and numbered architecture/feature docs |
-| Version | Root/web `package.json`; Mac `project.yml` `MARKETING_VERSION`, `Gecko/Sources/Views/AboutView.swift` fallback and regenerated `Gecko.xcodeproj` must match |
-| Enforcement | `.husky/`, `.github/workflows/ci.yml`, `.github/workflows/release.yml`, web Vitest/Playwright configs, Xcode `GeckoTests` |
-| Local secrets | Ignored web `.env.local` / `.dev.vars`; Access JWT and Worker secrets in Cloudflare; native keys in Keychain |
-| Machine rules / accidents | Global `AGENTS.md` and `rules/`; [Retrospective.md](Retrospective.md) |
-
-## Project Invariants
-
-- Production vinext must load `cloudflare.config.ts` with Node; Bun remains the install/build/test tool. GitHub Release deploys Worker `gecko` with `GECKO_DEPLOY_STAGE=cron`. Do not PATCH production Worker settings via the script API; that marks `last_deployed_from=api` and CI `cf deploy --strict` aborts. Dove secrets stay on the Worker through `cf` inherit.
-- Dashboard identity is the verified Cloudflare Access email in lowercase as `user_id`. Access Allow is the admission list. Machine APIs keep device keys and Backy webhook keys.
-- Native device keys stay in Keychain; local sessions remain queued through network outages. Tests use local SQLite, fake providers and injected preferences rather than real user data or paid model calls.
-- Use a stable Apple Development signature for installed TCC-sensitive builds. The unit-test host must start only its test event loop, without production settings, Keychain, tracking or permission services.
-- Store injected `UserDefaults` and use it in every setter. Resume a suspended GCD source before canceling it; essential menubar startup belongs in `MenuBarExtra` / AppDelegate, not a deferred Window task.
-- Production schedulers must be reachable from bundled route startup; vinext's development instrumentation is insufficient. After a Node change, rebuild native SQLite dependencies and verify their runtime ABI.
-- Preserve intentional React effect triggers such as pathname. Never drop a trigger or apply unsafe autofix to silence an exhaustive-dependencies warning.
-
-## Stack / Layout
-
-| Component | Choice |
-|---|---|
-| Web | TypeScript 7, React/vinext on Workers, Cloudflare Access; Bun install/scripts, CI Bun 1.4.2 |
-| Native | macOS 14+, SwiftUI/AppKit, Xcode 16+, XcodeGen, SwiftLint |
-| Data | Production D1 binding; local Miniflare D1; native SQLite and Keychain |
-| `apps/web-dashboard/` | App/API, services, database adapters, Vitest and HTTP/browser suites |
-| `apps/mac-client/` | Native app, `project.yml`, generated Xcode project and tests |
-| `scripts/` | Coordinated version release and DMG packaging |
+Screen-time tracker: native macOS agent (`apps/mac-client/`, macOS 14+, SwiftUI/AppKit, Xcode 16+, XcodeGen, SwiftLint, SQLite, Keychain), web dashboard (`apps/web-dashboard/`, TS 7, React/vinext, Workers/D1, CF Access, Bun/Node), and release/gate `scripts/`.
+Docs: [README.md](README.md) · [English](docs/README.en.md) · [Docs](docs/README.md) · [CI/CD](docs/15-github-cicd.md) · [Gates & Release](docs/16-quality-gates-and-release.md) · [Retrospective](Retrospective.md)
 
 ## Commands
 
-Run each line from the root. Install both dependency graphs; only the root install restores the repository's Husky wrappers. Web tests need no Access session or production D1 credential; browser tests require Chromium. Native tests require full Xcode and SwiftLint; when Command Line Tools is selected, use the per-command `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` override.
+Run from root (CI: Bun 1.4.2, Node 26.12.1). Install both graphs; only root `bun install` restores `.husky/`. Env templates: `apps/web-dashboard/.env.example` & `.dev.vars.example` (local `.env.local`/`.dev.vars` ignored). Tests need no Access/prod D1; E2E needs Chromium; `gate:security` requires `gitleaks` + `osv-scanner`; native needs Xcode + SwiftLint (`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` if CLT active).
 
-```bash
+```sh
 bun install --frozen-lockfile
 bun install --cwd apps/web-dashboard --frozen-lockfile
-bun run typecheck
-bun run lint
-bun run --cwd apps/web-dashboard build
-bun run test:l1
-bun run gate:l1-selftest
-python3 -B scripts/pre-commit.py
-bun run test:l2
-bun run test:l3
-bun run --cwd apps/web-dashboard gate:security
-(cd apps/mac-client && swiftlint --strict)
+bun run dev # https://gecko.dev.hexly.ai -> 127.0.0.1:7018
+bun run typecheck # S1 (web)
+bun run lint # S2 (web Biome, check-only, 0 warnings)
+bun run --cwd apps/web-dashboard build # B1 (web vinext bundle)
+bun run test:l1 # L1 (web Vitest coverage >= 95.5%)
+bun run gate:l1-selftest # L1 pre-commit gate probe
+python3 -B scripts/pre-commit.py # local pre-commit gate
+bun run test:l2 # L3 Integration (local HTTP :17018)
+bun run test:l3 # L4 E2E (Playwright Chromium :27018)
+bun run --cwd apps/web-dashboard gate:security # G1/G2 (gitleaks + osv-scanner + image-size)
+(cd apps/mac-client && swiftlint --strict) # S2 (native)
 xcodebuild -resolvePackageDependencies -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -scmProvider system
 xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destination 'platform=macOS' -only-testing:GeckoTests
 ```
 
-The L2/L3 entrypoints allocate per-run Miniflare persist and test-auth variables. Keep `CF_ACCOUNT_ID`, `CF_API_TOKEN` and `CF_D1_DATABASE_ID` out of automated test environments. Gitleaks/OSV must be available.
+## Invariants
 
-## Verification
+- Load prod vinext (`cloudflare.config.ts`) with Node (Bun handles install/build/test); GitHub Release deploys Worker `gecko` via `cf` with `GECKO_DEPLOY_STAGE=cron`.
+- Never PATCH prod Worker settings via script API (sets `last_deployed_from=api`, aborts CI `cf deploy --strict`); keep Dove secrets on Worker `gecko` via `cf` inherit.
+- Dashboard `user_id` is verified Cloudflare Access email (lowercase); Access Allow gates admission; machine APIs use device keys and Backy webhook keys.
+- Keep native device keys in Keychain and queue sessions offline; tests use local SQLite, fake providers, and injected prefs—never real data or paid models.
+- Use a stable Apple Development signature for TCC-sensitive builds; the Xcode test host starts only its test event loop (no prod settings, Keychain, tracking, or permissions).
+- Store injected `UserDefaults` and use it in every setter; resume suspended GCD sources before cancel; put essential menubar startup in `MenuBarExtra`/`AppDelegate`, not a deferred `Window` task.
+- Wire prod schedulers into bundled route startup (vinext dev instrumentation is not loaded in prod); rebuild native SQLite deps and verify runtime ABI after Node upgrades.
+- Preserve intentional React effect triggers (e.g. `pathname`); never drop a trigger or apply unsafe autofix for exhaustive-dependencies warnings.
+- Sync versions across root & `apps/web-dashboard` `package.json`, `apps/mac-client/project.yml` (`MARKETING_VERSION`), `Gecko/Sources/Views/AboutView.swift` fallback, and regenerated `Gecko.xcodeproj`.
+- Releases/deploys require explicit authorization; check `main` ruleset before `bun run release` and verify SHA CI/Release, `/api/live`, and Cron `0 * * * *` ([Gates & Release](docs/16-quality-gates-and-release.md)).
 
-Quality slots are enforced via `.github/workflows/quality-slots.yml` (`quality / Z1: Gate`, System1 v1.3.0 / `nocoo/base-ci v2026.15`). Former G1 is merged into L1; L2/L3, G2 and D1 retain their scope. Status: `enforced`, `planned`, `manual`, `N/A`.
+## Quality & Local Gates
 
-| Dimension | Required proof | Status | Current enforcement / gap |
-|---|---|---|---|
-| L1 web | Statements, branches, functions and lines each ≥95.5%; no skipped/focused tests | enforced | Measured on Linux CI/agent VM via `bun run gate:l1-selftest` (index snapshot = same path as `.husky/pre-commit` → `scripts/pre-commit.py`). Last verified four metrics: statements **99.21%**, branches **96.28%**, functions **98.17%**, lines **99.62%** (floor 95.5%). Warm web stage **~10–11s** per probe (lint + typecheck + `test:coverage`); target \<30s for ordinary web-only execution, not yet measured for full macOS hook including `xcodebuild` |
-| L1 native | Measurable statements/branches/functions/lines each ≥95%; no skipped/focused tests | planned | **Required when staged paths touch `apps/mac-client/`** (missing `swiftlint`/`xcodebuild`/`xcrun` → exit **1**); otherwise macOS dev machines still run native checks when the toolchain is installed. **Unverified end-to-end on Linux CI.** Interim regression floors **lines 26% / functions 38%** unchanged |
-| L2 API | Real local HTTP over 100% of endpoint/method combinations | planned | Push/CI run real vinext/D1 suites; exhaustive endpoint/method and server-identity checks are not enforced |
-| L3 web | Critical dashboard journeys in Chromium | enforced | CI and root `test:l3` / `test:e2e:bdd` use Playwright |
-| L3 native | Tracking, sleep/lock, permissions and sync as user journeys | planned | Native unit tests exist; complete desktop system acceptance is not enforced |
-| L1 static web | Strict types and check-only lint, zero errors/warnings | enforced | Probed: lint error/warning, type error, focused/skipped tests, staged-bad/unstaged-good index mismatch — all reject (`gate:l1-selftest`). Commands: `bun run lint` (Biome `--error-on-warnings`), `bun run typecheck` |
-| L1 static native | Warnings-as-errors compilation and strict SwiftLint | unverified | Required on commit when macOS toolchain present; not executed in Linux CI. Missing native tools **fail closed** (no silent pass) |
-| G2 web | Dependency and secret scans; missing tools fail | enforced | Push scans the web lock/history and image-size regression; shared CI security also scans root dependencies |
-| G2 native | Native dependency vulnerabilities and repository secrets scanned | planned | Repository secret scanning exists; the GRDB Swift package lacks a dependency audit gate |
-| D1 isolation | Per-run local files/preferences and guarded fixture/reset/cleanup | planned | L2/L3 allocate per-run persist and reject remote fallback; daily 7018 must stay idle |
-| Build | Real vinext bundle and native executable | manual | Web `build`, Xcode build/test; native packaging via `scripts/build-dmg.sh` |
-| Docs / release | Synchronized web/native versions and publication proof | planned | `bun run release` plus GitHub Release workflow; production evidence is the proven SHA's Actions run and `/api/live` version |
+Follows `system1-quality`; CI slots & pinned `base-ci` live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
 
-| Hook | Current behavior | Required follow-up |
-|---|---|---|
-| pre-commit | Staged Python gate; isolated index snapshot and cache directories; check-only web/native tests, coverage, strict checks and fail-closed tools/reports | Repeatable probe: `bun run gate:l1-selftest` (CI job `l1-gate`). Fixes: Linux-safe `SourcePackages` copy (no `cp -cR`), quiet probe mode. Negative cases: UT fail, coverage floor, lint/type, `.only`/skip, index-only defect, timeout, malformed JSON report, missing tools |
-| pre-push | Web L2 and G2 in parallel | Validate commits named by stdin push refs, <3min |
+- **N/A & manual**: `L2 Runtime` and `P1 Package` are `N/A` (Worker/app, not npm); native Release/DMG (`scripts/build-dmg.sh`) is `manual`.
+- **Planned gaps**: native CI & 95% target (interim local floors: 26% lines, 38% functions), GRDB dep audit, exhaustive L3 API matrix, native E2E, and pre-push stdin ref scoping are `planned`.
+- **Coverage scope**: Web `L1 Unit` enforces >= 95.5% statements/branches/functions/lines (`apps/web-dashboard/vitest.config.ts` excludes UI/app/hooks/constants).
+- **Local hooks**: Root `bun install` restores `.husky/`; never use `--no-verify` or auto-fix in hooks (8-min timeout, process-group cleanup; [Gates & Release](docs/16-quality-gates-and-release.md)).
+- **Hook lanes**: `pre-commit` (`scripts/pre-commit.py`) checks staged index (web `S1/S2/L1` + fail-closed native on `apps/mac-client/` or local tools); `pre-push` runs `test:l2` + `gate:security` in parallel.
 
-Never use `--no-verify` on commits or branch pushes. Hooks never auto-fix or re-stage. Gate execution is bounded to eight minutes and owned process groups/temporary outputs are cleaned on failure or cancellation. CI and Release pin shared workflows at `ac635753a869cb85fad1f52aae4ccbd6119f3cae` (base-ci main 2026-10-22).
+## Resources & Isolation
 
-## Resources / Isolation
+| Lane | Endpoint / State | Boundary |
+| --- | --- | --- |
+| Daily web | `127.0.0.1:7018`, `gecko.dev.hexly.ai`, local Miniflare D1 | Daily local data; preserve user session, never target prod |
+| L3 API (`test:l2`) | `127.0.0.1:17018`, per-run temp persist + `_test_marker` | Local HTTP; do not overlap `:7018` or `:27018` |
+| L4 E2E (`test:l3`) | `127.0.0.1:27018`, per-run temp persist + `_test_marker` | Isolated Playwright storage; do not overlap `:7018` or `:17018` |
+| Prod | `https://gecko.hexly.ai`, Worker `gecko` (`gecko / production`) | Read-only `/api/live` checks unless release/deploy authorized |
 
-| Lane | Port / store | Boundary |
-|---|---|---|
-| Daily web | 7018, `gecko.dev.hexly.ai` | Local Miniflare D1 persist; never an automated production target |
-| L2 | 17018, per-run persist | Local HTTP; do not overlap daily 7018 |
-| L3 | 27018, per-run persist | Browser lane needs its own storage; do not overlap L2 |
-
-Vinext has a single development-instance lock. Arrange an idle local server before L2/L3; do not terminate a user's 7018 session to force a gate through. Required harnesses allocate verified per-run persist, reject remote fallback and guard resets/cleanup. No remote `-test` Worker/database is required.
-
-## Operations / Release
-
-Authorized maintainers use `bun run release` (patch default; `-- minor`, `-- major`, explicit version, or `-- --dry-run`). It updates all version locations, regenerates the Mac project with XcodeGen, prepares changelog/tag/Release and builds/uploads the DMG; packaging uses macOS `hdiutil` without mounting a temporary volume and requires the intended signature. It preserves existing build artifacts and retains each staging directory under ignored `build/`.
-Successful main-push CI deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=cron`). Production credentials live in GitHub environment `gecko / production`. Dove webhook URL/token are Worker secrets. After a release, verify the exact SHA's CI and Release runs, `https://gecko.hexly.ai/api/live` version, and Cron `0 * * * *`. See [docs/15](docs/15-github-cicd.md).
+Vinext holds a single dev-instance lock: arrange an idle `:7018` before `test:l2`/`test:l3` without killing a user's running server. Keep `CF_ACCOUNT_ID`, `CF_API_TOKEN`, and `CF_D1_DATABASE_ID` out of test envs; harnesses reject remote fallback and need no `-test` Worker/DB.
 
 ## Retrospective
 
-All original dated narratives are preserved in [Retrospective.md](Retrospective.md), including native test-host isolation. Keep only recurring project rules here, cross-project lessons in global rules/nmem and deterministic requirements in hooks/tests.
+Record incidents in [Retrospective.md](Retrospective.md); promote recurring constraints to `Invariants` and enforceable safeguards to tests/hooks.
