@@ -6,7 +6,14 @@ import {
   AppSkipLink,
   AppShell as BasaltAppShell,
 } from "@nocoo/basalt/components/app-shell";
-import { ContentIsland, SidebarDrawer } from "@nocoo/basalt/components/sidebar";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@nocoo/basalt/components/sheet";
+import { ContentIsland, SidebarProvider } from "@nocoo/basalt/components/sidebar";
 import { TooltipProvider } from "@nocoo/basalt/components/tooltip";
 import { LinkProvider } from "@nocoo/basalt/providers/link";
 import Link from "next/link";
@@ -69,21 +76,34 @@ function AppShellInner({ children }: AppShellProps) {
           )}
 
           {isMobile && (
-            <SidebarDrawer
-              id="mobile-navigation-drawer"
-              open={mobileOpen}
-              onOpenChange={setMobileOpen}
-              returnFocusRef={menuButton}
-              title="Navigation"
-              description="Browse Gecko dashboard pages"
-            >
-              <Sidebar
-                ariaLabel="Navigation"
-                variant="mobile"
-                onNavigate={() => setMobileOpen(false)}
-                onDismiss={() => setMobileOpen(false)}
-              />
-            </SidebarDrawer>
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetContent
+                id="mobile-navigation-drawer"
+                data-slot="sidebar-drawer"
+                side="left"
+                showCloseButton={false}
+                className="basalt-sidebar-drawer max-h-dvh w-[var(--basalt-size-sidebar-width)] max-w-[var(--basalt-size-sidebar-width)] border-r-0 bg-basalt-background p-0 sm:p-0"
+                onCloseAutoFocus={(event) => {
+                  if (menuButton.current) {
+                    event.preventDefault();
+                    menuButton.current.focus();
+                  }
+                }}
+              >
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Navigation</SheetTitle>
+                  <SheetDescription>Browse Gecko dashboard pages</SheetDescription>
+                </SheetHeader>
+                <SidebarProvider collapsed={false}>
+                  <Sidebar
+                    ariaLabel="Navigation"
+                    variant="mobile"
+                    onNavigate={() => setMobileOpen(false)}
+                    onDismiss={() => setMobileOpen(false)}
+                  />
+                </SidebarProvider>
+              </SheetContent>
+            </Sheet>
           )}
 
           <AppMain>
