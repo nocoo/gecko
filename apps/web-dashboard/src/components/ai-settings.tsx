@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "@nocoo/basalt/components/dropdown-menu";
 import { Input } from "@nocoo/basalt/components/input";
-import { InputArea } from "@nocoo/basalt/components/input-area";
 import { Label } from "@nocoo/basalt/components/label";
 import {
   Select,
@@ -18,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@nocoo/basalt/components/select";
+import { Textarea } from "@nocoo/basalt/components/textarea";
 import {
   AlertTriangle,
   Bot,
@@ -489,12 +489,12 @@ export function AiSettingsSection() {
         </Button>
 
         {testStatus === "success" && (
-          <Badge variant="success" dot>
+          <Badge tone="success" dot>
             Connected
           </Badge>
         )}
         {testStatus === "error" && (
-          <Badge variant="destructive" dot>
+          <Badge tone="danger" dot>
             {testError}
           </Badge>
         )}
@@ -751,7 +751,7 @@ export function PromptTemplateSection() {
             )}
 
             {/* Textarea — shows actual text (default or custom) */}
-            <InputArea
+            <Textarea
               id={`prompt-${meta.key}`}
               ref={(el) => {
                 textareaRefs.current[meta.key] = el;

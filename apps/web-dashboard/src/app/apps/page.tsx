@@ -2,7 +2,6 @@
 
 import { Button } from "@nocoo/basalt/components/button";
 import { Input } from "@nocoo/basalt/components/input";
-import { InputArea } from "@nocoo/basalt/components/input-area";
 import { InputGroup } from "@nocoo/basalt/components/input-group";
 import { PageHeader } from "@nocoo/basalt/components/page-header";
 import { Popover, PopoverContent, PopoverTrigger } from "@nocoo/basalt/components/popover";
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@nocoo/basalt/components/select";
+import { Textarea } from "@nocoo/basalt/components/textarea";
 import { ToggleGroup, ToggleGroupItem } from "@nocoo/basalt/components/toggle-group";
 import {
   AlertTriangle,
@@ -784,7 +784,7 @@ function AppRow({
         {/* Note */}
         {isNoteExpanded ? (
           <div className="flex items-start gap-2 w-full">
-            <InputArea
+            <Textarea
               aria-label={`Note for ${app.appName}`}
               className="min-w-0 flex-1"
               rows={2}
