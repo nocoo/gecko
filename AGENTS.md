@@ -44,7 +44,7 @@ Follows `system1-quality`; CI slots & pinned `base-ci` live in `.github/workflow
 
 - **N/A & manual**: `L2 Runtime` and `P1 Package` are `N/A` (Worker/app, not npm); native Release/DMG (`scripts/build-dmg.sh`) is `manual`.
 - **Planned gaps**: native CI & 95% target (interim local floors: 26% lines, 38% functions), GRDB dep audit, exhaustive L3 API matrix, native E2E, and pre-push stdin ref scoping are `planned`.
-- **Coverage scope**: Web `L1 Unit` enforces >= 95.5% statements/branches/functions/lines (`apps/web-dashboard/vitest.config.ts` excludes UI/app/hooks/constants).
+- **Coverage scope**: Web `L1 Unit` enforces >= 95.5% statements/branches/functions/lines (`apps/web-dashboard/vitest.config.ts` covers `src/**` + `worker-entry.ts`, excluding UI/app/hooks/constants and `scripts/**`).
 - **Local hooks**: Root `bun install` restores `.husky/`; never use `--no-verify` or auto-fix in hooks (8-min timeout, process-group cleanup; [Gates & Release](docs/16-quality-gates-and-release.md)).
 - **Hook lanes**: `pre-commit` (`scripts/pre-commit.py`) checks staged index (web `S1/S2/L1` + fail-closed native on `apps/mac-client/` or local tools); `pre-push` runs `test:l2` + `gate:security` in parallel.
 

@@ -15,6 +15,8 @@ export default defineConfig({
   },
   test: {
     globals: false,
+    allowOnly: false,
+    passWithNoTests: false,
     pool: "threads",
     setupFiles: ["./src/__tests__/setup.ts"],
     include: ["src/__tests__/**/*.test.ts", "src/__tests__/**/*.test.tsx"],
@@ -28,24 +30,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],
-      include: [
-        "src/**/*.ts",
-        "src/**/*.tsx",
-        "worker-entry.ts",
-        "scripts/worker-stage.ts",
-        "scripts/cutover-guard.ts",
-        "scripts/cutover-schema.ts",
-        "scripts/baseline-d1.ts",
-        "scripts/remap-user-ids.ts",
-        "scripts/deploy.ts",
-        "scripts/cutover-cf.ts",
-        "scripts/cd-publish.ts",
-      ],
+      include: ["src/**/*.ts", "src/**/*.tsx", "worker-entry.ts"],
       exclude: [
         "**/*.test.ts",
         "**/*.test.tsx",
         "**/*.d.ts",
         "**/__tests__/**",
+        // Operational deploy/cutover scripts — not web-dashboard runtime code
+        "scripts/**",
         "src/proxy.ts",
         "src/app/**",
         "src/components/**",
