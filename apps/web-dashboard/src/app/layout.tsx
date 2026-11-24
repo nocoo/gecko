@@ -43,6 +43,7 @@ export default function RootLayout({
       <head>
         {/* Blocking script: apply dark/light class and data-mode before first paint to prevent FOUC */}
         <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static inline theme bootstrap avoids pre-hydration FOUC
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var s=localStorage.getItem("theme");var d=window.matchMedia("(prefers-color-scheme:dark)").matches;var isDark=s==="dark"||(s!=="light"&&d);document.documentElement.classList.toggle("dark",isDark);document.documentElement.classList.toggle("light",!isDark);document.documentElement.dataset.mode=isDark?"dark":"light"}catch(e){}})()`,
           }}

@@ -111,7 +111,7 @@
         "noUnknownProperty": "off"
       },
       "security": {
-        "noDangerouslySetInnerHtml": "off"
+        "noDangerouslySetInnerHtml": "error"
       },
       "performance": {
         "noImgElement": "off",
@@ -164,16 +164,6 @@
           "style": {
             "useImportType": "off",
             "noNonNullAssertion": "off"
-          }
-        }
-      }
-    },
-    {
-      "includes": ["**/e2e/**", "**/__tests__/e2e/**", "**/__tests__/bdd/**"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noSkippedTests": "off"
           }
         }
       }
