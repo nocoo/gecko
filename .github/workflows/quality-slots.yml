@@ -19,7 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -33,7 +35,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -80,28 +84,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Verify all external actions are pinned to full SHA
-        run: |
-          node -e '
-            const fs = require("fs");
-            const path = require("path");
-            const dir = ".github/workflows";
-            let failed = false;
-            for (const f of fs.readdirSync(dir)) {
-              if (!f.endsWith(".yml") && !f.endsWith(".yaml")) continue;
-              const content = fs.readFileSync(path.join(dir, f), "utf8");
-              for (const m of content.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)) {
-                const ref = m[1];
-                if (ref.startsWith("./")) continue;
-                const [, sha] = ref.split("@");
-                if (!sha || !/^[a-f0-9]{40}$/.test(sha)) {
-                  console.error(`Unpinned action in ${f}: ${ref}`);
-                  failed = true;
-                }
-              }
-            }
-            if (failed) process.exit(1);
-          '
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/lint-workflows@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
 
   g1-secrets:
     name: "G1: Secrets"
@@ -109,24 +94,29 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
-      - uses: nocoo/base-ci/.github/actions/setup-security-scanners@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-      - run: gitleaks detect --no-banner --source . --config .gitleaks.toml --verbose
+          persist-credentials: false
+          fetch-depth: 1
+      - uses: nocoo/base-ci/.github/actions/scan-secrets@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
 
   g2-dependencies:
     name: "G2: Dependencies"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-security-scanners@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-      - run: osv-scanner scan --config osv-scanner.toml --lockfile=bun.lock
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/scan-dependencies@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+        with:
+          lockfiles: "bun.lock"
 
   b1-build:
     name: "B1: Build"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -140,7 +130,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -148,6 +140,36 @@ jobs:
           install-policy: project
           extra-install-dirs: apps/web-dashboard
       - run: bun run --cwd apps/web-dashboard test:coverage
+
+  l1-gate:
+    name: "L1: Unit (Pre-commit Gate)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+        with:
+          package-manager: bun
+          runtime-version: ${{ env.BUN_VERSION }}
+          node-version: ${{ env.NODE_VERSION }}
+          install-policy: project
+          extra-install-dirs: apps/web-dashboard
+      - name: Install gitleaks (pinned v8.30.1)
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.30.1"
+          GITLEAKS_SHA256="551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
+          TAR_FILE="$RUNNER_TEMP/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --retry 5 --retry-delay 2 --retry-all-errors -sSfL \
+            -o "$TAR_FILE" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  ${TAR_FILE}" | sha256sum --check
+          tar -xzf "$TAR_FILE" -C "$RUNNER_TEMP" gitleaks
+          chmod +x "$RUNNER_TEMP/gitleaks"
+          rm -f "$TAR_FILE"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+      - run: bun run gate:l1-selftest
 
   l2-runtime:
     name: "L2: Runtime"
@@ -161,7 +183,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -175,7 +199,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+        with:
+          persist-credentials: false
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -202,21 +228,6 @@ jobs:
     steps:
       - run: echo "N/A - Cloudflare Worker project, not published to npm"
 
-  l1-gate:
-    name: "L1: Unit (Pre-commit Gate)"
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-        with:
-          package-manager: bun
-          runtime-version: ${{ env.BUN_VERSION }}
-          node-version: ${{ env.NODE_VERSION }}
-          install-policy: project
-          extra-install-dirs: apps/web-dashboard
-      - uses: nocoo/base-ci/.github/actions/setup-security-scanners@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-      - run: bun run gate:l1-selftest
-
   z1-gate:
     name: "Z1: Gate"
     runs-on: ubuntu-latest
@@ -224,17 +235,17 @@ jobs:
     needs:
       - s1-types
       - s2-lint
+      - s2-swift-lint
       - s3-workflow
       - g1-secrets
       - g2-dependencies
       - b1-build
       - l1-unit
+      - l1-gate
       - l2-runtime
       - l3-integration
       - l4-e2e
       - p1-package
-      - l1-gate
-      - s2-swift-lint
     outputs:
       tested-sha: ${{ github.sha }}
     steps:
@@ -248,11 +259,11 @@ jobs:
           echo "g2-dependencies: ${{ needs.g2-dependencies.result }}"
           echo "b1-build: ${{ needs.b1-build.result }}"
           echo "l1-unit: ${{ needs.l1-unit.result }}"
+          echo "l1-gate: ${{ needs.l1-gate.result }}"
           echo "l2-runtime: ${{ needs.l2-runtime.result }}"
           echo "l3-integration: ${{ needs.l3-integration.result }}"
           echo "l4-e2e: ${{ needs.l4-e2e.result }}"
           echo "p1-package: ${{ needs.p1-package.result }}"
-          echo "l1-gate: ${{ needs.l1-gate.result }}"
           for r in \
             "${{ needs.s1-types.result }}" \
             "${{ needs.s2-lint.result }}" \
@@ -262,9 +273,9 @@ jobs:
             "${{ needs.g2-dependencies.result }}" \
             "${{ needs.b1-build.result }}" \
             "${{ needs.l1-unit.result }}" \
+            "${{ needs.l1-gate.result }}" \
             "${{ needs.l3-integration.result }}" \
-            "${{ needs.l4-e2e.result }}" \
-            "${{ needs.l1-gate.result }}"; do
+            "${{ needs.l4-e2e.result }}"; do
             if [ "$r" != "success" ]; then
               echo "Required slot failed or was skipped: $r"
               exit 1
