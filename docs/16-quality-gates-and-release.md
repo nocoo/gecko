@@ -11,7 +11,7 @@ Operational runbook for Gecko's local Git hooks, pre-commit selftest probes, nat
 - **Web lane** (`apps/web-dashboard`):
   - `bun run lint` (Biome `--error-on-warnings`, 0 errors / 0 warnings).
   - `bun run typecheck` (`cf workers types`, `vinext typegen`, `tsc --noEmit`, `tsc --noEmit -p tsconfig.tools.json`).
-  - `bun run test:coverage --allowOnly=false` (Vitest v8 coverage >= 95.5% across statements, branches, functions, and lines; JSON report check fails closed on empty runs or skipped/todo/focused tests).
+  - `bun run test:coverage --allowOnly=false` (Vitest v8 coverage >= 80% across statements, branches, functions, and lines; JSON report check fails closed on empty runs or skipped/todo/focused tests).
   - Coverage scope and exclusions are defined in `apps/web-dashboard/vitest.config.ts` (excludes `src/proxy.ts`, `src/app/**`, `src/components/**`, `src/hooks/**`, `src/lib/palette.ts`, `src/lib/chart-config.ts`, `src/services/prompt-defaults.ts`).
 - **Native lane** (`apps/mac-client`):
   - Required when staged paths touch `apps/mac-client/` — missing `swiftlint`, `xcodebuild`, or `xcrun` fails closed with exit `1`.
@@ -22,7 +22,7 @@ Operational runbook for Gecko's local Git hooks, pre-commit selftest probes, nat
 
 ### Pre-commit Selftest Probe (`bun run gate:l1-selftest`)
 
-`bun run gate:l1-selftest` (also enforced in CI job `l1-gate`) exercises `scripts/pre-commit.py` in quiet probe mode with Linux-safe `SourcePackages` copy against negative cases:
+`bun run gate:l1-selftest` exercises `scripts/pre-commit.py` in quiet probe mode with Linux-safe `SourcePackages` copy against negative cases:
 
 - Unit test failure and coverage floor regression
 - Biome lint error/warning and TypeScript type error

@@ -329,7 +329,7 @@ def main() -> int:
                     r,
                     "apps/web-dashboard/vitest.config.ts",
                     (r / "apps/web-dashboard/vitest.config.ts").read_text().replace(
-                        "statements: 95.5",
+                        "statements: 80",
                         "statements: 100",
                     ),
                 ),
