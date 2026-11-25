@@ -8,16 +8,18 @@ all temporary state on exit.
 
 from __future__ import annotations
 
+import concurrent.futures
 import importlib.util
 import json
 import os
+import queue
 import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -140,10 +142,24 @@ def stage(repo: Path, relative: str, content: str):
     run_git(["add", "--", relative], repo, check=True)
 
 
-def expect_reject(repo: Path) -> str:
+@contextmanager
+def quiet_l1_env():
     prior = os.environ.get("GECKO_L1_QUIET")
-    os.environ["GECKO_L1_QUIET"] = "1"
+    changed = prior != "1"
+    if changed:
+        os.environ["GECKO_L1_QUIET"] = "1"
     try:
+        yield
+    finally:
+        if changed:
+            if prior is None:
+                os.environ.pop("GECKO_L1_QUIET", None)
+            else:
+                os.environ["GECKO_L1_QUIET"] = prior
+
+
+def expect_reject(repo: Path) -> str:
+    with quiet_l1_env():
         with tempfile.TemporaryDirectory(prefix=gate.PREFIX) as temporary:
             output = Path(temporary)
             try:
@@ -152,11 +168,6 @@ def expect_reject(repo: Path) -> str:
             except (RuntimeError, subprocess.CalledProcessError, OSError, ValueError, KeyError):
                 return "reject"
         return "accept"
-    finally:
-        if prior is None:
-            os.environ.pop("GECKO_L1_QUIET", None)
-        else:
-            os.environ["GECKO_L1_QUIET"] = prior
 
 
 def expect_accept(repo: Path) -> str:
@@ -186,6 +197,16 @@ def read_coverage_from_vitest() -> dict[str, float]:
         raise RuntimeError("Could not collect web coverage for summary")
     metrics: dict[str, float] = {}
     for line in proc.stdout.splitlines():
+        table_match = re.match(
+            r"^\s*All files\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|\s*([\d.]+)\s*\|",
+            line,
+        )
+        if table_match:
+            metrics["statements"] = float(table_match.group(1))
+            metrics["branches"] = float(table_match.group(2))
+            metrics["functions"] = float(table_match.group(3))
+            metrics["lines"] = float(table_match.group(4))
+            break
         match = re.match(r"\s*(Statements|Branches|Functions|Lines)\s*:\s*([\d.]+)%", line)
         if match:
             metrics[match.group(1).lower()] = float(match.group(2))
@@ -262,25 +283,52 @@ def main() -> int:
         str(tool.get("stderr", "")),
     ))
 
-    with probe_repo(fixture) as repo:
-        summary.web_timing_seconds = run_web_timing(repo)
+    with quiet_l1_env():
+        with probe_repo(fixture) as repo:
+            summary.web_timing_seconds = run_web_timing(repo)
+            summary.add(ProbeResult(
+                "healthy_web_index",
+                "accept",
+                "accept",
+                seconds=summary.web_timing_seconds["warm"],
+            ))
 
-        probes: list[tuple[str, Callable[[], None]]] = [
-            ("healthy_web_index", lambda: None),
+            reset_index(repo)
+            old = gate.DEADLINE
+            start = time.monotonic()
+            try:
+                with tempfile.TemporaryDirectory(prefix=gate.PREFIX) as temporary:
+                    snapshot = gate.materialize_snapshot(repo, temporary)
+                    gate.DEADLINE = time.monotonic() + 0.05
+                    try:
+                        gate.run([sys.executable, "-c", "import time; time.sleep(30)"], snapshot)
+                        outcome = "accept"
+                    except subprocess.TimeoutExpired:
+                        outcome = "reject"
+                timeout_probe = ProbeResult(
+                    "gate_timeout",
+                    "reject",
+                    outcome,
+                    seconds=round(time.monotonic() - start, 2),
+                )
+            finally:
+                gate.DEADLINE = old
+
+        negative_specs: list[tuple[str, Callable[[Path], None]]] = [
             (
                 "ut_failure",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/__tests__/l1-probe-fail.test.ts",
                     'import { expect, test } from "vitest";\ntest("l1 probe fail", () => { expect(1).toBe(2); });\n',
                 ),
             ),
             (
                 "coverage_shortfall",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/vitest.config.ts",
-                    (repo / "apps/web-dashboard/vitest.config.ts").read_text().replace(
+                    (r / "apps/web-dashboard/vitest.config.ts").read_text().replace(
                         "statements: 95.5",
                         "statements: 100",
                     ),
@@ -288,78 +336,81 @@ def main() -> int:
             ),
             (
                 "lint_error",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/__tests__/l1-probe-lint.test.ts",
                     "const unterminated\n",
                 ),
             ),
             (
                 "lint_warning",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/__tests__/l1-probe-warn.test.ts",
                     'const unused = 1;\nexport {};\n',
                 ),
             ),
             (
                 "type_error",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/lib/l1-probe-types.ts",
                     'export const broken: number = "x";\n',
                 ),
             ),
             (
                 "focused_test",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/__tests__/l1-probe-only.test.ts",
                     'import { expect, it } from "vitest";\nit.only("focused", () => { expect(1).toBe(1); });\n',
                 ),
             ),
             (
                 "skipped_test",
-                lambda: stage(
-                    repo,
+                lambda r: stage(
+                    r,
                     "apps/web-dashboard/src/__tests__/l1-probe-skip.test.ts",
                     'import { test } from "vitest";\ntest.skip("skipped", () => {});\n',
                 ),
             ),
             (
                 "staged_bad_unstaged_good",
-                lambda: staged_bad_unstaged_good(repo),
+                staged_bad_unstaged_good,
             ),
         ]
 
-        for name, mutate in probes:
-            reset_index(repo)
-            mutate()
-            start = time.monotonic()
-            if name == "healthy_web_index":
-                outcome = expect_accept(repo)
-                expect = "accept"
-            else:
-                outcome = expect_reject(repo)
-                expect = "reject"
-            summary.add(ProbeResult(name, expect, outcome, seconds=round(time.monotonic() - start, 2)))
+        pool_size = min(4, len(negative_specs))
+        with ExitStack() as stack:
+            repo_queue: queue.Queue[Path] = queue.Queue()
+            for _ in range(pool_size):
+                repo_queue.put(stack.enter_context(probe_repo(fixture)))
 
-        reset_index(repo)
-        old = gate.DEADLINE
-        start = time.monotonic()
-        try:
-            with tempfile.TemporaryDirectory(prefix=gate.PREFIX) as temporary:
-                snapshot = gate.materialize_snapshot(repo, temporary)
-                gate.DEADLINE = time.monotonic() + 0.05
+            def run_negative(name: str, mutate: Callable[[Path], None]) -> ProbeResult:
+                worker_repo = repo_queue.get()
                 try:
-                    gate.run([sys.executable, "-c", "import time; time.sleep(30)"], snapshot)
-                    outcome = "accept"
-                except subprocess.TimeoutExpired:
-                    outcome = "reject"
-            summary.add(ProbeResult("gate_timeout", "reject", outcome,
-                                    seconds=round(time.monotonic() - start, 2)))
-        finally:
-            gate.DEADLINE = old
+                    reset_index(worker_repo)
+                    mutate(worker_repo)
+                    start = time.monotonic()
+                    outcome = expect_reject(worker_repo)
+                    return ProbeResult(name, "reject", outcome, seconds=round(time.monotonic() - start, 2))
+                finally:
+                    repo_queue.put(worker_repo)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=pool_size + 1) as executor:
+                cov_future = executor.submit(read_coverage_from_vitest)
+                probe_futures = [
+                    executor.submit(run_negative, name, mutate)
+                    for name, mutate in negative_specs
+                ]
+                for future in probe_futures:
+                    summary.add(future.result())
+                try:
+                    summary.web_coverage = cov_future.result()
+                except RuntimeError as error:
+                    summary.web_coverage = {"error": str(error)}
+
+        summary.add(timeout_probe)
 
     with tempfile.TemporaryDirectory() as directory:
         path = Path(directory) / "tests.json"
@@ -369,11 +420,6 @@ def main() -> int:
             summary.add(ProbeResult("malformed_test_report", "reject", "accept"))
         except ValueError:
             summary.add(ProbeResult("malformed_test_report", "reject", "reject"))
-
-    try:
-        summary.web_coverage = read_coverage_from_vitest()
-    except RuntimeError as error:
-        summary.web_coverage = {"error": str(error)}
 
     if sys.platform == "darwin" and all(shutil.which(t) for t in gate.NATIVE_TOOLS):
         summary.native_lane = "unverified: macOS tools present; native negative probes not yet automated in CI"
