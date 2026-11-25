@@ -43,7 +43,7 @@ jobs:
       - run: bun run --cwd apps/web-dashboard lint
 
   s2-swift-lint:
-    name: "SwiftLint (macOS)"
+    name: "S2: Lint (Swift)"
     runs-on: macos-latest
     timeout-minutes: 10
     outputs:
@@ -203,7 +203,7 @@ jobs:
       - run: echo "N/A - Cloudflare Worker project, not published to npm"
 
   l1-gate:
-    name: "L1 gate selftest"
+    name: "L1: Unit (Pre-commit Gate)"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
