@@ -147,7 +147,7 @@ Mac 测试需要完整 Xcode 和已生成的项目；测试无需签名的环境
 
 ## 发版
 
-维护者从仓库根运行 `bun run release`（默认 patch；`-- minor`、`-- major`、显式版本或 `-- --dry-run`）。脚本对齐 Web/Mac 版本、changelog、tag、GitHub Release 和 DMG。成功的 main CI 经 [`.github/workflows/release.yml`](.github/workflows/release.yml) 发布 Worker `gecko`。凭据在 GitHub environment `gecko / production`。发版后核对该 SHA 的 CI 与 Release，以及 `https://gecko.hexly.ai/api/live` 的 `version`。详见 [GitHub CI/CD](docs/15-github-cicd.md)。
+维护者从仓库根运行 `bun run release`（默认 patch；`-- minor`、`-- major`、显式版本或 `-- --dry-run`）。脚本对齐 Web/Mac 版本、changelog、tag、GitHub Release 和 DMG。成功的 main CI 经 [`.github/workflows/release.yml`](.github/workflows/release.yml) 发布 Worker `gecko`。凭据在 GitHub environment `production`。发版后核对该 SHA 的 CI 与 Release，以及 `https://gecko.hexly.ai/api/live` 的 `version`。详见 [GitHub CI/CD](docs/15-github-cicd.md)。
 
 ## 文档
 

@@ -40,7 +40,7 @@ xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destinat
 
 ## Quality & Local Gates
 
-Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.18`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
+Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.19`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
 
 - **N/A & manual**: `L2 Runtime` and `P1 Package` are `N/A` (Worker/app, not npm); native Release/DMG (`scripts/build-dmg.sh`) is `manual`.
 - **Planned gaps**: native test/coverage CI & 95% target (SwiftLint runs in macOS CI; interim local test floors: 26% lines, 38% functions), GRDB dep audit, exhaustive L3 API matrix, native E2E, and pre-push stdin ref scoping are `planned`.
@@ -55,7 +55,7 @@ Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.18`, using `setup
 | Daily web | `127.0.0.1:7018`, `gecko.dev.hexly.ai`, local Miniflare D1 | Daily local data; preserve user session, never target prod |
 | L3 API (`test:l2`) | `127.0.0.1:17018`, per-run temp persist + `_test_marker` | Local HTTP; do not overlap `:7018` or `:27018` |
 | L4 E2E (`test:l3`) | `127.0.0.1:27018`, per-run temp persist + `_test_marker` | Isolated Playwright storage; do not overlap `:7018` or `:17018` |
-| Prod | `https://gecko.hexly.ai`, Worker `gecko` (`gecko / production`) | Read-only `/api/live` checks unless release/deploy authorized |
+| Prod | `https://gecko.hexly.ai`, Worker `gecko` (`production`) | Read-only `/api/live` checks unless release/deploy authorized |
 
 Vinext holds a single dev-instance lock: arrange an idle `:7018` before `test:l2`/`test:l3` without killing a user's running server. Keep `CF_ACCOUNT_ID`, `CF_API_TOKEN`, and `CF_D1_DATABASE_ID` out of test envs; harnesses reject remote fallback and need no `-test` Worker/DB.
 

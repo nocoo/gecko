@@ -34,7 +34,7 @@ jobs:
        github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'push' &&
        github.event.workflow_run.head_repository.full_name == github.repository)
-    uses: nocoo/base-ci/.github/workflows/deploy-worker.yml@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
+    uses: nocoo/base-ci/.github/workflows/deploy-worker.yml@98fc023423f82b010f17e0ebbc9dd580fe68736a # v2026.19
     with:
       required-quality-check: "quality / Z1: Gate"
       expected-workflow-path: ".github/workflows/ci.yml"
@@ -53,7 +53,7 @@ jobs:
       d1-migrations: true
       d1-databases: f66490d2-e7b3-43e8-a30c-2b34111141d7
       deploy-script: CLOUDFLARE_DEPLOY=production GECKO_DEPLOY_STAGE=cron bun run scripts/cd-publish.ts
-      environment: gecko / production
+      environment: production
       concurrency-group: deploy-gecko-production
       timeout-minutes: 20
       verify-command: |
@@ -66,4 +66,3 @@ jobs:
       verify-retry-seconds: 5
     secrets:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

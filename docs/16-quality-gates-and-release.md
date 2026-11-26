@@ -68,7 +68,7 @@ bun run release -- --dry-run # preview without side effects
 
 ## Worker CD & Post-Release Verification
 
-`bun run release` does not deploy the Cloudflare Worker. Successful `main` push CI (or `v*.*.*` tag push referencing a proven `main` CI SHA) deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=cron`, D1 migrations against the production UUID). Production credentials live in GitHub environment `gecko / production`; Dove webhook URL/token remain on Worker `gecko` as Worker secrets via `cf` inherit.
+`bun run release` does not deploy the Cloudflare Worker. Successful `main` push CI (or `v*.*.*` tag push referencing a proven `main` CI SHA) deploys Worker `gecko` through `.github/workflows/release.yml` (`deploy-worker.yml`, `cf`, `GECKO_DEPLOY_STAGE=cron`, D1 migrations against the production UUID). Production credentials live in GitHub environment `production`; Dove webhook URL/token remain on Worker `gecko` as Worker secrets via `cf` inherit.
 
 After every release, verify:
 
