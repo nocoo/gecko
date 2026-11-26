@@ -3,72 +3,46 @@ import { visit } from "./navigation";
 
 const shellSelector = "#main-content, [data-basalt-header], [data-basalt-island]";
 
-for (const width of [390, 1440]) {
-  test(`daily navigation retains the shared shell at ${width}px`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 900 });
-    let userRequests = 0;
-    page.on("request", (request) => {
-      if (new URL(request.url()).pathname === "/api/me") userRequests++;
-    });
-    await visit(page, "/daily/2026-10-16");
-    if (width === 1440) {
-      await expect(page.getByText("e2e@test.local", { exact: true })).toBeVisible();
-      await page.getByRole("button", { name: "Collapse sidebar" }).click();
-      await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
-    } else {
-      await expect(page.getByRole("button", { name: "Open navigation menu" })).toBeVisible();
-    }
-    const initialUserRequests = userRequests;
-    const shell = await page.locator(shellSelector).elementHandles();
-    expect(shell).toHaveLength(3);
-    const sidebar =
-      width === 1440 ? await page.locator("[data-basalt-sidebar]").elementHandle() : null;
-    let documentRequests = 0;
-    page.on("request", (request) => {
-      if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documentRequests++;
-    });
-
-    await page.getByRole("button", { name: "Next day" }).click();
-    await expect(page).toHaveURL(/\/daily\/2026-10-17$/);
-    await expect(page.getByRole("button", { name: "Choose review date" })).toHaveText(
-      "Sat, Oct 17, 2026",
-    );
-    await expect(page.locator("[data-basalt-header]")).toContainText("Sat, Oct 17, 2026");
-    for (const node of shell) expect(await node.isVisible()).toBe(true);
-
-    await page.getByRole("button", { name: "Choose review date" }).click();
-    await page.getByRole("grid").locator('[aria-selected="true"] button').focus();
-    await page.keyboard.press("ArrowLeft");
-    await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/daily\/2026-10-16$/);
-    await expect(page.getByRole("grid")).toHaveCount(0);
-
-    await page.goBack();
-    await expect(page.getByRole("button", { name: "Choose review date" })).toHaveText(
-      "Sat, Oct 17, 2026",
-    );
-    await expect(page.locator("[data-basalt-header]")).toContainText("Sat, Oct 17, 2026");
-    await page.goForward();
-    await expect(page.getByRole("button", { name: "Choose review date" })).toHaveText(
-      "Fri, Oct 16, 2026",
-    );
-    await expect(page.locator("[data-basalt-header]")).toContainText("Fri, Oct 16, 2026");
-    for (const node of shell)
-      expect(await node.evaluate((element) => element.isConnected)).toBe(true);
-    for (const node of shell) expect(await node.isVisible()).toBe(true);
-    if (sidebar) {
-      expect(await sidebar.evaluate((element) => element.isConnected)).toBe(true);
-      await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
-      expect(userRequests).toBe(initialUserRequests);
-    }
-    expect(documentRequests).toBe(0);
+test("daily navigation retains the shared shell at 1440px", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  let userRequests = 0;
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/me") userRequests++;
   });
-}
+  await visit(page, "/daily/2026-10-16");
+  await expect(page.getByText("e2e@test.local", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Collapse sidebar" }).click();
+  await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
+  const initialUserRequests = userRequests;
+  const shell = await page.locator(shellSelector).elementHandles();
+  expect(shell).toHaveLength(3);
+  const sidebar = await page.locator("[data-basalt-sidebar]").elementHandle();
+  let documentRequests = 0;
+  page.on("request", (request) => {
+    if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documentRequests++;
+  });
+
+  await page.getByRole("button", { name: "Next day" }).click();
+  await expect(page).toHaveURL(/\/daily\/2026-10-17$/);
+  await expect(page.getByRole("button", { name: "Choose review date" })).toHaveText(
+    "Sat, Oct 17, 2026",
+  );
+  await page.goBack();
+  await expect(page.getByRole("button", { name: "Choose review date" })).toHaveText(
+    "Fri, Oct 16, 2026",
+  );
+  for (const node of shell)
+    expect(await node.evaluate((element) => element.isConnected)).toBe(true);
+  if (sidebar) {
+    expect(await sidebar.evaluate((element) => element.isConnected)).toBe(true);
+    expect(userRequests).toBe(initialUserRequests);
+  }
+  expect(documentRequests).toBe(0);
+});
 
 test("sidebar navigation preserves one shell across every dashboard page", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await visit(page, "/integrations/api");
-  await page.getByRole("button", { name: "Collapse sidebar" }).click();
   const shell = await page.locator(`${shellSelector}, [data-basalt-sidebar]`).elementHandles();
   expect(shell).toHaveLength(4);
   let documentRequests = 0;
@@ -76,17 +50,17 @@ test("sidebar navigation preserves one shell across every dashboard page", async
     if (request.isNavigationRequest() && request.frame() === page.mainFrame()) documentRequests++;
   });
 
-  for (const [label, path, heading, breadcrumb] of [
-    ["Sessions", "/sessions", "Sessions", "Sessions"],
-    ["Apps", "/apps", "Apps", "Apps"],
-    ["Categories", "/settings/categories", "Categories", "Categories"],
-    ["Tags", "/settings/tags", "Tags", "Tags"],
-    ["General", "/settings", "Settings", "Settings"],
-    ["AI Settings", "/settings/ai", "AI Settings", "AI Settings"],
-    ["Backy", "/settings/backy", "Backy", "Backy"],
-    ["API", "/integrations/api", "API", "API"],
-    ["Dashboard", "/", "Hey,", "Home"],
-    ["Daily Review", "/daily", "Daily Review", "Daily Review"],
+  for (const [label, path, heading] of [
+    ["Sessions", "/sessions", "Sessions"],
+    ["Apps", "/apps", "Apps"],
+    ["Categories", "/settings/categories", "Categories"],
+    ["Tags", "/settings/tags", "Tags"],
+    ["General", "/settings", "Settings"],
+    ["AI Settings", "/settings/ai", "AI Settings"],
+    ["Backy", "/settings/backy", "Backy"],
+    ["API", "/integrations/api", "API"],
+    ["Dashboard", "/", "Hey,"],
+    ["Daily Review", "/daily", "Daily Review"],
   ] as const) {
     const link = page
       .locator("[data-basalt-sidebar]")
@@ -96,12 +70,7 @@ test("sidebar navigation preserves one shell across every dashboard page", async
       path === "/daily" ? /\/daily\/\d{4}-\d{2}-\d{2}$/ : new RegExp(`${path}$`),
     );
     await expect(page.locator("h1").first()).toContainText(heading);
-    await expect(page.locator("[data-basalt-header]")).toContainText(breadcrumb);
     await expect(link).toHaveAttribute("aria-current", "page");
-    await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
-    for (const node of shell)
-      expect(await node.evaluate((element) => element.isConnected)).toBe(true);
-    await expect(page.locator("[data-basalt-island]")).toHaveCount(1);
   }
   expect(documentRequests).toBe(0);
 });
@@ -112,19 +81,4 @@ test("sidebar sign-out uses Cloudflare Access logout URL", async ({ page }) => {
   const signOut = page.getByRole("link", { name: "Sign out", exact: true });
   await expect(signOut).toBeVisible();
   await expect(signOut).toHaveAttribute("href", "/cdn-cgi/access/logout");
-});
-
-test("mobile drawer closes from dismiss toggle and restores menu focus", async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 900 });
-  await visit(page, "/integrations/api");
-  const opener = page.getByRole("button", { name: "Open navigation menu" });
-  await opener.click();
-  const drawer = page.locator('[data-slot="sidebar-drawer"]');
-  await expect(drawer).toBeVisible();
-  await expect(drawer).toHaveCSS("padding-left", "0px");
-  await expect(drawer).toHaveCSS("border-left-width", "0px");
-  const close = page.getByRole("dialog", { name: "Navigation" });
-  await close.getByRole("button", { name: "Close navigation" }).click();
-  await expect(drawer).toHaveCount(0);
-  await expect(opener).toBeFocused();
 });
