@@ -40,7 +40,7 @@ xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destinat
 
 ## Quality & Local Gates
 
-Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.19`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
+Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.20`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
 
 - **N/A & manual**: `L2 Runtime` and `P1 Package` are `N/A` (Worker/app, not npm); native Release/DMG (`scripts/build-dmg.sh`) is `manual`.
 - **Planned gaps**: native test/coverage CI & 95% target (SwiftLint runs in macOS CI; interim local test floors: 26% lines, 38% functions), GRDB dep audit, exhaustive L3 API matrix, native E2E, and pre-push stdin ref scoping are `planned`.
