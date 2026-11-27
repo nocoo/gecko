@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -45,7 +45,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -104,7 +104,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/lint-workflows@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/lint-workflows@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -120,7 +120,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
-      - uses: nocoo/base-ci/.github/actions/scan-secrets@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/scan-secrets@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -135,7 +135,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/scan-dependencies@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/scan-dependencies@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           lockfiles: "bun.lock"
       - name: Record tested SHA
@@ -152,7 +152,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -160,6 +160,14 @@ jobs:
           install-policy: project
           extra-install-dirs: apps/web-dashboard
       - run: bun run --cwd apps/web-dashboard build
+      - name: Pack built Worker artifact
+        run: tar -czf b1-dist.tgz -C apps/web-dashboard .cloudflare/output dist
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: b1-dist
+          path: b1-dist.tgz
+          if-no-files-found: error
+          retention-days: 1
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -174,7 +182,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -203,7 +211,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -225,14 +233,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-js@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
           node-version: ${{ env.NODE_VERSION }}
           install-policy: project
           extra-install-dirs: apps/web-dashboard
-      - uses: nocoo/base-ci/.github/actions/setup-playwright@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+      - uses: nocoo/base-ci/.github/actions/setup-playwright@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           working-directory: apps/web-dashboard
           package-manager: bun
@@ -280,7 +288,7 @@ jobs:
     steps:
       - name: Verify quality slots
         id: gate
-        uses: nocoo/base-ci/.github/actions/z1-gate@e5876a604547b1ddb0916f16dd841a4f832609a0 # v2026.20
+        uses: nocoo/base-ci/.github/actions/z1-gate@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
         with:
           needs-json: ${{ toJSON(needs) }}
           expected-sha: ${{ github.sha }}

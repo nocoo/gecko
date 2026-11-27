@@ -372,12 +372,14 @@ export async function defaultVinextDeploy(
   spawnFn: typeof spawn = spawn,
   timeoutMs = 15 * 60_000,
 ): Promise<{ id: string }> {
+  const args = [resolve(cwd, "node_modules/@vinext/cloudflare/dist/cli.js"), "deploy"];
+  if (env.GECKO_SKIP_BUILD === "1") args.push("--skip-build");
   return new Promise((resolvePromise, reject) => {
-    const child: ChildProcess = spawnFn(
-      "node",
-      [resolve(cwd, "node_modules/@vinext/cloudflare/dist/cli.js"), "deploy"],
-      { cwd, env: productionEnv(env), stdio: ["ignore", "pipe", "pipe"] },
-    );
+    const child: ChildProcess = spawnFn("node", args, {
+      cwd,
+      env: productionEnv(env),
+      stdio: ["ignore", "pipe", "pipe"],
+    });
     let stdout = "";
     let stderr = "";
     let timedOut = false;

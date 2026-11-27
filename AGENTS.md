@@ -27,7 +27,7 @@ xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destinat
 
 ## Invariants
 
-- Load prod vinext (`cloudflare.config.ts`) with Node (Bun handles install/build/test); GitHub Release deploys Worker `gecko` via `cf` with `GECKO_DEPLOY_STAGE=cron`.
+- Load prod vinext (`cloudflare.config.ts`) with Node (Bun handles install/build/test); unified [pipeline.yml](.github/workflows/pipeline.yml) (`Pipeline`) deploys Worker `gecko` via `cf` (`D1`–`D5`, `GECKO_DEPLOY_STAGE=cron`, reusing `B1`'s `b1-dist` artifact) on `main` push after `quality / Z1: Gate`.
 - Never PATCH prod Worker settings via script API (sets `last_deployed_from=api`, aborts CI `cf deploy --strict`); keep Dove secrets on Worker `gecko` via `cf` inherit.
 - Dashboard `user_id` is verified Cloudflare Access email (lowercase); Access Allow gates admission; machine APIs use device keys and Backy webhook keys.
 - Keep native device keys in Keychain and queue sessions offline; tests use local SQLite, fake providers, and injected prefs—never real data or paid models.
@@ -40,7 +40,7 @@ xcodebuild test -project apps/mac-client/Gecko.xcodeproj -scheme Gecko -destinat
 
 ## Quality & Local Gates
 
-Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.20`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
+Follows `system1-quality`; CI slots & pinned `base-ci` (`v2026.24`, using `setup-playwright` for `L4` single Desktop Chromium smoke suite and `z1-gate` for `Z1`) live in [.github/workflows/quality-slots.yml](.github/workflows/quality-slots.yml) (called by [.github/workflows/pipeline.yml](.github/workflows/pipeline.yml); `quality / Z1: Gate` required on `main`, gating D1–D5 Worker deploy on `main`). Statuses: `enforced`, `planned`, `manual`, `N/A`.
 
 - **N/A & manual**: `L2 Runtime` and `P1 Package` are `N/A` (Worker/app, not npm); native Release/DMG (`scripts/build-dmg.sh`) is `manual`.
 - **Planned gaps**: native test/coverage CI & 95% target (SwiftLint runs in macOS CI; interim local test floors: 26% lines, 38% functions), GRDB dep audit, exhaustive L3 API matrix, native E2E, and pre-push stdin ref scoping are `planned`.
