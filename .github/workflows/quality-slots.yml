@@ -159,7 +159,10 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           install-policy: project
           extra-install-dirs: apps/web-dashboard
-      - run: bun run --cwd apps/web-dashboard build
+      - env:
+          CLOUDFLARE_DEPLOY: production
+          GECKO_DEPLOY_STAGE: cron
+        run: bun run --cwd apps/web-dashboard build
       - name: Pack built Worker artifact
         run: tar -czf b1-dist.tgz -C apps/web-dashboard .cloudflare/output dist
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
