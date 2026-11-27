@@ -56,13 +56,14 @@ describe("cd-publish", () => {
     expect(config.triggers).toEqual([{ cron: CRON_SCHEDULE }]);
   });
 
-  test("release workflow publishes the cron stage", () => {
+  test("pipeline workflow publishes the cron stage without rebuilding", () => {
     const workflowPath = resolve(
       dirname(fileURLToPath(import.meta.url)),
-      "../../../../../.github/workflows/release.yml",
+      "../../../../../.github/workflows/pipeline.yml",
     );
     const workflow = readFileSync(workflowPath, "utf8");
     expect(workflow).toContain("GECKO_DEPLOY_STAGE=cron");
+    expect(workflow).toContain("GECKO_SKIP_BUILD=1");
     expect(workflow).not.toMatch(/GECKO_DEPLOY_STAGE=http/);
   });
 

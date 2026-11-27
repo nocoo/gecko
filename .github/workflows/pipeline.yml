@@ -1,0 +1,55 @@
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request: {}
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy after quality gate passes
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  quality:
+    uses: ./.github/workflows/quality-slots.yml
+
+  deploy:
+    name: Deploy Worker
+    needs: [quality]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy == true)
+    uses: nocoo/base-ci/.github/workflows/deploy-worker.yml@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
+    with:
+      runtime-version: "1.4.2"
+      node-version: "26.12.1"
+      working-directory: apps/web-dashboard
+      install-policy: project
+      artifact-name: b1-dist
+      artifact-path: apps/web-dashboard
+      artifact-unpack-command: tar -xzf b1-dist.tgz && rm -f b1-dist.tgz
+      deploy-cli: cf
+      cf-version: 1.0.0-beta.13
+      d1-migrations: true
+      d1-databases: f66490d2-e7b3-43e8-a30c-2b34111141d7
+      deploy-env: GECKO_SKIP_BUILD=1
+      deploy-script: CLOUDFLARE_DEPLOY=production GECKO_DEPLOY_STAGE=cron bun run scripts/cd-publish.ts
+      environment: production
+      concurrency-group: deploy-gecko-production
+      timeout-minutes: 20
+      verify-command: |
+        EXPECTED=$(jq -r .version package.json)
+        HTTP=$(curl -fsS -o /tmp/gecko-live.json -w "%{http_code}" https://gecko.hexly.ai/api/live || echo "000")
+        jq -e --arg version "$EXPECTED" --arg http "$HTTP" '
+          $http == "200" and .status == "ok" and .storage == "d1" and .version == $version
+        ' /tmp/gecko-live.json
+      verify-retries: 6
+      verify-retry-seconds: 5
+    secrets:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
