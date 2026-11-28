@@ -39,7 +39,7 @@ export default defineConfig({
         // Operational deploy/cutover scripts — not web-dashboard runtime code
         "scripts/**",
         "src/proxy.ts",
-        "src/app/**",
+        "src/app/**/*.tsx",
         "src/components/**",
         "src/views/**",
         "src/pages/**",
@@ -51,10 +51,10 @@ export default defineConfig({
         "src/services/prompt-defaults.ts",
       ],
       thresholds: {
-        statements: 80,
-        branches: 80,
-        functions: 80,
-        lines: 80,
+        statements: 90,
+        branches: 85,
+        functions: 90,
+        lines: 90,
       },
     },
   },
